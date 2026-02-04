@@ -159,6 +159,9 @@ class OpenAIClient:
     async def generate_response(
         self,
         request: ResponseGenerationRequest,
+        conversation_history: str = "",
+        lead_profile: str = "",
+        is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Gera candidatos de resposta usando ResponseAgent (LLM #2)."""
         # Serializa session_context se for dict
@@ -175,6 +178,9 @@ class OpenAIClient:
             detected_intent=request.detected_intent,
             next_state=request.next_state or request.current_state,
             session_context=context_str,
+            conversation_history=conversation_history,
+            lead_profile=lead_profile,
+            is_first_message=is_first_message,
         )
         raw_response = await self._call_openai(
             system_prompt=RESPONSE_AGENT_SYSTEM,

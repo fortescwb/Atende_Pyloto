@@ -55,11 +55,17 @@ class AIClientProtocol(Protocol):
     async def generate_response(
         self,
         request: ResponseGenerationRequest,
+        conversation_history: str = "",
+        lead_profile: str = "",
+        is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Gera resposta usando LLM.
 
         Args:
             request: Dados para geração
+            conversation_history: Histórico recente (sanitizado)
+            lead_profile: LeadProfile resumido para prompt
+            is_first_message: Se é primeira mensagem da conversa
 
         Returns:
             Resposta gerada (ou fallback em caso de erro)

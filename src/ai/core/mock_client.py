@@ -70,6 +70,9 @@ class MockAIClient:
     async def generate_response(
         self,
         request: ResponseGenerationRequest,
+        conversation_history: str = "",
+        lead_profile: str = "",
+        is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Retorna resposta mock genérica."""
         responses = {

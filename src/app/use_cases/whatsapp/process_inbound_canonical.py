@@ -169,11 +169,13 @@ class ProcessInboundCanonicalUseCase:
                 f"{n.title} ({n.status.value})" for n in lead_profile.active_needs
             ) if lead_profile.active_needs else ""
 
+        is_first_message = session.turn_count == 0 and not session.history
+
         # 3-7) AI Orchestrator (5 agentes LLM)
         ai_result = await self._ai_orchestrator.process_message(
             user_input=sanitized_input,
             current_state=session.current_state.name,
-            session_history=session.history,
+            session_history=session.history_as_strings,
             valid_transitions=valid_transitions,
             session_context={
                 "tenant_id": session.context.tenant_id,
@@ -183,6 +185,7 @@ class ProcessInboundCanonicalUseCase:
             lead_profile_context=lead_profile_context,
             lead_profile_personal_info=lead_profile_personal_info,
             lead_profile_needs=lead_profile_needs,
+            is_first_message=is_first_message,
         )
 
         # 3.5) Atualiza LeadProfile com dados extraídos
@@ -229,7 +232,15 @@ class ProcessInboundCanonicalUseCase:
         # 9) Atualiza sessão
         if fsm_result.success and fsm_result.transition:
             session.transition_to(fsm_result.transition.to_state)
-        session.add_to_history(sanitized_input)
+        session.add_to_history(sanitized_input, max_history=None)
+        # Registrar resposta do assistente (sanitizada, sem PII)
+        if decision.final_text:
+            from app.sessions.models import HistoryRole
+            session.add_to_history(
+                sanitize_pii(decision.final_text),
+                role=HistoryRole.ASSISTANT,
+                max_history=None,
+            )
         await self._session_manager.save(session)
 
         if decision.should_close_session:

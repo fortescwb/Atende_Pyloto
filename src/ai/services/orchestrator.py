@@ -40,7 +40,7 @@ from ai.models.state_agent import StateAgentRequest, StateAgentResult
 from ai.services._orchestrator_helpers import (
     calculate_4agent_confidence,
 )
-from ai.utils.sanitizer import sanitize_pii
+from ai.utils.sanitizer import mask_history, sanitize_pii
 
 if TYPE_CHECKING:
     from ai.config.settings import AISettings
@@ -88,6 +88,7 @@ class AIOrchestrator:
         lead_profile_context: str = "",
         lead_profile_personal_info: str = "",
         lead_profile_needs: str = "",
+        is_first_message: bool = False,
     ) -> OrchestratorResult:
         """Processa mensagem através dos 5 agentes LLM.
 
@@ -113,6 +114,7 @@ class AIOrchestrator:
                 session_history=session_history,
                 valid_transitions=transitions,
                 lead_profile_context=lead_profile_context,
+                is_first_message=is_first_message,
             ),
             self._extract_lead_profile(
                 sanitized_input,
@@ -181,6 +183,7 @@ class AIOrchestrator:
         session_history: list[str] | None = None,
         valid_transitions: tuple[str, ...] | None = None,
         lead_profile_context: str = "",
+        is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Executa agente 2: geração de resposta (gpt-5-chat-latest).
 
@@ -205,6 +208,9 @@ class AIOrchestrator:
         if lead_profile_context:
             enriched_context["lead_profile"] = lead_profile_context
 
+        # Histórico sanitizado e truncado para prompt
+        history_for_prompt = "\n".join(mask_history(session_history or [], max_messages=None))
+
         request = ResponseGenerationRequest(
             event="message",
             detected_intent=detected_intent,
@@ -214,7 +220,13 @@ class AIOrchestrator:
             confidence_event=0.8,
             session_context=enriched_context,
         )
-        return await self._client.generate_response(request)
+        # Passa histórico e lead profile direto ao prompt
+        return await self._client.generate_response(
+            request,
+            conversation_history=history_for_prompt,
+            lead_profile=lead_profile_context,
+            is_first_message=is_first_message,
+        )
 
     async def _extract_lead_profile(
         self,

@@ -66,8 +66,8 @@ class SessionManager:
         return hashlib.sha256(sender_id.encode()).hexdigest()[:16]
 
     def _generate_session_id(self, sender_hash: str) -> str:
-        """Gera ID único para sessão."""
-        return f"sess_{sender_hash}_{uuid.uuid4().hex[:8]}"
+        """Gera ID determinístico por remetente."""
+        return f"sess_{sender_hash}"
 
     async def resolve_or_create(
         self,
@@ -93,24 +93,24 @@ class SessionManager:
             Sessão existente ou nova
         """
         sender_hash = self._hash_sender(sender_id)
-        lookup_key = f"session:{sender_hash}"
+        session_id = self._generate_session_id(sender_hash)
 
-        existing = await self._store.load_async(lookup_key)
+        existing = await self._store.load_async(session_id)
         if existing is not None:
-            session = Session.from_dict(existing)
+            session = existing if isinstance(existing, Session) else Session.from_dict(existing)
             if not session.is_expired and not session.is_terminal:
                 logger.debug("session_resolved", extra={"session_id": session.session_id})
                 return session
 
         # Sessão não encontrada no Redis, tentar recuperar do Firestore
         return await self._create_with_recovery(
-            sender_hash, lookup_key, tenant_id, vertente, channel
+            sender_hash, session_id, tenant_id, vertente, channel
         )
 
     async def _create_with_recovery(
         self,
         sender_hash: str,
-        lookup_key: str,
+        session_id: str,
         tenant_id: str,
         vertente: str,
         channel: str,
@@ -123,7 +123,7 @@ class SessionManager:
 
         Args:
             sender_hash: Hash do sender_id
-            lookup_key: Chave de lookup no Redis
+            session_id: ID determinístico da sessão
             tenant_id: ID do tenant
             vertente: Vertente de atendimento
             channel: Canal de origem
@@ -158,7 +158,7 @@ class SessionManager:
 
         return await self._create_new(
             sender_hash,
-            lookup_key,
+            session_id,
             tenant_id,
             vertente,
             lead_profile=lead_profile,
@@ -220,7 +220,7 @@ class SessionManager:
     async def _create_new(
         self,
         sender_hash: str,
-        lookup_key: str,
+        session_id: str,
         tenant_id: str,
         vertente: str,
         *,
@@ -231,13 +231,12 @@ class SessionManager:
 
         Args:
             sender_hash: Hash do sender_id
-            lookup_key: Chave de lookup no Redis
+            session_id: ID determinístico da sessão
             tenant_id: ID do tenant
             vertente: Vertente de atendimento
             lead_profile: Perfil do lead (recuperado do Firestore)
             recovered_history: Histórico recuperado (limitado às últimas N msgs)
         """
-        session_id = self._generate_session_id(sender_hash)
         now = datetime.now(UTC)
 
         session = Session(
@@ -415,6 +414,5 @@ class SessionManager:
 
     async def close(self, session: Session, reason: str = "normal") -> None:
         """Encerra sessão explicitamente."""
-        lookup_key = f"session:{session.sender_id}"
-        await self._store.delete_async(lookup_key)
+        await self._store.delete_async(session.session_id)
         logger.info("session_closed", extra={"session_id": session.session_id, "reason": reason})

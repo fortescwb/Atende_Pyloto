@@ -70,14 +70,15 @@ def sanitize_pii(text: str) -> str:
     return result
 
 
-def mask_history(messages: list[str], max_messages: int = 5) -> list[str]:
+def mask_history(messages: list[str], max_messages: int | None = 5) -> list[str]:
     """Mascara PII em histórico de mensagens antes de enviar para LLM.
 
     Trunca para últimas N mensagens (minimização de dados) e mascara cada uma.
 
     Args:
         messages: Lista de strings com histórico de conversa
-        max_messages: Número máximo de mensagens a manter (padrão 5)
+        max_messages: Número máximo de mensagens a manter (padrão 5).
+            Use None ou <= 0 para manter todas.
 
     Returns:
         Lista mascarada e truncada
@@ -90,7 +91,10 @@ def mask_history(messages: list[str], max_messages: int = 5) -> list[str]:
         return []
 
     # Truncar para últimas N mensagens (determinístico, limite de tokens)
-    truncated = messages[-max_messages:] if len(messages) > max_messages else messages
+    if max_messages is None or max_messages <= 0:
+        truncated = messages
+    else:
+        truncated = messages[-max_messages:] if len(messages) > max_messages else messages
 
     # Sanitizar cada mensagem
     return [sanitize_pii(msg) for msg in truncated]

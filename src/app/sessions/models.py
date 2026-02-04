@@ -188,7 +188,7 @@ class Session:
         content: str,
         role: HistoryRole = HistoryRole.USER,
         detected_intent: str | None = None,
-        max_history: int = 10,
+        max_history: int | None = 10,
     ) -> None:
         """Adiciona mensagem ao histórico (FIFO com limite).
 
@@ -204,7 +204,7 @@ class Session:
             detected_intent=detected_intent,
         )
         self.history.append(entry)
-        if len(self.history) > max_history:
+        if max_history is not None and max_history > 0 and len(self.history) > max_history:
             self.history = self.history[-max_history:]
         self.updated_at = datetime.now(UTC)
 

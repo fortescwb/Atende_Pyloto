@@ -53,7 +53,9 @@ def create_session_store() -> SessionStoreProtocol:
     Returns:
         Implementação de SessionStoreProtocol
     """
-    backend = os.getenv("SESSION_STORE_BACKEND", "memory").lower()
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    default_backend = "redis" if environment in ("staging", "production") else "memory"
+    backend = os.getenv("SESSION_STORE_BACKEND", default_backend).lower()
 
     if backend == "redis":
         redis_client = create_redis_client()
@@ -66,7 +68,6 @@ def create_session_store() -> SessionStoreProtocol:
         return store
 
     if backend == "memory":
-        environment = os.getenv("ENVIRONMENT", "development")
         if environment not in ("development", "test"):
             logger.warning(
                 "memory_store_in_non_dev",
@@ -104,7 +105,9 @@ def create_dedupe_store() -> DedupeProtocol:
     Returns:
         Implementação de DedupeProtocol
     """
-    backend = os.getenv("DEDUPE_BACKEND", "memory").lower()
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    default_backend = "redis" if environment in ("staging", "production") else "memory"
+    backend = os.getenv("DEDUPE_BACKEND", default_backend).lower()
 
     if backend == "redis":
         redis_client = create_redis_client()
@@ -117,7 +120,6 @@ def create_dedupe_store() -> DedupeProtocol:
         return store
 
     if backend == "memory":
-        environment = os.getenv("ENVIRONMENT", "development")
         if environment not in ("development", "test"):
             logger.warning(
                 "memory_dedupe_in_non_dev",
