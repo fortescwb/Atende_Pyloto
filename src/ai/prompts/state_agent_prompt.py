@@ -1,49 +1,60 @@
-"""Prompt do StateAgent (LLM #1).
+"""Prompt do StateAgent (Agente 1) — gpt-5-nano.
 
-Identifica estado atual e sugere transições válidas.
-Conforme README.md: LLM #1 do pipeline de 4 agentes.
+Seletor de estado: recebe últimas 3 mensagens e estados possíveis.
+Retorna apenas: próximo estado + confiança.
+
+CONTEXTO MÍNIMO para velocidade:
+- Últimas 3 mensagens do usuário
+- Estado anterior, atual e próximos possíveis
 """
 
 from __future__ import annotations
 
-from ai.prompts.system_role import SYSTEM_ROLE
+# Prompt minimalista para nano — apenas seleção de estado
+STATE_AGENT_SYSTEM = """Selecione o próximo estado da conversa.
 
-STATE_AGENT_SYSTEM = f"""{SYSTEM_ROLE}
-
-Você é um analisador de contexto conversacional.
-Sua tarefa é identificar o estado atual da conversa e sugerir próximos estados válidos.
-
-Estados disponíveis:
+ESTADOS:
 - INITIAL: Sessão recém-criada
-- TRIAGE: Classificação/triagem em andamento
-- COLLECTING_INFO: Coleta estruturada de informações
+- TRIAGE: Classificação em andamento
+- COLLECTING_INFO: Coletando informações do cliente
 - GENERATING_RESPONSE: Preparando resposta
-- HANDOFF_HUMAN: Escalado para humano (terminal)
-- SELF_SERVE_INFO: Autoatendimento concluído (terminal)
-- ROUTE_EXTERNAL: Encaminhado externamente (terminal)
-- SCHEDULED_FOLLOWUP: Follow-up agendado (terminal)
-- TIMEOUT: Sessão expirou (terminal)
-- ERROR: Falha irrecuperável (terminal)
+- HANDOFF_HUMAN: Escalar para humano
+- SELF_SERVE_INFO: Autoatendimento concluído
+- ROUTE_EXTERNAL: Encaminhar para sistema externo
+- SCHEDULED_FOLLOWUP: Follow-up agendado
+- TIMEOUT: Encerrar por inatividade
+- ERROR: Erro inesperado
 
-Responda APENAS em JSON válido com a estrutura:
-{{
-    "previous_state": "<estado anterior>",
-    "current_state": "<estado identificado>",
-    "suggested_next_states": [
-        {{"state": "<estado>", "confidence": <0.0-1.0>, "reasoning": "<motivo>"}}
-    ],
-    "confidence": <0.0-1.0>,
-    "rationale": "<explicação>"
-}}
+REGRAS:
+- Se usuário está frustrado → HANDOFF_HUMAN
+- Se precisa coletar dados → COLLECTING_INFO
+- Se pode responder direto → GENERATING_RESPONSE
+- Se é primeira mensagem → TRIAGE
+- Sempre respeite os próximos válidos
+
+Responda APENAS em JSON:
+{
+  "previous_state": "<ESTADO>",
+  "current_state": "<ESTADO>",
+  "suggested_next_states": [
+    {"state": "<ESTADO>", "confidence": <0.0-1.0>, "reasoning": "<curto>"},
+    {"state": "<ESTADO>", "confidence": <0.0-1.0>, "reasoning": "<curto>"}
+  ],
+  "confidence": <0.0-1.0>,
+  "rationale": "<explicação curta>"
+}
 """
 
-STATE_AGENT_USER_TEMPLATE = """Mensagem do usuário: {user_input}
-
+STATE_AGENT_USER_TEMPLATE = """Estado anterior: {previous_state}
 Estado atual: {current_state}
-Histórico: {conversation_history}
-Transições válidas: {valid_transitions}
+Próximos válidos: {valid_transitions}
 
-Analise e sugira próximos estados. Responda APENAS em JSON válido."""
+Últimas mensagens:
+{last_messages}
+
+Mensagem atual: {user_input}
+
+Escolha próximo estado. JSON apenas."""
 
 
 def format_state_agent_prompt(
@@ -51,11 +62,21 @@ def format_state_agent_prompt(
     current_state: str,
     conversation_history: str,
     valid_transitions: tuple[str, ...],
+    previous_state: str = "INITIAL",
 ) -> str:
-    """Formata prompt para o StateAgent."""
+    """Formata prompt para o StateAgent.
+
+    Args:
+        user_input: Mensagem atual do usuário
+        current_state: Estado atual da FSM
+        conversation_history: Últimas 3 mensagens formatadas
+        valid_transitions: Tupla de estados válidos para transição
+        previous_state: Estado anterior
+    """
     return STATE_AGENT_USER_TEMPLATE.format(
-        user_input=user_input,
+        user_input=user_input[:200],  # Trunca para nano
         current_state=current_state,
-        conversation_history=conversation_history or "Nenhum histórico",
+        previous_state=previous_state,
         valid_transitions=", ".join(valid_transitions) if valid_transitions else "Nenhuma",
+        last_messages=conversation_history[:500] if conversation_history else "Primeira mensagem",
     )

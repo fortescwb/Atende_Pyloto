@@ -21,7 +21,7 @@ class TestAIModelSettings:
         """Valida valores padrão do modelo."""
         settings = AIModelSettings()
 
-        assert settings.model == "gpt-4o-mini"
+        assert settings.model == "gpt-5-nano-2025-08-07"  # MODEL_GPT5_NANO
         assert settings.max_tokens == 400
         assert settings.temperature == 0.3
 
@@ -73,9 +73,10 @@ class TestAIThresholdSettings:
         """Valida valores padrão de thresholds."""
         settings = AIThresholdSettings()
 
-        assert settings.min_confidence == 0.5
-        assert settings.requires_review_threshold == 0.4
+        assert settings.min_confidence == 0.7  # Threshold validado
+        assert settings.requires_review_threshold == 0.5
         assert settings.fallback_confidence == 0.3
+        assert settings.escalate_after_consecutive == 3
 
     def test_custom_values(self) -> None:
         """Valida valores customizados."""
@@ -117,7 +118,7 @@ class TestGetAISettings:
         settings = get_ai_settings()
 
         assert isinstance(settings, AISettings)
-        assert settings.model.model == "gpt-4o-mini"
+        assert settings.model.model == "gpt-5-nano-2025-08-07"  # MODEL_GPT5_NANO
 
     def test_returns_same_instance(self) -> None:
         """Valida que retorna mesma instância (singleton)."""

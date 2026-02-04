@@ -69,7 +69,8 @@ def _parse_config(data: dict[str, Any], agent_name: str) -> AgentConfig:
         description=str(data.get("description", "")),
         model_name=str(model.get("name", "gpt-4o-mini")),
         temperature=float(model.get("temperature", 0.3)),
-        max_tokens=int(model.get("max_tokens", 500)),
+        # Support both new 'max_completion_tokens' and legacy 'max_tokens' keys in YAML
+        max_tokens=int(model.get("max_completion_tokens", model.get("max_tokens", 500))),
         timeout_seconds=int(model.get("timeout_seconds", 10)),
         behavior=behavior if isinstance(behavior, dict) else {},
     )

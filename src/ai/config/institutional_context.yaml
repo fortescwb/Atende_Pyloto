@@ -1,0 +1,147 @@
+# Contexto Institucional — Pyloto
+# Este arquivo contém informações estáticas sobre a empresa
+# que podem ser usadas pelos agentes LLM para responder perguntas.
+#
+# ATENÇÃO: Não incluir dados sensíveis (tokens, senhas, chaves de API).
+# Atualizar este arquivo quando houver mudança em informações públicas.
+
+empresa:
+  nome: "Pyloto"
+  nome_completo: "Pyloto Corp - Uma Companhia Multiserviços"
+  slogan: "Soluções inteligentes para seu negócio"
+  descricao: >
+    A Pyloto é uma empresa de tecnologia especializada em automação,
+    gestão empresarial e desenvolvimento de sistemas sob medida.
+
+contato:
+  telefone: "(42) 8402-7199"  # Telefone/WhatsApp para dúvidas, agendamentos de reuniões e suporte geral.
+  whatsapp1: "(42) 8402-7199"  # Telefone/WhatsApp para dúvidas, agendamentos de reuniões e suporte geral.
+  whatsapp2: "(42) 9161-9261"  # WhatsApp para solicitação de entregas e serviços (Prestadores cadastrados na Pyloto).
+  email: "contato@pyloto.com.br"
+  site: "https://www.pyloto.com.br"
+
+endereco:
+  rua: "Rua Dr. Vicente Machado"
+  numero: "1472"
+  complemento: "Sala 7"
+  bairro: "Centro"
+  cidade: "Ponta Grossa"
+  estado: "PR"
+  cep: "84010-000"
+  referencia: "Próximo a rodoviária de Ponta Grossa"
+
+horario_atendimento_presencial:
+  dias_uteis:
+    inicio: "09:00"
+    fim: "17:00"
+  sabado: "Fechado"
+  domingo: "Fechado"
+  feriados: "Consultar disponibilidade"
+  fuso_horario: "America/Sao_Paulo"
+
+vertentes:
+  - id: "entregas"
+    nome: "Pyloto Entrega/Serviços"
+    descricao: "Intermediação entre solicitante e prestadores de serviço"
+    tipos_servico:
+      - "Entregas rápidas"
+      - "Serviços gerais"
+      - "Freelancers"
+    publico_alvo: "Empresas e pessoas físicas"
+
+  - id: "saas"
+    nome: "SaaS Adaptável Pyloto"
+    descricao: "Sistema de gestão adaptável aos mais diversos nichos empresariais"
+    funcionalidades:
+      - "CRM integrado"
+      - "Gestão financeira"
+      - "Controle de estoque"
+      - "Agenda e agendamentos"
+      - "Relatórios personalizados"
+    publico_alvo: "Pequenas e médias empresas"
+
+  - id: "gestao_perfis"
+    nome: "Gestão de Perfis e Tráfego"
+    descricao: "Gestão de perfis empresariais em redes sociais e campanhas de tráfego pago"
+    plataformas:
+      - "Google Ads"
+      - "Meta Ads (Facebook/Instagram)"
+      - "LinkedIn Ads"
+      - "TikTok Ads"
+    servicos:
+      - "Criação e gestão de campanhas"
+      - "Análise de métricas"
+      - "Otimização de ROI"
+    publico_alvo: "Empresas que buscam presença digital. Obs.: A Pyloto não cria conteúdo, apenas gerencia publicações e campanhas."
+
+  - id: "desenvolvimento"
+    nome: "Desenvolvimento Sob Medida"
+    descricao: "Desenvolvimento de sistemas, sites e landing pages personalizados"
+    tecnologias:
+      - "Python"
+      - "TypeScript/JavaScript"
+      - "React/Next.js"
+      - "Cloud (GCP, Cloudflare)"
+    tipos_projeto:
+      - "Sites institucionais"
+      - "Landing pages"
+      - "Sistemas web"
+      - "Integrações e APIs"
+      - "Automações"
+      - "Soluções personalizadas"
+      - "Manutenção e suporte"
+      - "Portal de vendas online (e-commerce)"
+      - "Sistemas de gestão empresarial (ERP)"
+      - "Aplicativos móveis (iOS/Android)"
+    publico_alvo: "Empresas com necessidades específicas"
+
+faixas_preco:
+  nota: "Valores aproximados. Consulte para orçamento personalizado."
+  projetos:
+    landing_page:
+      minimo: 500
+      maximo: 2000
+      moeda: "BRL"
+    site_institucional:
+      minimo: 3000
+      maximo: 15000
+      moeda: "BRL"
+    sistema_sob_medida:
+      nota: "A partir de R$ 10.000 - valor varia conforme complexidade, requisitos e quantidade de funcionalidades."
+  mensalidades:
+    saas_basico:
+      valor: 29 #Por usuário
+      moeda: "BRL"
+    saas_profissional:
+      valor: 49 #Por usuário
+      moeda: "BRL"
+    gestao_trafego:
+      minimo: 1499
+      maximo: 19999
+      nota: "Não inclui verba de anúncios"
+      moeda: "BRL"
+
+links_uteis:
+  agendamento: "https://pyloto.com.br/agendar"
+  portfolio: "https://pyloto.com.br/portfolio"
+  blog: "https://pyloto.com.br/blog"
+  instagram: "https://instagram.com/pylotocorp"
+  linkedin: "https://linkedin.com/company/pylotocorp"
+
+clientes_referencia:
+  - nome: "Fechoo Intermediações Ltda"
+    segmento: "Intermediação de Repasse de Veículos"
+    depoimento: "Excelente parceria! Sistema extremamente eficiente, com funcionalidades que nenhuma outra intermediadora do Brasil tem!"
+  - nome: "Sidão Repasses"
+    segmento: "Intermediação de Repasse de Veículos"
+    depoimento: "Transformou uma operação solo em uma empresa de sucesso."
+  - nome: "Ávila e Reis Advogados"
+    segmento: "Escritório de Advocacia"
+    depoimento: "O SaaS da Pyloto otimizou nosso fluxo de trabalho e melhorou a comunicação com nossos clientes."
+
+politicas:
+  privacidade: "https://pyloto.com.br/privacidade"
+  termos_uso: "https://pyloto.com.br/termos"
+  lgpd:
+    responsavel: "dpo@pyloto.com.br"
+    nota: "Seus dados são tratados conforme a LGPD"

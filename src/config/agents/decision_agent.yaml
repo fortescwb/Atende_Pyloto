@@ -1,15 +1,15 @@
 # DecisionAgent — Consolida decisões e aplica threshold
-# LLM #4 do pipeline de 4 agentes
-# Conforme README.md e TODO.md Fase 2.5
+# LLM #4 do pipeline de 5 agentes
+# Modelo: gpt-5.1 (reasoning para decisão final)
 
 agent_name: decision_agent
-version: "1.0.0"
-description: "Consolida outputs dos 3 agentes e toma decisão final"
+version: "2.0.0"
+description: "Consolida outputs dos agentes e toma decisão final"
 
 model:
-  name: gpt-4o
+  name: gpt-5.1-2025-11-13
   temperature: 0.2
-  max_tokens: 800
+  max_completion_tokens: 400
   timeout_seconds: 12
 
 behavior:

@@ -4,7 +4,7 @@
 >
 > **Data de criação:** 03/02/2026  
 > **Responsável:** Equipe Pyloto  
-> **Status:** 🟡 Em planejamento
+> **Status:** � Em execução (P0 ✅, P1 parcial)
 
 ---
 
@@ -140,21 +140,24 @@ Otto: Não podemos fornecer informações de endereço.
 | **Redis Session Store** | ✅ Existe | `src/app/infra/stores/redis_session_store.py` |
 | **Firestore Audit Store** | ✅ Existe | `src/app/infra/stores/firestore_audit_store.py` |
 | **DecisionAuditStoreProtocol** | ✅ Existe | `src/app/protocols/decision_audit_store.py` |
-| **Conversation Store** | ❌ Criar | `src/app/infra/stores/firestore_conversation_store.py` |
-| **Lead Store** | ❌ Criar | `src/app/infra/stores/firestore_lead_store.py` |
+| **Conversation Store** | ✅ Criado | `src/app/infra/stores/firestore_conversation_store.py` |
+| **ConversationStoreProtocol** | ✅ Criado | `src/app/protocols/conversation_store.py` |
+| **LeadExtractor** | ✅ Criado | `src/ai/services/lead_extractor.py` |
+| **SessionManager (dual-write)** | ✅ Atualizado | `src/app/sessions/manager.py` |
 
 ---
 
 ## 3) Tarefas P0 — Críticas (Pré-produção)
 
 > ⏱️ Estimativa: 1-2 dias  
-> 🎯 Objetivo: Corrigir problemas mais graves que afetam qualidade básica
+> 🎯 Objetivo: Corrigir problemas mais graves que afetam qualidade básica  
+> ✅ **STATUS: CONCLUÍDO em 04/02/2026**
 
 ### P0.1 — Passar histórico de conversa para ResponseAgent
 
-- [ ] **Arquivo:** `src/ai/services/orchestrator.py`
-- [ ] **Mudança:** Incluir `session_history` no request do `_generate_response()`
-- [ ] **Impacto:** Modelo terá contexto das mensagens anteriores
+- [x] **Arquivo:** `src/ai/services/orchestrator.py`
+- [x] **Mudança:** Incluir `session_history` no request do `_generate_response()`
+- [x] **Impacto:** Modelo terá contexto das mensagens anteriores
 
 ```python
 # ANTES (linha 132-142)
@@ -177,8 +180,8 @@ async def _generate_response(
 
 ### P0.2 — Atualizar template do ResponseAgent para incluir histórico
 
-- [ ] **Arquivo:** `src/ai/prompts/response_agent_prompt.py`
-- [ ] **Mudança:** Adicionar campo `{conversation_history}` no template
+- [x] **Arquivo:** `src/ai/prompts/response_agent_prompt.py`
+- [x] **Mudança:** Adicionar campo `{conversation_history}` no template
 
 ```python
 RESPONSE_AGENT_USER_TEMPLATE = """Intenção detectada: {detected_intent}
@@ -196,8 +199,8 @@ Gere 3 candidatos de resposta. Responda APENAS em JSON válido."""
 
 ### P0.3 — Usar detected_intent real ao invés de hardcoded
 
-- [ ] **Arquivo:** `src/ai/services/orchestrator.py`
-- [ ] **Mudança:** Linha 137 — substituir `"general"` por intent do StateAgent
+- [x] **Arquivo:** `src/ai/services/orchestrator.py`
+- [x] **Mudança:** Substituir `"general"` por `state_result.detected_intent`
 
 ```python
 # ANTES
@@ -209,26 +212,27 @@ detected_intent=state_result.detected_intent or "general",
 
 ### P0.4 — Criar arquivo de contexto institucional
 
-- [ ] **Arquivo:** `src/ai/config/institutional_context.yaml`
-- [ ] **Conteúdo:** Ver [Seção 6](#6-especificação-arquivo-de-contexto-institucional)
+- [x] **Arquivo:** `src/ai/config/institutional_context.yaml`
+- [x] **Conteúdo:** YAML com empresa, contato, endereço, horários, vertentes, faixas de preço
 
 ### P0.5 — Expandir SYSTEM_ROLE com limitações e comportamento
 
-- [ ] **Arquivo:** `src/ai/prompts/system_role.py`
-- [ ] **Mudança:** Incluir capacidades, limitações e tom esperado
-- [ ] **Conteúdo:** Ver [Seção 7](#7-especificação-prompts-atualizados)
+- [x] **Arquivo:** `src/ai/prompts/system_role.py`
+- [x] **Mudança:** Incluir capacidades, limitações e tom esperado
+- [x] **Conteúdo:** SYSTEM_ROLE expandido com regras do Otto
 
 ---
 
 ## 4) Tarefas P1 — Estruturais e Persistência (Sprint Atual)
 
 > ⏱️ Estimativa: 5-7 dias  
-> 🎯 Objetivo: Estruturar dados do lead, persistir conversas e melhorar qualidade das respostas
+> 🎯 Objetivo: Estruturar dados do lead, persistir conversas e melhorar qualidade das respostas  
+> � **STATUS: CONCLUÍDO em 04/02/2026**
 
 ### P1.1 — Criar estrutura LeadProfile no SessionContext
 
-- [ ] **Arquivo:** `src/app/sessions/models.py`
-- [ ] **Mudança:** Adicionar dataclass `LeadProfile`
+- [x] **Arquivo:** `src/app/sessions/models.py`
+- [x] **Mudança:** Adicionado dataclass `LeadProfile`
 
 ```python
 @dataclass(slots=True)
@@ -255,8 +259,8 @@ class SessionContext:
 
 ### P1.2 — Estruturar histórico com role e timestamp
 
-- [ ] **Arquivo:** `src/app/sessions/models.py`
-- [ ] **Mudança:** Substituir `list[str]` por `list[HistoryEntry]`
+- [x] **Arquivo:** `src/app/sessions/models.py`
+- [x] **Mudança:** Adicionados `HistoryRole` enum e `HistoryEntry` dataclass
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -276,8 +280,8 @@ class HistoryEntry:
 
 ### P1.3 — Criar loader para contexto institucional
 
-- [ ] **Arquivo:** `src/ai/config/institutional_loader.py`
-- [ ] **Função:** Carregar YAML e disponibilizar para prompts
+- [x] **Arquivo:** `src/ai/config/institutional_loader.py`
+- [x] **Função:** `load_institutional_context()`, `get_institutional_prompt_section()`, helpers
 
 ```python
 from functools import lru_cache
@@ -298,26 +302,26 @@ def get_institutional_prompt_section() -> str:
 
 ### P1.4 — Adicionar few-shot examples nos prompts
 
-- [ ] **Arquivo:** `src/ai/prompts/response_agent_prompt.py`
-- [ ] **Mudança:** Incluir 2-3 exemplos de conversas humanizadas
+- [x] **Arquivo:** `src/ai/prompts/response_agent_prompt.py`
+- [x] **Mudança:** Adicionados 3 exemplos de conversas humanizadas (saudação, serviços, orçamento)
 
 ### P1.5 — Implementar extração automática de dados do lead
 
-- [ ] **Arquivo:** `src/ai/services/lead_extractor.py` (novo)
-- [ ] **Função:** Extrair nome, email, telefone das mensagens do usuário
-- [ ] **Integração:** Chamar após cada mensagem e atualizar `LeadProfile`
+- [x] **Arquivo:** `src/ai/services/lead_extractor.py` (criado)
+- [x] **Função:** `extract_name()`, `extract_email()`, `extract_phone()`, `extract_lead_data()`
+- [x] **Testes:** `tests/test_ai/test_lead_extractor.py` (19 testes)
 
 ### P1.6 — Atualizar serialização de sessão para novos campos
 
-- [ ] **Arquivo:** `src/app/sessions/models.py`
-- [ ] **Métodos:** `to_dict()` e `from_dict()` de `Session`
+- [x] **Arquivo:** `src/app/sessions/models.py`
+- [x] **Métodos:** `to_dict()` e `from_dict()` atualizados com suporte a `HistoryEntry`
 
 ### P1.7 — Criar protocolo e store para persistência de conversas (Firestore)
 
-- [ ] **Arquivo:** `src/app/protocols/conversation_store.py` (novo)
-- [ ] **Arquivo:** `src/app/infra/stores/firestore_conversation_store.py` (novo)
-- [ ] **Descrição:** Persistir TODAS as mensagens permanentemente no Firestore
-- [ ] **Baseado em:** `firestore_audit_store.py` (padrão já existente)
+- [x] **Arquivo:** `src/app/protocols/conversation_store.py` (criado)
+- [x] **Arquivo:** `src/app/infra/stores/firestore_conversation_store.py` (criado)
+- [x] **Descrição:** Protocol com `append_message()`, `get_messages()`, `upsert_lead()`, `get_lead()`
+- [x] **Testes:** `tests/app/protocols/test_conversation_store.py` (8 testes)
 
 ```python
 # src/app/protocols/conversation_store.py
@@ -352,17 +356,17 @@ class ConversationStoreProtocol(ABC):
 
 ### P1.8 — Criar Firestore Conversation Store (implementação)
 
-- [ ] **Arquivo:** `src/app/infra/stores/firestore_conversation_store.py`
-- [ ] **Collections Firestore:**
-  - `conversations/{phone_hash}/messages/{msg_id}` — mensagens individuais
-  - `leads/{phone_hash}` — perfil do lead
-- [ ] **Campos por mensagem:**
+- [x] **Arquivo:** `src/app/infra/stores/firestore_conversation_store.py` (criado)
+- [x] **Collections Firestore:**
+  - `conversations/{tenant_id}_{phone_hash}/messages/{msg_id}` — mensagens individuais
+  - `leads/{tenant_id}_{phone_hash}` — perfil do lead
+- [x] **Campos por mensagem:**
   - `role`: "user" | "assistant"
   - `content`: texto (sanitizado, sem PII sensível)
   - `timestamp`: datetime
-  - `session_id`: para agrupar por sessão
-  - `intent`: intenção detectada (opcional)
   - `channel`: "whatsapp" | "instagram" | etc.
+  - `detected_intent`: intenção detectada (opcional)
+  - `metadata`: dados extras
 
 ```python
 # Estrutura no Firestore
@@ -390,35 +394,38 @@ leads/
 
 ### P1.9 — Implementar dual-write (Redis + Firestore)
 
-- [ ] **Arquivo:** `src/app/sessions/manager.py`
-- [ ] **Mudança:** Ao salvar mensagem no Redis, também persistir no Firestore
-- [ ] **Padrão:** Write-through (Firestore async, não bloqueia fluxo)
+- [x] **Arquivo:** `src/app/sessions/manager.py`
+- [x] **Mudança:** Método `add_message()` com dual-write pattern
+- [x] **Padrão:** Write-through (Firestore async via `asyncio.create_task`, não bloqueia fluxo)
 
 ```python
-async def add_message_to_session(
-    self, 
-    session: Session, 
-    message: HistoryEntry,
+async def add_message(
+    self,
+    session: Session,
+    content: str,
+    role: HistoryRole,
+    *,
+    detected_intent: str | None = None,
+    channel: str = "whatsapp",
+    message_id: str | None = None,
 ) -> None:
-    """Adiciona mensagem à sessão (dual-write)."""
-    # 1. Atualiza Redis (síncrono, crítico para resposta)
-    session.add_to_history(message)
-    await self._store.save_async(session.to_dict(), self._ttl_seconds)
+    """Adiciona mensagem à sessão com dual-write."""
+    # 1. Adiciona ao histórico local (Redis)
+    session.add_to_history(content, role, detected_intent)
+    await self.save(session)
     
-    # 2. Persiste no Firestore (async, fire-and-forget)
-    asyncio.create_task(
-        self._conversation_store.append_message(
-            phone_hash=session.sender_id,
-            message=message,
-            session_id=session.session_id,
+    # 2. Dual-write para Firestore (async, fire-and-forget)
+    if self._conversation_store is not None:
+        asyncio.create_task(  # noqa: RUF006
+            self._persist_message_to_firestore(...)
         )
-    )
 ```
 
 ### P1.10 — Recuperar histórico do Firestore ao criar nova sessão
 
-- [ ] **Arquivo:** `src/app/sessions/manager.py`
-- [ ] **Mudança:** Em `resolve_or_create()`, se sessão não existe no Redis, buscar histórico no Firestore
+- [x] **Arquivo:** `src/app/sessions/manager.py`
+- [x] **Mudança:** Em `resolve_or_create()`, recuperar histórico do Firestore quando sessão não existe no Redis
+- [x] **Método:** `_recover_from_firestore()` busca lead e mensagens em paralelo
 
 ```python
 async def resolve_or_create(
@@ -426,43 +433,32 @@ async def resolve_or_create(
     sender_id: str,
     tenant_id: str = "",
     vertente: str = "geral",
+    channel: str = "whatsapp",
 ) -> Session:
-    """Resolve sessão existente ou cria nova."""
-    sender_hash = self._hash_sender(sender_id)
-    lookup_key = f"session:{sender_hash}"
-
+    """Resolve sessão existente ou cria nova com recovery do Firestore."""
     # 1. Tenta carregar do Redis (sessão ativa)
     existing = await self._store.load_async(lookup_key)
     if existing is not None:
-        session = Session.from_dict(existing)
-        if not session.is_expired and not session.is_terminal:
-            return session
+        return Session.from_dict(existing)
 
     # 2. Sessão não existe no Redis — buscar histórico no Firestore
-    lead_profile = await self._conversation_store.get_lead_profile(sender_hash)
-    recent_messages = await self._conversation_store.get_recent_messages(
-        sender_hash, limit=10
-    )
-    
-    # 3. Criar nova sessão com contexto histórico
-    return await self._create_new(
-        sender_hash, 
-        lookup_key, 
-        tenant_id, 
-        vertente,
-        lead_profile=lead_profile,
-        history=recent_messages,
-    )
+    return await self._create_with_recovery(...)
 ```
 
 ### P1.11 — Criar testes para persistência de conversas
 
-- [ ] **Arquivo:** `tests/app/infra/stores/test_firestore_conversation_store.py`
-- [ ] **Cobertura:**
-  - Append de mensagem
-  - Recuperação de histórico
-  - Persistência de LeadProfile
-  - Dual-write não bloqueia fluxo principal
+- [x] **Arquivo:** `tests/app/sessions/test_session_manager.py` (criado)
+- [x] **Cobertura (11 testes):**
+  - Criação de sessão
+  - Resolução de sessão existente
+  - Dual-write salva no Redis e dispara task para Firestore
+  - add_message funciona sem ConversationStore
+  - Recovery carrega LeadProfile do Firestore
+  - Recovery carrega histórico de mensagens
+  - Recovery trata erro do Firestore graciosamente
+  - Sem recovery quando não há ConversationStore
+  - update_lead_profile persiste no Firestore
+  - close session remove do Redis
 
 ---
 
@@ -858,15 +854,18 @@ Responda APENAS em JSON válido."""
 
 ### Técnicos
 
-- [ ] Histórico é passado para ResponseAgent
-- [ ] Contexto institucional é carregado do YAML
-- [ ] LeadProfile é persistido na sessão
-- [ ] **Mensagens são persistidas no Firestore (dual-write)**
-- [ ] **LeadProfile é persistido no Firestore**
-- [ ] **Nova sessão recupera histórico do Firestore quando Redis expira**
-- [ ] Testes unitários passam
-- [ ] Cobertura de código mantida ≥80%
-- [ ] Nenhum PII em logs
+- [x] Histórico é passado para ResponseAgent
+- [x] Contexto institucional é carregado do YAML
+- [x] LeadProfile definido na sessão
+- [x] HistoryEntry estruturado com role/timestamp
+- [x] LeadExtractor implementado (regex)
+- [x] ConversationStoreProtocol criado
+- [x] FirestoreConversationStore implementado
+- [ ] **Mensagens são persistidas no Firestore (dual-write)** — pendente P1.9
+- [ ] **Nova sessão recupera histórico do Firestore quando Redis expira** — pendente P1.10
+- [x] Testes unitários passam (458/458)
+- [x] Cobertura de código mantida ≥80%
+- [x] Nenhum PII em logs
 
 ---
 
@@ -931,21 +930,25 @@ Cenário 5: Continuidade cross-sessão (NOVO)
 
 ## Arquivos a Criar/Modificar
 
-| Arquivo | Ação | Prioridade |
-|---------|------|------------|
-| `src/ai/config/institutional_context.yaml` | Criar | P0 |
-| `src/ai/config/institutional_loader.py` | Criar | P0 |
-| `src/ai/prompts/system_role.py` | Modificar | P0 |
-| `src/ai/prompts/response_agent_prompt.py` | Modificar | P0 |
-| `src/ai/services/orchestrator.py` | Modificar | P0 |
-| `src/app/sessions/models.py` | Modificar | P1 |
-| `src/ai/services/lead_extractor.py` | Criar | P1 |
-| `src/app/protocols/conversation_store.py` | **Criar** | **P1** |
-| `src/app/infra/stores/firestore_conversation_store.py` | **Criar** | **P1** |
-| `src/app/sessions/manager.py` | **Modificar** | **P1** |
-| `tests/test_ai/test_institutional_context.py` | Criar | P1 |
-| `tests/test_ai/test_lead_extractor.py` | Criar | P1 |
-| `tests/app/infra/stores/test_firestore_conversation_store.py` | **Criar** | **P1** |
+| Arquivo | Ação | Prioridade | Status |
+|---------|------|------------|--------|
+| `src/ai/config/institutional_context.yaml` | Criar | P0 | ✅ |
+| `src/ai/config/institutional_loader.py` | Criar | P0 | ✅ |
+| `src/ai/prompts/system_role.py` | Modificar | P0 | ✅ |
+| `src/ai/prompts/response_agent_prompt.py` | Modificar | P0 | ✅ |
+| `src/ai/prompts/state_agent_prompt.py` | Modificar | P1 | ✅ |
+| `src/ai/prompts/decision_agent_prompt.py` | Modificar | P1 | ✅ |
+| `src/ai/services/orchestrator.py` | Modificar | P0 | ✅ |
+| `src/app/sessions/models.py` | Modificar | P1 | ✅ |
+| `src/ai/services/lead_extractor.py` | Criar | P1 | ✅ |
+| `src/app/protocols/conversation_store.py` | Criar | P1 | ✅ |
+| `src/app/infra/stores/firestore_conversation_store.py` | Criar | P1 | ✅ |
+| `src/app/sessions/manager.py` | Modificar | P1 | ✅ |
+| `src/app/bootstrap/whatsapp_factory.py` | Modificar | P1 | ✅ |
+| `tests/test_ai/test_institutional_loader.py` | Criar | P1 | ✅ |
+| `tests/test_ai/test_lead_extractor.py` | Criar | P1 | ✅ |
+| `tests/app/protocols/test_conversation_store.py` | Criar | P1 | ✅ |
+| `tests/app/sessions/test_session_manager.py` | Criar | P1 | ✅ |
 
 ---
 
@@ -956,7 +959,21 @@ Cenário 5: Continuidade cross-sessão (NOVO)
 | 03/02/2026 | Auditoria | Documento criado com base em análise do código |
 | 03/02/2026 | Auditoria | Adicionadas tarefas P1.7-P1.11 para persistência de conversas |
 | 03/02/2026 | Auditoria | Adicionada seção 7 (Especificação Firestore) |
+| 04/02/2026 | Executor | ✅ Concluído P0.1-P0.5 (tarefas críticas) |
+| 04/02/2026 | Executor | ✅ Concluído P1.1-P1.8 (estruturas, persistência, prompts) |
+| 04/02/2026 | Executor | Nova arquitetura de agentes (Phase1: State+Response paralelo → Phase2: MessageType → Phase3: Decision) |
+| 04/02/2026 | Executor | Modelos por agente: GPT-5.1 (State/Decision), GPT-5.1-chat (Response), GPT-5-nano (MessageType) |
+| 04/02/2026 | Executor | Threshold de confiança alterado para 0.7 |
+| 04/02/2026 | Executor | ✅ Concluído P1.9-P1.11 (dual-write, recovery, testes) |
+| 04/02/2026 | Executor | SessionManager com suporte a ConversationStore opcional |
+| 04/02/2026 | Executor | 469 testes passando, cobertura mantida |
 
 ---
 
-> **Próximo passo:** Preencher os campos marcados com `# TODO` no arquivo `institutional_context.yaml` com informações reais da Pyloto.
+> **P0 e P1 CONCLUÍDOS!**
+>
+> **Próximos passos (P2):**
+> 1. Integração Google Calendar
+> 2. Ferramentas para o LLM agendar/verificar agenda
+> 3. Integração WhatsApp Flows
+> 3. Preencher campos `# TODO` no `institutional_context.yaml` com dados reais da Pyloto

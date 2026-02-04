@@ -25,6 +25,10 @@ class StateSelectorSettings:
 
     model: str = "gpt-4o-mini"
     confidence_threshold: float = 0.7
+    # Máximo de tokens esperados na resposta do modelo.
+    # Config name kept as `max_tokens` internally, but environment keys
+    # accept both STATE_SELECTOR_MAX_COMPLETION_TOKENS (preferred) and
+    # legacy STATE_SELECTOR_MAX_TOKENS for backward compatibility.
     max_tokens: int = 100
 
     def validate(self) -> list[str]:
@@ -39,7 +43,7 @@ class StateSelectorSettings:
             errors.append("STATE_SELECTOR_CONFIDENCE_THRESHOLD deve estar entre 0 e 1")
 
         if self.max_tokens < 1:
-            errors.append("STATE_SELECTOR_MAX_TOKENS deve ser >= 1")
+            errors.append("STATE_SELECTOR_MAX_COMPLETION_TOKENS deve ser >= 1 (ou STATE_SELECTOR_MAX_TOKENS)")
 
         return errors
 
@@ -57,6 +61,9 @@ class ResponseGeneratorSettings:
 
     model: str = "gpt-4o-mini"
     min_responses: int = 3
+    # Máximo de tokens esperados na resposta do modelo.
+    # Accept both RESPONSE_GENERATOR_MAX_COMPLETION_TOKENS (preferred) and
+    # legacy RESPONSE_GENERATOR_MAX_TOKENS for compatibility.
     max_tokens: int = 500
     temperature: float = 0.7
 
@@ -72,7 +79,7 @@ class ResponseGeneratorSettings:
             errors.append("RESPONSE_GENERATOR_MIN_RESPONSES deve ser >= 3")
 
         if self.max_tokens < 1:
-            errors.append("RESPONSE_GENERATOR_MAX_TOKENS deve ser >= 1")
+            errors.append("RESPONSE_GENERATOR_MAX_COMPLETION_TOKENS deve ser >= 1 (ou RESPONSE_GENERATOR_MAX_TOKENS)")
 
         if not 0 <= self.temperature <= 2:
             errors.append("RESPONSE_GENERATOR_TEMPERATURE deve estar entre 0 e 2")
@@ -131,7 +138,7 @@ def _load_state_selector_from_env() -> StateSelectorSettings:
         confidence_threshold=float(
             os.getenv("STATE_SELECTOR_CONFIDENCE_THRESHOLD", "0.7")
         ),
-        max_tokens=int(os.getenv("STATE_SELECTOR_MAX_TOKENS", "100")),
+        max_tokens=int(os.getenv("STATE_SELECTOR_MAX_COMPLETION_TOKENS", os.getenv("STATE_SELECTOR_MAX_TOKENS", "100"))),
     )
 
 
@@ -140,7 +147,7 @@ def _load_response_generator_from_env() -> ResponseGeneratorSettings:
     return ResponseGeneratorSettings(
         model=os.getenv("RESPONSE_GENERATOR_MODEL", "gpt-4o-mini"),
         min_responses=int(os.getenv("RESPONSE_GENERATOR_MIN_RESPONSES", "3")),
-        max_tokens=int(os.getenv("RESPONSE_GENERATOR_MAX_TOKENS", "500")),
+        max_tokens=int(os.getenv("RESPONSE_GENERATOR_MAX_COMPLETION_TOKENS", os.getenv("RESPONSE_GENERATOR_MAX_TOKENS", "500"))),
         temperature=float(os.getenv("RESPONSE_GENERATOR_TEMPERATURE", "0.7")),
     )
 

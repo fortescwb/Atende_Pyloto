@@ -1,8 +1,8 @@
 """Use case canônico para processamento inbound WhatsApp.
 
-Integra pipeline de 4 agentes LLM conforme README.md.
+Integra pipeline de 5 agentes LLM conforme README.md.
 
-NOTA: Este arquivo tem ~217 linhas (ligeiramente acima de 200).
+NOTA: Este arquivo tem ~250 linhas (ligeiramente acima de 200).
 Justificativa: Classe principal do fluxo inbound, já usa helpers externos.
 Dividir mais comprometeria a legibilidade do fluxo principal.
 """
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
         MessageNormalizerProtocol,
         OutboundSenderProtocol,
     )
+    from app.protocols.lead_profile_store import LeadProfileStoreProtocol
     from app.protocols.master_decider import MasterDeciderProtocol, MasterDecision
     from app.protocols.models import NormalizedMessage
     from app.protocols.session_manager import SessionManagerProtocol
@@ -65,6 +66,7 @@ class ProcessInboundCanonicalUseCase:
         outbound_sender: OutboundSenderProtocol,
         audit_store: DecisionAuditStoreProtocol | None = None,
         master_decider: MasterDeciderProtocol | None = None,
+        lead_profile_store: LeadProfileStoreProtocol | None = None,
     ) -> None:
         """Inicializa use case com dependências. Preferir injeção de protocolos.
 
@@ -88,6 +90,7 @@ class ProcessInboundCanonicalUseCase:
         self._ai_orchestrator = ai_orchestrator
         self._outbound_sender = outbound_sender
         self._audit_store = audit_store
+        self._lead_profile_store = lead_profile_store
 
         # master_decider: prefer protocol; fallback: implementação padrão
         if master_decider is not None:
@@ -152,7 +155,21 @@ class ProcessInboundCanonicalUseCase:
         # Transições válidas a partir do estado atual
         valid_transitions = self._get_valid_transitions(session.current_state.name)
 
-        # 3-7) AI Orchestrator (4 agentes LLM)
+        # 2) Carrega LeadProfile (se store disponível)
+        lead_profile = None
+        lead_profile_context = ""
+        lead_profile_personal_info = ""
+        lead_profile_needs = ""
+
+        if self._lead_profile_store:
+            lead_profile = await self._lead_profile_store.get_or_create_async(msg.from_number)
+            lead_profile_context = lead_profile.to_prompt_context()
+            lead_profile_personal_info = lead_profile.personal_info or ""
+            lead_profile_needs = ", ".join(
+                f"{n.title} ({n.status.value})" for n in lead_profile.active_needs
+            ) if lead_profile.active_needs else ""
+
+        # 3-7) AI Orchestrator (5 agentes LLM)
         ai_result = await self._ai_orchestrator.process_message(
             user_input=sanitized_input,
             current_state=session.current_state.name,
@@ -163,7 +180,18 @@ class ProcessInboundCanonicalUseCase:
                 "vertente": session.context.vertente,
                 "turn_count": str(session.turn_count),
             },
+            lead_profile_context=lead_profile_context,
+            lead_profile_personal_info=lead_profile_personal_info,
+            lead_profile_needs=lead_profile_needs,
         )
+
+        # 3.5) Atualiza LeadProfile com dados extraídos
+        if self._lead_profile_store and lead_profile:
+            extraction = ai_result.lead_profile_extraction
+            if extraction.has_updates:
+                await self._apply_lead_profile_updates(
+                    lead_profile, extraction, msg.from_number
+                )
 
         # 4) FSM - usa sugestão do StateAgent (LLM #1)
         fsm = FSMStateMachine(
@@ -214,6 +242,66 @@ class ProcessInboundCanonicalUseCase:
             "closed": decision.should_close_session,
             "sent": sent,
         }
+
+    async def _apply_lead_profile_updates(
+        self,
+        lead_profile: Any,
+        extraction: Any,
+        phone: str,
+    ) -> None:
+        """Aplica atualizações extraídas ao LeadProfile.
+
+        Args:
+            lead_profile: LeadProfile atual
+            extraction: Resultado do LeadProfileExtractionResult
+            phone: Telefone do lead
+        """
+        from app.domain.lead_profile import Need, NeedStatus, NeedType
+
+        updated = False
+
+        # Atualiza dados pessoais
+        if extraction.personal_data:
+            for field, value in extraction.personal_data.items():
+                if hasattr(lead_profile, field) and value:
+                    setattr(lead_profile, field, value)
+                    updated = True
+
+        # Atualiza personal_info
+        if extraction.personal_info_update:
+            lead_profile.personal_info = extraction.personal_info_update[:1500]
+            updated = True
+
+        # Adiciona nova necessidade
+        if extraction.need and len(lead_profile.active_needs) < 3:
+            need_data = extraction.need
+            need_type_str = need_data.get("need_type", "other")
+            try:
+                need_type = NeedType(need_type_str)
+            except ValueError:
+                need_type = NeedType.OTHER
+
+            new_need = Need(
+                need_type=need_type,
+                title=need_data.get("title", "")[:100],
+                details=need_data.get("details", "")[:500],
+                status=NeedStatus.ACTIVE,
+            )
+            lead_profile.needs.append(new_need)
+            updated = True
+
+        # Salva se houve mudanças
+        if updated and self._lead_profile_store:
+            lead_profile.increment_messages()
+            await self._lead_profile_store.save(lead_profile)
+            logger.info(
+                "lead_profile_updated",
+                extra={
+                    "has_personal_data": bool(extraction.personal_data),
+                    "has_personal_info_update": bool(extraction.personal_info_update),
+                    "has_need": bool(extraction.need),
+                },
+            )
 
     def _get_valid_transitions(self, current_state: str) -> tuple[str, ...]:
         """Retorna transições válidas a partir do estado atual."""

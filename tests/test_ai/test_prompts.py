@@ -76,23 +76,25 @@ class TestFormatPrompts:
         """Valida formatação de prompt do ResponseAgent."""
         prompt = format_response_agent_prompt(
             user_input="Olá",
-            detected_intent="GREETING",
             current_state="INITIAL",
-            next_state="TRIAGE",
+            lead_profile="Nome: João",
+            is_first_message=True,
         )
 
         assert "Olá" in prompt
-        assert "GREETING" in prompt
+        assert "João" in prompt
 
     def test_format_message_type_agent(self) -> None:
-        """Valida formatação de prompt do MessageTypeAgent."""
+        """Valida formatação de prompt do MessageTypeAgent (nano)."""
         prompt = format_message_type_agent_prompt(
             text_content="Escolha uma opção:",
             options=["Suporte", "Vendas"],
+            user_input="Preciso de ajuda",
         )
 
         assert "Escolha uma opção" in prompt
-        assert "Suporte" in prompt
+        # Nano não recebe options no prompt (simplificado)
+        assert "Classifique" in prompt
 
     def test_format_decision_agent(self) -> None:
         """Valida formatação de prompt do DecisionAgent."""

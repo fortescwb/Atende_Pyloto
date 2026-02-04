@@ -2,7 +2,7 @@
 
 Implementa AIClientProtocol com chamadas reais à API OpenAI.
 Implementação de IO — pertence a app/infra conforme REGRAS § 2.3.
-Pipeline de 4 agentes conforme README.md.
+Pipeline de 5 agentes conforme README.md.
 """
 
 from __future__ import annotations
@@ -14,6 +14,10 @@ from typing import TYPE_CHECKING
 
 import httpx
 
+from ai.models.lead_profile_extraction import (
+    LeadProfileExtractionRequest,
+    LeadProfileExtractionResult,
+)
 from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
     MessageTypeSelectionResult,
@@ -24,10 +28,12 @@ from ai.models.response_generation import (
 )
 from ai.prompts import (
     DECISION_AGENT_SYSTEM,
+    LEAD_PROFILE_AGENT_SYSTEM,
     MESSAGE_TYPE_AGENT_SYSTEM,
     RESPONSE_AGENT_SYSTEM,
     STATE_AGENT_SYSTEM,
     format_decision_agent_prompt,
+    format_lead_profile_agent_prompt,
     format_message_type_agent_prompt,
     format_response_agent_prompt,
     format_state_agent_prompt,
@@ -46,15 +52,23 @@ from ai.utils.agent_parser import (
 from app.infra.ai._openai_http import call_openai_api
 
 if TYPE_CHECKING:
-    from ai.config.settings import AISettings
+    from ai.config.settings import AIModelSettings, AISettings
     from ai.models.decision_agent import DecisionAgentRequest, DecisionAgentResult
     from ai.models.state_agent import StateAgentRequest, StateAgentResult
 
 logger = logging.getLogger(__name__)
 
+_AGENT_ROLE_MAP = {
+    "state_agent": "STATE",
+    "response_agent": "RESPONSE",
+    "lead_profile_agent": "LEAD_PROFILE",
+    "message_type_agent": "MESSAGE_TYPE",
+    "decision_agent": "DECISION",
+}
+
 
 class OpenAIClient:
-    """Cliente OpenAI para produção — Pipeline de 4 Agentes.
+    """Cliente OpenAI para produção — Pipeline de 5 Agentes.
 
     Implementa AIClientProtocol com chamadas assíncronas à API.
     Usa httpx para requests async. Fallback seguro em caso de erro.
@@ -62,6 +76,7 @@ class OpenAIClient:
     Agentes:
     1. StateAgent - sugere próximos estados
     2. ResponseAgent - gera candidatos de resposta
+    2-B. LeadProfileAgent - extrai dados para o perfil
     3. MessageTypeAgent - seleciona tipo de mensagem
     4. DecisionAgent - consolida e decide
     """
@@ -96,11 +111,18 @@ class OpenAIClient:
         agent_name: str,
     ) -> str | None:
         """Executa chamada à API OpenAI via helper."""
+        from ai.config.settings import AgentRole
+
+        model_settings = None
+        role_name = _AGENT_ROLE_MAP.get(agent_name)
+        if role_name:
+            model_settings = self._settings.agents.get_for_agent(AgentRole[role_name])
         client = await self._get_http_client()
         return await call_openai_api(
             http_client=client,
             api_key=self._api_key,
             settings=self._settings,
+            model_settings=model_settings,
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             point_name=agent_name,
@@ -250,6 +272,43 @@ class OpenAIClient:
         return parse_decision_agent_response(
             raw_response,
             request.consecutive_low_confidence,
+        )
+
+    async def extract_lead_profile(
+        self,
+        request: LeadProfileExtractionRequest,
+    ) -> LeadProfileExtractionResult:
+        """Extrai dados do perfil do lead usando LeadProfileAgent (Agente 2-B)."""
+        user_prompt = format_lead_profile_agent_prompt(
+            user_input=request.user_input,
+            current_profile=request.current_profile_summary,
+            current_personal_info=request.current_personal_info,
+            current_needs=request.current_needs_summary,
+        )
+        raw_response = await self._call_openai(
+            system_prompt=LEAD_PROFILE_AGENT_SYSTEM,
+            user_prompt=user_prompt,
+            agent_name="lead_profile_agent",
+        )
+        if raw_response is None:
+            return LeadProfileExtractionResult(confidence=0.0)
+
+        # Parser simples - retorna JSON direto
+        from ai.utils._json_extractor import extract_json_from_response
+
+        data = extract_json_from_response(raw_response)
+        if data is None:
+            return LeadProfileExtractionResult(
+                confidence=0.0,
+                raw_response=raw_response or "",
+            )
+
+        return LeadProfileExtractionResult(
+            personal_data=data.get("personal", {}),
+            personal_info_update=data.get("personal_info_update"),
+            need=data.get("need"),
+            confidence=float(data.get("confidence", 0.7)),
+            raw_response=raw_response or "",
         )
 
     async def close(self) -> None:

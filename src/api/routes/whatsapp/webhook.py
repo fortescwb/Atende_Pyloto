@@ -51,6 +51,7 @@ def _get_inbound_use_case():
             create_ai_orchestrator,
             create_async_dedupe_store,
             create_async_session_store,
+            create_lead_profile_store,
         )
         from app.bootstrap.whatsapp_factory import (
             create_process_inbound_canonical,
@@ -65,6 +66,7 @@ def _get_inbound_use_case():
             ai_orchestrator=create_ai_orchestrator(),
             outbound_sender=create_whatsapp_outbound_sender(),
             audit_store=None,  # TODO: Adicionar audit store
+            lead_profile_store=create_lead_profile_store(),
         )
     return _inbound_use_case
 

@@ -1,16 +1,16 @@
 # MessageTypeAgent — Seleciona tipo de mensagem ideal
-# LLM #3 do pipeline de 4 agentes
-# Conforme README.md e TODO.md Fase 2.4
+# LLM #3 do pipeline de 5 agentes
+# Modelo: gpt-5-nano (classificação rápida)
 
 agent_name: message_type_agent
-version: "1.0.0"
+version: "2.0.0"
 description: "Seleciona o tipo de mensagem mais adequado para a resposta"
 
 model:
-  name: gpt-4o-mini
-  temperature: 0.2
-  max_tokens: 300
-  timeout_seconds: 8
+  name: gpt-5-nano-2025-08-07
+  temperature: 0.1
+  max_completion_tokens: 100
+  timeout_seconds: 5
 
 behavior:
   valid_types:

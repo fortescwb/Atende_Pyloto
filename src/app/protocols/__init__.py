@@ -1,5 +1,11 @@
 """Protocolos e contratos do core da aplicação."""
 
+from .conversation_store import (
+    ConversationMessage,
+    ConversationStoreError,
+    ConversationStoreProtocol,
+    LeadData,
+)
 from .decision_audit_store import DecisionAuditStoreProtocol
 from .dedupe import AsyncDedupeProtocol, DedupeProtocol
 from .http_client import WhatsAppHttpClientProtocol
@@ -19,9 +25,13 @@ from .validator import OutboundRequestValidatorProtocol, ValidationError
 __all__ = [
     "AsyncDedupeProtocol",
     "AsyncSessionStoreProtocol",
+    "ConversationMessage",
+    "ConversationStoreError",
+    "ConversationStoreProtocol",
     "DecisionAuditStoreProtocol",
     "DedupeProtocol",
     "InboundMessageEvent",
+    "LeadData",
     "MessageNormalizerProtocol",
     "NormalizedMessage",
     "OutboundMessageRequest",

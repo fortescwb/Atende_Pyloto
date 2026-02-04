@@ -137,7 +137,11 @@ class TestIsConfidenceAcceptable:
         assert result is False
 
     def test_edge_case(self) -> None:
-        """Valida caso limite."""
-        # Depende do threshold configurado, mas 0.5 deve ser aceito por padrão
-        result = is_confidence_acceptable(0.5)
+        """Valida caso limite (threshold agora é 0.7)."""
+        # Com threshold 0.7, confiança de 0.7 deve ser aceita
+        result = is_confidence_acceptable(0.7)
         assert result is True
+
+        # Confiança de 0.5 não é mais aceita (abaixo do threshold 0.7)
+        result_low = is_confidence_acceptable(0.5)
+        assert result_low is False

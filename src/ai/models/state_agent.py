@@ -68,6 +68,7 @@ class StateAgentResult:
         previous_state: Estado anterior da sessão
         current_state: Estado identificado como atual
         suggested_next_states: Lista de próximos estados sugeridos (max 3)
+        detected_intent: Intenção do usuário detectada (ex: 'agendar', 'dúvida', 'reclamação')
         confidence: Confiança geral na análise (0.0-1.0)
         rationale: Justificativa da análise (para debug/auditoria)
     """
@@ -75,7 +76,8 @@ class StateAgentResult:
     previous_state: str
     current_state: str
     suggested_next_states: tuple[SuggestedState, ...]
-    confidence: float
+    detected_intent: str | None = None
+    confidence: float = 0.5
     rationale: str | None = None
 
     def __post_init__(self) -> None:

@@ -12,7 +12,7 @@ class TestLoadAgentConfig:
         """Testa carregamento do state_agent.yaml."""
         config = load_agent_config("state_agent")
         assert config.agent_name == "state_agent"
-        assert config.model_name == "gpt-4o-mini"
+        assert config.model_name == "gpt-5-nano-2025-08-07"
         assert 0.0 <= config.temperature <= 1.0
 
     def test_load_response_agent(self) -> None:

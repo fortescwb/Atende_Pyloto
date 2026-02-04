@@ -3,7 +3,7 @@
 Define o contrato AIClientProtocol para implementações concretas.
 Conforme REGRAS_E_PADROES.md § 2.1: ai/core contém interfaces e pipeline.
 Conforme REGRAS_E_PADROES.md § 3: ai/ não faz IO direto (HTTP via protocol).
-Conforme README.md: 4 agentes LLM (State, Response, MessageType, Decision).
+Conforme README.md: 5 agentes LLM (State, Response, LeadProfile, MessageType, Decision).
 """
 
 from __future__ import annotations
@@ -14,6 +14,10 @@ from typing import TYPE_CHECKING, Protocol
 if TYPE_CHECKING:
     from ai.models.decision_agent import DecisionAgentRequest, DecisionAgentResult
     from ai.models.event_detection import EventDetectionRequest, EventDetectionResult
+    from ai.models.lead_profile_extraction import (
+        LeadProfileExtractionRequest,
+        LeadProfileExtractionResult,
+    )
     from ai.models.message_type_selection import (
         MessageTypeSelectionRequest,
         MessageTypeSelectionResult,
@@ -109,5 +113,23 @@ class AIClientProtocol(Protocol):
 
         Returns:
             Decisão final consolidada (ou fallback em caso de erro)
+        """
+        ...
+
+    @abstractmethod
+    async def extract_lead_profile(
+        self,
+        request: LeadProfileExtractionRequest,
+    ) -> LeadProfileExtractionResult:
+        """Extrai dados do perfil do lead usando LLM (LeadProfileAgent - Agente 2-B).
+
+        Analisa a mensagem do usuário e extrai informações pessoais,
+        necessidades e outros dados relevantes para o CRM.
+
+        Args:
+            request: Dados para extração (mensagem + perfil atual)
+
+        Returns:
+            Dados extraídos (ou resultado vazio se nenhuma info nova)
         """
         ...

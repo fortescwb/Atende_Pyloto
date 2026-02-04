@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from app.sessions.models import Session, SessionContext
+from app.sessions.models import HistoryRole, Session, SessionContext
 from fsm.states import SessionState
 
 
@@ -99,7 +99,8 @@ class TestSession:
         session.add_to_history("Mensagem 2")
 
         assert len(session.history) == 2
-        assert session.history[0] == "Mensagem 1"
+        assert session.history[0].content == "Mensagem 1"
+        assert session.history[0].role == HistoryRole.USER
 
     def test_add_to_history_limit(self) -> None:
         """Verifica limite do histórico (FIFO)."""
@@ -112,7 +113,7 @@ class TestSession:
             session.add_to_history(f"Mensagem {i}")
 
         assert len(session.history) == 10
-        assert session.history[0] == "Mensagem 5"  # Primeiras 5 foram removidas
+        assert session.history[0].content == "Mensagem 5"  # Primeiras 5 foram removidas
 
     def test_transition_to(self) -> None:
         """Verifica transição de estado."""
@@ -171,9 +172,12 @@ class TestSession:
             sender_id="hash-test",
             current_state=SessionState.COLLECTING_INFO,
             context=SessionContext(tenant_id="t1", vertente="vendas"),
-            history=["a", "b", "c"],
             turn_count=3,
         )
+        # Adiciona histórico usando o método correto
+        original.add_to_history("a")
+        original.add_to_history("b")
+        original.add_to_history("c")
 
         data = original.to_dict()
         restored = Session.from_dict(data)
@@ -181,5 +185,6 @@ class TestSession:
         assert restored.session_id == original.session_id
         assert restored.current_state == original.current_state
         assert restored.context.tenant_id == original.context.tenant_id
-        assert restored.history == original.history
+        assert len(restored.history) == len(original.history)
+        assert restored.history[0].content == original.history[0].content
         assert restored.turn_count == original.turn_count

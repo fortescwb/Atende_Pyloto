@@ -1,4 +1,4 @@
-"""Testes de integração do pipeline de 4 agentes LLM.
+"""Testes de integração do pipeline de 5 agentes LLM.
 
 Testa fluxo completo com MockAIClient.
 """
@@ -16,6 +16,10 @@ from ai.models.decision_agent import (
     DecisionAgentResult,
 )
 from ai.models.event_detection import EventDetectionRequest, EventDetectionResult
+from ai.models.lead_profile_extraction import (
+    LeadProfileExtractionRequest,
+    LeadProfileExtractionResult,
+)
 from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
     MessageTypeSelectionResult,
@@ -121,6 +125,18 @@ class MockAIClient:
             confidence=self.decision_confidence,
             should_escalate=False,
             rationale="Mock decision",
+        )
+
+    async def extract_lead_profile(
+        self, request: LeadProfileExtractionRequest
+    ) -> LeadProfileExtractionResult:
+        """Mock de extract_lead_profile (Agente 2-B)."""
+        return LeadProfileExtractionResult(
+            personal_data={},
+            personal_info_update=None,
+            need=None,
+            confidence=0.8,
+            raw_response="Mock lead profile extraction",
         )
 
 

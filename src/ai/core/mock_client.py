@@ -10,6 +10,10 @@ from typing import TYPE_CHECKING
 
 from ai.models.decision_agent import DecisionAgentRequest, DecisionAgentResult
 from ai.models.event_detection import EventDetectionRequest, EventDetectionResult
+from ai.models.lead_profile_extraction import (
+    LeadProfileExtractionRequest,
+    LeadProfileExtractionResult,
+)
 from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
     MessageTypeSelectionResult,
@@ -166,4 +170,30 @@ class MockAIClient:
             confidence=combined_confidence,
             should_escalate=should_escalate,
             rationale="Mock: decisão baseada em média ponderada de confiança",
+        )
+
+    async def extract_lead_profile(
+        self,
+        request: LeadProfileExtractionRequest,
+    ) -> LeadProfileExtractionResult:
+        """Retorna extração mock de perfil de lead.
+
+        Usa extração determinística por regex quando possível.
+        """
+        from ai.services.lead_extractor import extract_lead_data
+
+        extracted = extract_lead_data(request.user_input)
+
+        personal_data: dict[str, str] = {}
+        if extracted.name:
+            personal_data["name"] = extracted.name
+        if extracted.email:
+            personal_data["email"] = extracted.email
+
+        return LeadProfileExtractionResult(
+            personal_data=personal_data,
+            personal_info_update=None,
+            need=None,
+            confidence=0.7 if personal_data else 0.5,
+            raw_response="Mock: extração determinística por regex",
         )

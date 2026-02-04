@@ -4,10 +4,19 @@ Exporta modelos e gerenciador de sessões.
 """
 
 from app.sessions.manager import DEFAULT_SESSION_TTL_SECONDS, SessionManager
-from app.sessions.models import Session, SessionContext
+from app.sessions.models import (
+    HistoryEntry,
+    HistoryRole,
+    LeadProfile,
+    Session,
+    SessionContext,
+)
 
 __all__ = [
     "DEFAULT_SESSION_TTL_SECONDS",
+    "HistoryEntry",
+    "HistoryRole",
+    "LeadProfile",
     "Session",
     "SessionContext",
     "SessionManager",

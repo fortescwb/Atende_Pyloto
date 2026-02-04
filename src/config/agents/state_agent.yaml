@@ -1,16 +1,16 @@
 # StateAgent — Identifica estado e sugere transições
-# LLM #1 do pipeline de 4 agentes
-# Conforme README.md e TODO.md Fase 2.2
+# LLM #1 do pipeline de 5 agentes
+# Modelo: gpt-5-nano (rápido para seleção de estado)
 
 agent_name: state_agent
-version: "1.0.0"
+version: "2.0.0"
 description: "Identifica estado atual da conversa e sugere próximos estados válidos"
 
 model:
-  name: gpt-4o-mini
-  temperature: 0.3
-  max_tokens: 500
-  timeout_seconds: 10
+  name: gpt-5-nano-2025-08-07
+  temperature: 0.1
+  max_completion_tokens: 100
+  timeout_seconds: 5
 
 behavior:
   max_suggestions: 3

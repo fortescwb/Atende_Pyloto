@@ -21,11 +21,14 @@ from app.infra.stores import (
     FirestoreAuditStore,
     MemoryAuditStore,
     MemoryDedupeStore,
+    MemoryLeadProfileStore,
     MemorySessionStore,
     RedisDedupeStore,
+    RedisLeadProfileStore,
     RedisSessionStore,
 )
 from app.protocols.dedupe import AsyncDedupeProtocol, DedupeProtocol
+from app.protocols.lead_profile_store import AsyncLeadProfileStoreProtocol
 from app.protocols.session_store import AsyncSessionStoreProtocol, SessionStoreProtocol
 
 if TYPE_CHECKING:
@@ -187,3 +190,46 @@ def create_ai_orchestrator():
     orchestrator = AIOrchestrator(client=client)
     logger.info("ai_orchestrator_created")
     return orchestrator
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# LeadProfile Store Factory
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def create_lead_profile_store() -> AsyncLeadProfileStoreProtocol:
+    """Cria store de LeadProfile baseado na configuração.
+
+    Lê LEAD_PROFILE_BACKEND da env:
+    - "memory": MemoryLeadProfileStore (dev only)
+    - "redis": RedisLeadProfileStore (staging/production)
+
+    Returns:
+        Implementação de AsyncLeadProfileStoreProtocol
+    """
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    default_backend = "redis" if environment in ("staging", "production") else "memory"
+    backend = os.getenv("LEAD_PROFILE_BACKEND", default_backend).lower()
+
+    if backend == "redis":
+        redis_client = create_redis_client()
+        try:
+            async_client = create_async_redis_client()
+        except Exception:
+            async_client = None
+        store = RedisLeadProfileStore(redis_client, async_client)
+        logger.info("lead_profile_store_created", extra={"backend": "redis"})
+        return store
+
+    if backend == "memory":
+        if environment not in ("development", "test"):
+            logger.warning(
+                "memory_lead_profile_in_non_dev",
+                extra={"backend": "memory", "environment": environment},
+            )
+        store = MemoryLeadProfileStore()
+        logger.info("lead_profile_store_created", extra={"backend": "memory"})
+        return store
+
+    msg = f"LEAD_PROFILE_BACKEND inválido: {backend}"
+    raise ValueError(msg)

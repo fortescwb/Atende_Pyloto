@@ -106,15 +106,31 @@ def create_process_inbound_canonical(
     ai_orchestrator,
     outbound_sender,
     audit_store: Any | None = None,
+    conversation_store: Any | None = None,
+    lead_profile_store: Any | None = None,
 ) -> Any:
-    """Wiring para `ProcessInboundCanonicalUseCase` — injeta protocolos concretos."""
+    """Wiring para `ProcessInboundCanonicalUseCase` — injeta protocolos concretos.
+
+    Args:
+        normalizer: Normalizador de mensagens
+        session_store: Store de sessão (Redis)
+        dedupe: Serviço de dedupe
+        ai_orchestrator: Orquestrador de IA
+        outbound_sender: Sender outbound
+        audit_store: Store de auditoria (opcional)
+        conversation_store: Store de conversas permanente (Firestore, opcional)
+        lead_profile_store: Store de LeadProfile (opcional, Redis/Memory)
+    """
     from app.services.master_decider import MasterDecider
     from app.sessions.manager import SessionManager
     from app.use_cases.whatsapp.process_inbound_canonical import (
         ProcessInboundCanonicalUseCase,
     )
 
-    session_manager = SessionManager(session_store)
+    session_manager = SessionManager(
+        store=session_store,
+        conversation_store=conversation_store,
+    )
     master_decider = MasterDecider()
 
     return ProcessInboundCanonicalUseCase(
@@ -125,4 +141,5 @@ def create_process_inbound_canonical(
         outbound_sender=outbound_sender,
         audit_store=audit_store,
         master_decider=master_decider,
+        lead_profile_store=lead_profile_store,
     )

@@ -24,9 +24,6 @@ FORCE_CLOSE_KEYWORDS: frozenset[str] = frozenset({
 FORCE_ESCALATION_KEYWORDS: frozenset[str] = frozenset({
     "humano",
     "atendente",
-    "pessoa",
-    "gerente",
-    "supervisor",
     "reclamação",
     "ouvidoria",
 })

@@ -101,7 +101,7 @@ response = state_manager.process_message(user_message, current_state, context)
 OPENAI_API_KEY=your_api_key_here
 OPENAI_MODEL=gpt-4-turbo
 TEMPERATURE=0.7
-MAX_TOKENS=1000
+MAX_COMPLETION_TOKENS=1000  # preferencial; BACKCOMPAT: MAX_TOKENS accepted
 ```
 
 ## Testes
