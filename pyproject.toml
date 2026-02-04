@@ -1,0 +1,182 @@
+[project]
+name = "atende-pyloto"
+version = "1.0.0"
+description = "Núcleo de atendimento e automação omnichannel para CRM Pyloto"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "LicenseRef-Proprietary"
+authors = [
+    {name = "Pyloto", email = "dev@pyloto.com.br"},
+]
+
+dependencies = [
+    # Core ASGI/HTTP
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "httpx>=0.28.0",
+    "starlette>=0.41.0",
+    "anyio>=4.7.0",
+
+    # Google Cloud
+    "google-cloud-firestore>=2.20.0",
+    "google-cloud-tasks>=2.17.0",
+    "google-cloud-storage>=2.19.0",
+    "google-cloud-secret-manager>=2.22.0",
+
+    # Redis (Upstash compatível)
+    "redis>=5.2.0",
+
+    # AI (OpenAI)
+    "openai>=1.58.0",
+
+    # Crypto (WhatsApp Flows)
+    "cryptography>=44.0.0",
+
+    # Logging estruturado
+    "python-json-logger>=2.0.0",
+
+    # YAML para configuração de agentes
+    "pyyaml>=6.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testes
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+
+    # Linting e formatação
+    "ruff>=0.8.0",
+
+    # Type checking
+    "mypy>=1.13.0",
+
+    # Stubs para type checking
+    "types-redis>=4.6.0",
+    "types-PyYAML>=6.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ─────────────────────────────────────────────────────────
+# Ruff — Linter e Formatter
+# ─────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".pytest_cache",
+    ".mypy_cache",
+    "__pycache__",
+    "htmlcov",
+    ".venv",
+    "venv",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "RUF",    # Ruff-specific rules
+    "S",      # flake8-bandit (security)
+    "LOG",    # flake8-logging
+    "G",      # flake8-logging-format
+    "PIE",    # flake8-pie
+    "PT",     # flake8-pytest-style
+    "TCH",    # flake8-type-checking
+]
+ignore = [
+    "B008",   # function-call-in-default-argument (FastAPI Depends)
+    "S101",   # assert (permitido em testes)
+    "S104",   # possible-binding-to-all-interfaces (Cloud Run precisa)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]  # asserts e secrets em testes
+
+[tool.ruff.lint.isort]
+known-first-party = ["ai", "api", "app", "config", "fsm", "utils"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+# ─────────────────────────────────────────────────────────
+# Pytest
+# ─────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+# ─────────────────────────────────────────────────────────
+# Coverage
+# ─────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]
+show_missing = true
+precision = 2
+
+# ─────────────────────────────────────────────────────────
+# MyPy
+# ─────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+ignore_missing_imports = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false

@@ -1,0 +1,40 @@
+# StateAgent — Identifica estado e sugere transições
+# LLM #1 do pipeline de 4 agentes
+# Conforme README.md e TODO.md Fase 2.2
+
+agent_name: state_agent
+version: "1.0.0"
+description: "Identifica estado atual da conversa e sugere próximos estados válidos"
+
+model:
+  name: gpt-4o-mini
+  temperature: 0.3
+  max_tokens: 500
+  timeout_seconds: 10
+
+behavior:
+  max_suggestions: 3
+  min_confidence: 0.5
+  fallback_state: TRIAGE
+
+# Estados válidos conforme fsm/states/session.py
+valid_states:
+  - INITIAL
+  - TRIAGE
+  - COLLECTING_INFO
+  - GENERATING_RESPONSE
+  - HANDOFF_HUMAN
+  - SELF_SERVE_INFO
+  - ROUTE_EXTERNAL
+  - SCHEDULED_FOLLOWUP
+  - TIMEOUT
+  - ERROR
+
+# Estados terminais (sessão encerrada, não há transição)
+terminal_states:
+  - HANDOFF_HUMAN
+  - SELF_SERVE_INFO
+  - ROUTE_EXTERNAL
+  - SCHEDULED_FOLLOWUP
+  - TIMEOUT
+  - ERROR

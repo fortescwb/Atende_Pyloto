@@ -1,0 +1,32 @@
+# DecisionAgent — Consolida decisões e aplica threshold
+# LLM #4 do pipeline de 4 agentes
+# Conforme README.md e TODO.md Fase 2.5
+
+agent_name: decision_agent
+version: "1.0.0"
+description: "Consolida outputs dos 3 agentes e toma decisão final"
+
+model:
+  name: gpt-4o
+  temperature: 0.2
+  max_tokens: 800
+  timeout_seconds: 12
+
+behavior:
+  # Threshold de confiança mínimo (conforme README.md)
+  confidence_threshold: 0.7
+  # Escalar após N falhas consecutivas (conforme README.md)
+  escalation_after_consecutive_failures: 3
+  # Fallback quando confidence < threshold (conforme README.md)
+  fallback_response: "Desculpe, não entendi. Pode reformular?"
+
+# Pesos para cálculo de confiança combinada
+decision_weights:
+  state_agent: 0.3
+  response_agent: 0.4
+  message_type_agent: 0.3
+
+escalation:
+  trigger_on_low_confidence: true
+  trigger_on_sensitive_content: true
+  trigger_on_explicit_request: true

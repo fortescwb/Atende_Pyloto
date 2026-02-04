@@ -1,0 +1,188 @@
+# ─────────────────────────────────────────────────────────
+# Cloud Build — Atende_Pyloto
+# Pipeline CI/CD para staging e production
+# ─────────────────────────────────────────────────────────
+
+timeout: "1800s"
+
+options:
+  machineType: "E2_HIGHCPU_8"
+  logging: CLOUD_LOGGING_ONLY
+
+# Substitutions podem ser sobrescritas via --substitutions
+# Exemplo: gcloud builds submit --substitutions=_ENV=production
+substitutions:
+  _SERVICE: "atende-pyloto"
+  _ENV: "staging"
+  _REGION: "us-central1"
+  _ARTIFACT_REGISTRY: "atende"
+  _TAG: "${SHORT_SHA}"
+  _MIN_INSTANCES: "0"
+  _MAX_INSTANCES: "10"
+  _MEMORY: "512Mi"
+  _CPU: "1"
+  _CONCURRENCY: "80"
+  _TIMEOUT: "60s"
+
+steps:
+  # ─────────────────────────────────────────────────────────
+  # 1) Lint e verificação de código (fail-fast)
+  # ─────────────────────────────────────────────────────────
+  - id: "lint-check"
+    name: "python:3.12-slim"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        pip install --quiet ruff
+        echo "🔍 Executando lint com ruff..."
+        ruff check src/ tests/ --output-format=github
+        echo "✅ Lint passou"
+
+  # ─────────────────────────────────────────────────────────
+  # 2) Testes unitários (fail-fast)
+  # ─────────────────────────────────────────────────────────
+  - id: "run-tests"
+    name: "python:3.12-slim"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        pip install --quiet .
+        pip install --quiet pytest pytest-asyncio pytest-cov
+        echo "🧪 Executando testes..."
+        PYTHONPATH=src pytest tests/ -v --tb=short -x
+        echo "✅ Testes passaram"
+    waitFor: ["lint-check"]
+
+  # ─────────────────────────────────────────────────────────
+  # 3) Build da imagem Docker
+  # ─────────────────────────────────────────────────────────
+  - id: "build-image"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "--no-cache"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_TAG}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}"
+      - "."
+    timeout: "1200s"
+    waitFor: ["run-tests"]
+
+  # ─────────────────────────────────────────────────────────
+  # 4) Push das tags para Artifact Registry
+  # ─────────────────────────────────────────────────────────
+  - id: "push-tag"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_TAG}"
+    waitFor: ["build-image"]
+
+  - id: "push-latest"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest"
+    waitFor: ["build-image"]
+
+  - id: "push-env"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}"
+    waitFor: ["build-image"]
+
+  # ─────────────────────────────────────────────────────────
+  # 5) Deploy no Cloud Run
+  # ─────────────────────────────────────────────────────────
+  - id: "deploy-cloud-run"
+    name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+
+        SERVICE_NAME="${_SERVICE}-${_ENV}"
+        IMAGE="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}"
+
+        # Secrets montados do Secret Manager
+        SECRETS="OPENAI_API_KEY=openai-api-key-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_VERIFY_TOKEN=whatsapp-verify-token-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_WEBHOOK_SECRET=whatsapp-webhook-secret-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_ACCESS_TOKEN=whatsapp-access-token-${_ENV}:latest"
+        SECRETS="$$SECRETS,REDIS_URL=redis-url-${_ENV}:latest"
+
+        # Variáveis de ambiente
+        ENV_VARS="ENV=${_ENV}"
+        ENV_VARS="$$ENV_VARS,LOG_LEVEL=INFO"
+        ENV_VARS="$$ENV_VARS,UVICORN_WORKERS=1"
+
+        echo "🚀 Deploying $$SERVICE_NAME..."
+
+        gcloud run deploy "$$SERVICE_NAME" \
+          --image "$$IMAGE" \
+          --region "${_REGION}" \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 8080 \
+          --memory "${_MEMORY}" \
+          --cpu "${_CPU}" \
+          --min-instances "${_MIN_INSTANCES}" \
+          --max-instances "${_MAX_INSTANCES}" \
+          --concurrency "${_CONCURRENCY}" \
+          --timeout "${_TIMEOUT}" \
+          --set-env-vars "$$ENV_VARS" \
+          --set-secrets "$$SECRETS"
+
+        echo "✅ Deploy concluído: $$SERVICE_NAME"
+    waitFor: ["push-tag", "push-latest", "push-env"]
+
+  # ─────────────────────────────────────────────────────────
+  # 6) Smoke test — Health check
+  # ─────────────────────────────────────────────────────────
+  - id: "smoke-test-health"
+    name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+
+        SERVICE_NAME="${_SERVICE}-${_ENV}"
+
+        # Obter URL do serviço
+        SERVICE_URL=$$(gcloud run services describe "$$SERVICE_NAME" \
+          --region "${_REGION}" \
+          --format "value(status.url)")
+
+        echo "🏥 Verificando health em $$SERVICE_URL/health..."
+
+        # Aguardar serviço estabilizar
+        sleep 10
+
+        # Health check com retry
+        for i in 1 2 3 4 5; do
+          RESPONSE=$$(curl -s -o /dev/null -w "%{http_code}" "$$SERVICE_URL/health" || true)
+          if [ "$$RESPONSE" = "200" ]; then
+            echo "✅ Health check passou (tentativa $$i)"
+            exit 0
+          fi
+          echo "⏳ Tentativa $$i: HTTP $$RESPONSE, aguardando..."
+          sleep 5
+        done
+
+        echo "❌ Health check falhou após 5 tentativas"
+        exit 1
+    waitFor: ["deploy-cloud-run"]
+
+# Imagens a serem publicadas (referência)
+images:
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}"

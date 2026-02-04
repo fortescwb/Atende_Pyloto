@@ -1,0 +1,20 @@
+"""Normalizer Discord — converte payloads para modelo interno.
+
+TODO: Implementar quando canal Discord for ativado.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from app.protocols.models import NormalizedMessage
+
+
+def normalize_messages(payload: dict[str, Any]) -> list[NormalizedMessage]:
+    """Normaliza mensagens Discord para modelo interno.
+
+    TODO: Implementar normalização específica Discord.
+    """
+    _ = payload  # Placeholder
+    return []

@@ -1,0 +1,27 @@
+# ResponseAgent — Gera candidatos de resposta
+# LLM #2 do pipeline de 4 agentes
+# Conforme README.md e TODO.md Fase 2.3
+
+agent_name: response_agent
+version: "1.0.0"
+description: "Gera 3 candidatos de resposta com tons diferentes"
+
+model:
+  name: gpt-4o-mini
+  temperature: 0.7
+  max_tokens: 1000
+  timeout_seconds: 15
+
+behavior:
+  candidate_count: 3
+  tones:
+    - formal      # Linguagem profissional e distante
+    - casual      # Linguagem amigável e descontraída
+    - empathetic  # Linguagem acolhedora e compreensiva
+  max_response_length: 4096
+  min_confidence: 0.5
+
+guardrails:
+  prohibit_pii: true
+  prohibit_offensive: true
+  require_portuguese_br: true
