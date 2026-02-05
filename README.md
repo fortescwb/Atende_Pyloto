@@ -82,7 +82,7 @@ SEND MESSAGE    ESCALA HUMANO
 - **Execução:** Paralelo com OttoAgent (não aumenta latência)
 - **Output:** `ExtractedLeadInfo`
   - Dados pessoais: nome, email, telefone, empresa, cargo
-  - Interesse: `primary_interest` (saas, sob_medida, gestão_perfis, tráfego_pago, automação_atendimento, intermediação) # apenas 1
+  - Interesse: `primary_interest` (saas, sob_medida, gestao_perfis_trafego, automacao_atendimento, intermediacao_entregas) # apenas 1
   - Outros interesses: `others_interest` (sob_medida + automacao_atendimento) # até 3
   - Qualificação: urgência, necessidade específica, budget
 
@@ -97,14 +97,14 @@ SEND MESSAGE    ESCALA HUMANO
 
 - **Responsabilidade:** Injetar contexto dinâmico por vertente Pyloto
 - **Lógica:** Lê `LeadContact.primary_interest` → Injeta contexto vertical relevante
-- **Contextos:** 6 verticais (SaaS, Sob Medida, Gestão Perfis, Tráfego Pago, Automação, Intermediação)
+- **Contextos:** 5 verticais (SaaS, Sob Medida, Gestao Perfis + Trafego, Automacao Atendimento, Intermediacao Entregas)
 - **Economia:** 70% de tokens (injeta apenas contexto relevante vs todos contextos)
 
 #### 5. **DecisionValidator** (Pipeline Híbrido)
 
 - **Gate 1 - Determinístico (sempre):** Valida FSM, PII, promessas proibidas
 - **Gate 2 - Confidence Check:** >= 0.85 aprova | < 0.7 escala | 0.7-0.85 → Gate 3
-- **Gate 3 - LLM Review (seletivo):** Validação leve com `gpt-4o-mini` apenas em zona cinza
+- **Gate 3 - LLM Review (seletivo):** Validação leve com `gpt-5.1-mini` apenas em zona cinza
 
 ---
 
@@ -244,8 +244,8 @@ class ContactCard(BaseModel):
 
     # INTERESSE (crítico para context injection)
     primary_interest: Literal[
-        "saas", "sob_medida", "gestao_perfis",
-        "trafego_pago", "automacao_atendimento", "intermediacao"
+        "saas", "sob_medida", "gestao_perfis_trafego",
+        "automacao_atendimento", "intermediacao_entregas"
     ] | None
     secondary_interests: list[str]
 

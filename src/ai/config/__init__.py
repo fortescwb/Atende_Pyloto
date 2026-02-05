@@ -24,6 +24,11 @@ from ai.config.settings import (
     ReasoningLevel,
     get_ai_settings,
 )
+from ai.config.vertical_context_loader import (
+    VerticalContextError,
+    clear_vertical_cache,
+    load_vertical_context,
+)
 
 __all__ = [
     "DEFAULT_AI_SETTINGS",
@@ -35,7 +40,9 @@ __all__ = [
     "AgentRole",
     "InstitutionalContextError",
     "ReasoningLevel",
+    "VerticalContextError",
     "clear_cache",
+    "clear_vertical_cache",
     "get_address_info",
     "get_ai_settings",
     "get_business_hours",
@@ -43,4 +50,5 @@ __all__ = [
     "get_institutional_prompt_section",
     "get_service_info",
     "load_institutional_context",
+    "load_vertical_context",
 ]

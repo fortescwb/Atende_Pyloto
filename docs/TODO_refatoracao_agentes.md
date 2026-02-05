@@ -2,6 +2,7 @@
 
 **Data:** 05 de fevereiro de 2026  
 **Objetivo:** Substituir pipeline de 4 agentes LLM por arquitetura Otto (agente único) + agentes utilitários paralelos  
+**Status (05/fev/2026):** Concluído. Pipeline legado removido; documento mantido como referência histórica.
 **Referência:** REGRAS_E_PADROES.md (raiz do repositório)  
 **Estimativa:** 1-2 dias de desenvolvimento
 
@@ -1589,4 +1590,3 @@ Antes de considerar concluído:
 <div align="center">⁂</div>
 
 [^1]: Captura-de-tela-em-2026-02-04-17-06-12.jpg```
-

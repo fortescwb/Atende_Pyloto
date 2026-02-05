@@ -1,90 +1,61 @@
-"""Módulo AI do Atende Pyloto.
+"""Módulo AI do Atende Pyloto (arquitetura Otto).
 
-Implementa pipeline de 4 agentes LLM para processamento de mensagens:
-1. StateAgent - identifica estado e sugere transições FSM
-2. ResponseAgent - gera candidatos de resposta
-3. MessageTypeAgent - seleciona formato da mensagem
-4. DecisionAgent - valida e consolida decisão final
-
-Conforme AUDITORIA_ARQUITETURA.md § 10 e README.md.
+Exporta contratos e serviços usados pelo agente único (Otto) e utilitários
+determinísticos de suporte.
 """
 
 # Config
 from ai.config import AISettings, get_ai_settings
 
-# Core
-from ai.core import AIClientProtocol, MockAIClient
+# Core protocols
+from ai.core import ContactCardExtractorClientProtocol, OttoClientProtocol
 
-# Models — mantidos para compatibilidade de tipos
+# Models
 from ai.models import (
-    DecisionAgentRequest,
-    DecisionAgentResult,
-    MessageTypeSelectionRequest,
-    MessageTypeSelectionResult,
-    ResponseGenerationRequest,
-    ResponseGenerationResult,
-    StateAgentRequest,
-    StateAgentResult,
+    ContactCardExtractionRequest,
+    ContactCardExtractionResult,
+    ContactCardPatch,
+    OttoDecision,
+    OttoRequest,
 )
 
 # Rules
 from ai.rules import (
-    fallback_decision,
-    fallback_message_type_selection,
-    fallback_response_generation,
-    fallback_state_suggestion,
-    get_fallback_confidence,
-    is_confidence_acceptable,
-    should_require_human_review,
+    contains_disallowed_pii,
+    contains_prohibited_promises,
+    is_response_length_valid,
 )
 
 # Services
-from ai.services import AIOrchestrator, OrchestratorResult
-
-# Utils
-from ai.utils import (
-    contains_pii,
-    extract_json_from_response,
-    mask_history,
-    parse_decision_agent_response,
-    parse_response_candidates,
-    parse_state_agent_response,
-    sanitize_pii,
+from ai.services import (
+    ContactCardExtractorService,
+    ContextInjector,
+    DecisionValidatorService,
+    OttoAgentService,
 )
 
+# Utils
+from ai.utils import contains_pii, extract_json_from_response, mask_history, sanitize_pii
+
 __all__ = [
-    # Core
-    "AIClientProtocol",
-    # Services
-    "AIOrchestrator",
-    # Config
     "AISettings",
-    "DecisionAgentRequest",
-    "DecisionAgentResult",
-    "MessageTypeSelectionRequest",
-    "MessageTypeSelectionResult",
-    "MockAIClient",
-    "OrchestratorResult",
-    "ResponseGenerationRequest",
-    "ResponseGenerationResult",
-    # Models
-    "StateAgentRequest",
-    "StateAgentResult",
+    "ContactCardExtractionRequest",
+    "ContactCardExtractionResult",
+    "ContactCardExtractorClientProtocol",
+    "ContactCardExtractorService",
+    "ContactCardPatch",
+    "ContextInjector",
+    "DecisionValidatorService",
+    "OttoAgentService",
+    "OttoClientProtocol",
+    "OttoDecision",
+    "OttoRequest",
+    "contains_disallowed_pii",
     "contains_pii",
-    # Utils
+    "contains_prohibited_promises",
     "extract_json_from_response",
-    "fallback_decision",
-    "fallback_message_type_selection",
-    "fallback_response_generation",
-    # Rules
-    "fallback_state_suggestion",
     "get_ai_settings",
-    "get_fallback_confidence",
-    "is_confidence_acceptable",
+    "is_response_length_valid",
     "mask_history",
-    "parse_decision_agent_response",
-    "parse_response_candidates",
-    "parse_state_agent_response",
     "sanitize_pii",
-    "should_require_human_review",
 ]

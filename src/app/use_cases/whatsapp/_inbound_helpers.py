@@ -5,15 +5,15 @@ Extrai lógica auxiliar para reduzir o tamanho do process_inbound_canonical.py.
 
 from __future__ import annotations
 
-import logging
 import json
+import logging
 from typing import TYPE_CHECKING, Any, Protocol
 
+from ai.services.context_injector import ContextInjector
 from fsm.states import SessionState
 from fsm.transitions.rules import get_valid_targets
 
 if TYPE_CHECKING:
-    from ai.models.state_agent import StateAgentResult
     from app.protocols import OutboundMessageRequest
     from app.protocols.models import NormalizedMessage
 
@@ -27,10 +27,11 @@ class OutboundDecisionProtocol(Protocol):
     final_message_type: str | None
 
 logger = logging.getLogger(__name__)
+_CONTEXT_INJECTOR = ContextInjector()
 
 
 def map_state_suggestion_to_target(
-    state_result: StateAgentResult,
+    state_result: Any,
     current_state: SessionState,
 ) -> SessionState:
     """Mapeia sugestão do StateAgent para estado FSM.
@@ -184,14 +185,8 @@ def history_as_strings(session: Any) -> list[str]:
     return [str(entry) for entry in raw_history]
 
 def build_tenant_context(session: Any) -> str:
-    context = getattr(session, "context", None)
-    if context is None:
-        return ""
-    tenant_id = getattr(context, "tenant_id", "") or ""
-    vertente = getattr(context, "vertente", "") or ""
-    if tenant_id and vertente:
-        return f"tenant_id={tenant_id} | vertente={vertente}"
-    return tenant_id or vertente
+    contact_card = getattr(session, "contact_card", None)
+    return _CONTEXT_INJECTOR.build(contact_card=contact_card)
 
 def get_valid_transitions(current_state: SessionState) -> tuple[str, ...]:
     return tuple(state.name for state in get_valid_targets(current_state))

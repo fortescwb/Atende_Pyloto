@@ -176,26 +176,6 @@ def create_audit_store() -> DecisionAuditStoreProtocol:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# AI Orchestrator Factory
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def create_ai_orchestrator():
-    """Cria AIOrchestrator com client OpenAI configurado.
-
-    Retorna:
-        AIOrchestrator com OpenAIClient injetado
-    """
-    from ai.services.orchestrator import AIOrchestrator
-    from app.infra.ai.openai_client import OpenAIClient
-
-    client = OpenAIClient()
-    orchestrator = AIOrchestrator(client=client)
-    logger.info("ai_orchestrator_created")
-    return orchestrator
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Otto Agent Factory
 # ──────────────────────────────────────────────────────────────────────────────
 

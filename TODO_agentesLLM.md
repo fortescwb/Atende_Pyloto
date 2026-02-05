@@ -241,19 +241,102 @@ Retornar um **patch** (não o card inteiro), para facilitar merge e auditoria:
 
 ### Tarefas (P1)
 
-- [ ] Remover/depreciar 5-agent pipeline:
-  - [ ] `src/ai/services/orchestrator.py`
-  - [ ] `src/app/infra/ai/openai_client.py` (ou mover para `legacy_openai_client.py` e depois deletar)
-  - [ ] `src/ai/utils/agent_parser.py`
-  - [ ] `src/ai/services/_orchestrator_helpers.py`
-  - [ ] Prompts antigos em `src/ai/prompts/*_agent_prompt.py` (state/response/message_type/decision/lead_profile)
-  - [ ] Models antigos em `src/ai/models/*` que não forem mais usados
-- [ ] Remover YAMLs antigos se estiverem sem uso:
-  - [ ] `src/config/agents/state_agent.yaml`
-  - [ ] `src/config/agents/response_agent.yaml`
-  - [ ] `src/config/agents/message_type_agent.yaml`
-  - [ ] `src/config/agents/decision_agent.yaml`
-- [ ] Atualizar exports/imports: `src/ai/__init__.py`, `src/ai/prompts/__init__.py`, `src/ai/models/__init__.py`
+- [x] Remover/depreciar 5-agent pipeline:
+  - [x] `src/ai/services/orchestrator.py`
+  - [x] `src/app/infra/ai/openai_client.py` (ou mover para `legacy_openai_client.py` e depois deletar)
+  - [x] `src/ai/utils/agent_parser.py`
+  - [x] `src/ai/services/_orchestrator_helpers.py`
+  - [x] Prompts antigos em `src/ai/prompts/*_agent_prompt.py` (state/response/message_type/decision/lead_profile)
+  - [x] Models antigos em `src/ai/models/*` que não forem mais usados
+- [x] Remover YAMLs antigos se estiverem sem uso:
+  - [x] `src/config/agents/state_agent.yaml`
+  - [x] `src/config/agents/response_agent.yaml`
+  - [x] `src/config/agents/message_type_agent.yaml`
+  - [x] `src/config/agents/decision_agent.yaml`
+- [x] Atualizar exports/imports: `src/ai/__init__.py`, `src/ai/prompts/__init__.py`, `src/ai/models/__init__.py`
+
+---
+
+## Contextos por vertente (ContextInjector)
+
+> Fazer após a limpeza do pipeline antigo, para evitar mexer em prompts/modelos legados.
+
+### Tarefas (P1)
+
+- [x] Alinhar IDs das verticais (YAML ↔ enum):
+  - [x] Revisar `src/ai/contexts/institutional_context.yaml` (`servicos_resumo` e `dynamic_context_rules`)
+  - [x] Decidir mapeamento para `ContactCard.primary_interest`: `gestao_perfis_trafego`
+  - [x] Padronizar nomes: `automacao_atendimento` vs `automacao`, `intermediacao` vs `intermediacao_entregas`
+- [x] Completar arquivos de contexto em `src/ai/contexts/verticals/` para todas as verticais suportadas:
+  - [x] `saas_pyloto.yaml`
+  - [x] `intermediacao_entregas.yaml`
+  - [ ] (se optar por separar) `gestao_perfis.yaml` e `trafego_pago.yaml` (mantido combinado)
+- [x] Criar loader cacheado do contexto vertical (sem rede) em `src/ai/config/vertical_context_loader.py`
+- [x] Criar `ContextInjector` (serviço puro) em `src/ai/services/context_injector.py`:
+  - [x] Entrada: `primary_interest` (ou `ContactCard`)
+  - [x] Saída: string curta (<= ~1200 chars) pronta para prompt
+  - [x] Fallback seguro quando não houver vertical definida
+- [x] Integrar no pipeline:
+  - [x] Popular `OttoRequest.tenant_context` com contexto vertical selecionado (em `src/app/use_cases/whatsapp/_inbound_processor.py`)
+  - [ ] (Opcional) Incluir contexto vertical também no extractor, se aumentar precisão
+- [x] Testes:
+  - [x] `tests/test_ai/test_context_injector.py` (mapping, fallback, limite de tamanho)
+
+---
+
+## DecisionValidator (3-gate) — separar do OttoAgent
+
+### Tarefas (P1)
+
+- [x] Extrair gate determinístico de `src/ai/services/otto_agent.py` para `src/ai/services/decision_validator.py`
+- [x] Definir modelo de validação em `src/ai/models/validation.py` (ex.: `ValidationResult`, `EscalationReason`)
+- [x] Implementar Gate 2 (thresholds) e Gate 3 (LLM review seletivo) sem violar boundaries:
+  - [x] Protocolo do reviewer em `src/app/protocols/decision_review_client.py`
+  - [x] Implementação IO em `src/app/infra/ai/decision_review_client.py` (modelo barato, timeout curto)
+- [x] Atualizar pipeline canônico para usar o validator antes do envio outbound
+- [x] Testes unitários do validator + integração no `ProcessInboundCanonicalUseCase`
+
+---
+
+## LGPD / PII — auditoria de logs
+
+### Tarefas (P1)
+
+- [ ] Definir helpers únicos de máscara (wa_id/telefone/email) e padronizar uso em logs
+- [ ] Auditar `logger.*` em `src/` para garantir que nenhum campo PII vai em `extra`
+- [ ] Garantir que access log do Uvicorn permaneça desabilitado em Cloud Run (evita logar querystring do webhook)
+- [ ] Adicionar verificação automatizada (script ou teste) para bloquear regressões
+
+---
+
+## Fast-Path determinístico (saudações/FAQ)
+
+### Tarefas (P2)
+
+- [ ] Implementar classificador simples em `src/app/services/fast_path_classifier.py` (sem LLM)
+- [ ] Integrar no inbound: se fast-path casar, responder sem chamar Otto/Extractor
+- [ ] Medir impacto (latência/custo) via logs/métricas (sem PII)
+- [ ] Testes unitários + integração
+
+---
+
+## Resiliência de IO (OpenAI/WhatsApp)
+
+### Tarefas (P2)
+
+- [ ] Implementar circuit breaker leve para chamadas externas (OpenAI e WhatsApp)
+- [ ] Padronizar retries e timeouts curtos (evitar cascata)
+- [ ] Logar métricas de falha sem PII (`component`, `action`, `result`, `latency_ms`)
+
+---
+
+## Documentação e alinhamento final
+
+### Tarefas (P2)
+
+- [ ] Atualizar `README.md` e exemplos (fast-path, ContextInjector, DecisionValidator) após implementação
+- [ ] Remover referências a `LeadProfile` e ao pipeline antigo em comentários/docs remanescentes
+- [ ] Revisar `src/app/use_cases/whatsapp/_inbound_helpers.py` para remover tipos/fluxos legados após a limpeza
 
 ---
 
@@ -263,13 +346,16 @@ Retornar um **patch** (não o card inteiro), para facilitar merge e auditoria:
 
 - [ ] `ruff check .` sem erros
 - [x] `pytest -q` 100% verde
-- [ ] Cobertura >= 80% nos arquivos novos (pelo menos serviços e merges determinísticos)
+- [ ] Cobertura >= 80% nos serviços novos/alterados (pelo menos merges determinísticos + validator/injector/fast-path)
 
 ### Testes recomendados (P0/P1)
 
 - [ ] Unitários:
   - [ ] merge patch → ContactCard (determinístico)
   - [ ] validação gate 1 (PII/promessas/FSM)
+  - [ ] ContextInjector (mapping + fallback)
+  - [ ] Fast-path classifier
 - [ ] Integração:
   - [ ] `ProcessInboundCanonicalUseCase`: texto simples (fast path) + extração + otto
   - [ ] áudio: transcrição → otto
+  - [ ] `ProcessInboundCanonicalUseCase`: contexto vertical aplicado (quando `primary_interest` definido)

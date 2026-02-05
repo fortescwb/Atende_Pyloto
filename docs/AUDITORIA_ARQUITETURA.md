@@ -1,14 +1,15 @@
 # AUDITORIA ARQUITETURAL — Atende_Pyloto
 
 **Data:** 02 de fevereiro de 2026  
-**Versão:** 3.0 (Pipeline de 4 Agentes LLM implementado)  
-**Escopo:** Conformidade com REGRAS_E_PADROES.md, FUNCIONAMENTO.md e README.md
+**Versão:** 3.0 (LEGADO — pipeline 4 agentes)  
+**Escopo:** Conformidade com REGRAS_E_PADROES.md, FUNCIONAMENTO.md e README.md  
+**Nota rápida (05/fev/2026):** Pipeline de 4/5 agentes foi removido e substituído pela arquitetura Otto (agente único + utilitários). Este documento permanece como histórico; consulte README.md para o desenho atual.
 
 ---
 
 ## Resumo Executivo
 
-O repositório **Atende_Pyloto** apresenta **implementação completa do pipeline de 4 agentes LLM**. FSM e AI estão implementados com alta cobertura. **Todos os arquivos respeitam o limite de 200 linhas.** Pipeline de agentes executa StateAgent, ResponseAgent e MessageTypeAgent em paralelo, consolidados pelo DecisionAgent.
+O repositório **Atende_Pyloto** opera agora na **arquitetura Otto (agente único + utilitários)**. As referências ao pipeline de 4 agentes abaixo são históricas e não refletem o estado atual do código.
 
 ### Métricas Atuais
 
@@ -35,9 +36,9 @@ O repositório **Atende_Pyloto** apresenta **implementação completa do pipelin
 - ✅ **Observability:** IMPLEMENTADO (app/observability/, 87 linhas)
 - ✅ **Arquivos ≤ 200 linhas:** CONFORME (todos arquivos refatorados)
 - ✅ **FSM:** IMPLEMENTADO — 97% cobertura, 864 linhas, 11 arquivos
-- ✅ **AI 4-Agentes:** IMPLEMENTADO — 95% cobertura, ~2.819 linhas, 23 arquivos
-- ✅ **OpenAIClient:** IMPLEMENTADO em app/infra/ai/ (boundary correta)
-- ✅ **MasterDecider:** IMPLEMENTADO — Governança final integrada com DecisionAgent
+- ✅ **AI (Otto):** IMPLEMENTADO — agente único com utilitários paralelos
+- 🗑️ **Pipeline 4-Agentes:** REMOVIDO (substituído por Otto em 05/fev/2026)
+- 🗑️ **MasterDecider:** REMOVIDO (governança agora no Otto + validator)
 - ⚠️ **Cobertura geral de testes:** 55% (meta: 80%)
 
 ---

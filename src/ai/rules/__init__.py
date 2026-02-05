@@ -1,26 +1,13 @@
-"""Regras determinísticas para IA.
+"""Regras determinísticas para IA (guardrails do Otto)."""
 
-Re-exporta fallbacks e funções de decisão.
-"""
-
-from ai.rules.fallbacks import (
-    fallback_decision,
-    fallback_event_detection,
-    fallback_message_type_selection,
-    fallback_response_generation,
-    fallback_state_suggestion,
-    get_fallback_confidence,
-    is_confidence_acceptable,
-    should_require_human_review,
+from ai.rules.otto_guardrails import (
+    contains_disallowed_pii,
+    contains_prohibited_promises,
+    is_response_length_valid,
 )
 
 __all__ = [
-    "fallback_decision",
-    "fallback_event_detection",
-    "fallback_message_type_selection",
-    "fallback_response_generation",
-    "fallback_state_suggestion",
-    "get_fallback_confidence",
-    "is_confidence_acceptable",
-    "should_require_human_review",
+    "contains_disallowed_pii",
+    "contains_prohibited_promises",
+    "is_response_length_valid",
 ]

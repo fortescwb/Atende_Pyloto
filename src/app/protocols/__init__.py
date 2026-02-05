@@ -7,6 +7,7 @@ from .conversation_store import (
     LeadData,
 )
 from .decision_audit_store import DecisionAuditStoreProtocol
+from .decision_review_client import DecisionReviewClientProtocol
 from .dedupe import AsyncDedupeProtocol, DedupeProtocol
 from .http_client import WhatsAppHttpClientProtocol
 from .models import (
@@ -30,6 +31,7 @@ __all__ = [
     "ConversationStoreError",
     "ConversationStoreProtocol",
     "DecisionAuditStoreProtocol",
+    "DecisionReviewClientProtocol",
     "DedupeProtocol",
     "InboundMessageEvent",
     "LeadData",

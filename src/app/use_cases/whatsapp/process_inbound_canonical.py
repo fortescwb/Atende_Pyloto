@@ -18,6 +18,7 @@ from app.use_cases.whatsapp._inbound_processor import InboundMessageProcessor
 
 if TYPE_CHECKING:
     from ai.services.contact_card_extractor import ContactCardExtractorService
+    from ai.services.decision_validator import DecisionValidatorService
     from ai.services.otto_agent import OttoAgentService
     from app.protocols import (
         AsyncDedupeProtocol,
@@ -53,6 +54,7 @@ class ProcessInboundCanonicalUseCase:
         session_manager: SessionManagerProtocol | None = None,
         dedupe: AsyncDedupeProtocol,
         otto_agent: OttoAgentService,
+        decision_validator: DecisionValidatorService | None = None,
         outbound_sender: OutboundSenderProtocol,
         contact_card_store: ContactCardStoreProtocol | None = None,
         transcription_service: TranscriptionServiceProtocol | None = None,
@@ -73,6 +75,7 @@ class ProcessInboundCanonicalUseCase:
             session_manager=self._session_manager,
             dedupe=dedupe,
             otto_agent=otto_agent,
+            decision_validator=decision_validator,
             outbound_sender=outbound_sender,
             contact_card_store=contact_card_store,
             transcription_service=transcription_service,

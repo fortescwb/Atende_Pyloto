@@ -55,12 +55,12 @@ curl "https://atende-pyloto-staging-691572891105.us-central1.run.app/webhook/wha
 
 ## Resumo Executivo
 
-O repositório **Atende_Pyloto** possui arquitetura sólida e implementação avançada do pipeline de IA (4 agentes LLM), FSM e camadas bem definidas. Os componentes críticos de infraestrutura para build e deploy foram implementados:
+O repositório **Atende_Pyloto** já opera na **arquitetura Otto (agente único + utilitários)**; menções ao pipeline de 4 agentes a seguir são históricas. FSM e camadas continuam bem definidas. Os componentes críticos de infraestrutura para build e deploy foram implementados:
 
 |                    Categoria                    |         Estado                      |  Bloqueador para Staging?  |
 |-------------------------------------------------|-------------------------------------|----------------------------|
 |              Arquitetura e código               |   ✅ 95% pronto                     |   Não                      |
-|             Pipeline IA (4 agentes)             |   ✅ Implementado                   |   Não                      |
+|             Pipeline IA (Otto + utilitários)    |   ✅ Implementado                   |   Não                      |
 |                       FSM                       |   ✅ Implementado                   |   Não                      |
 |           **Aplicação ASGI (FastAPI)**          |   ✅ Implementado                   |   Não                      |
 |            **Rotas HTTP (webhooks)**            |   ✅ Implementado                   |   Não                      |
@@ -480,6 +480,6 @@ Atende_Pyloto/
 
 ## Conclusão
 
-O Atende_Pyloto possui **base sólida de arquitetura e lógica de negócio**, mas **falta toda a camada de runtime e infraestrutura** necessária para deploy. Os componentes de IA (4 agentes LLM), FSM e validação estão bem implementados e testados.
+O Atende_Pyloto possui **base sólida de arquitetura e lógica de negócio**, mas **falta toda a camada de runtime e infraestrutura** necessária para deploy. Os componentes de IA (Otto + utilitários), FSM e validação estão bem implementados e testados.
 
 **Prioridade absoluta:** Criar a aplicação FastAPI, Dockerfile e implementações de stores para viabilizar o primeiro deploy em staging.

@@ -42,63 +42,11 @@ async def test_valid_decision_passes() -> None:
 
     result = await service.decide(_base_request())
 
-    assert result.next_state == "COLLECTING_INFO"
-    assert result.requires_human is False
+    assert result == decision
 
 
 @pytest.mark.asyncio
-async def test_invalid_transition_triggers_handoff() -> None:
-    decision = OttoDecision(
-        next_state="ERROR",
-        response_text="Resposta qualquer",
-        message_type="text",
-        confidence=0.9,
-        requires_human=False,
-    )
-    service = OttoAgentService(FakeClient(decision))
-
-    result = await service.decide(_base_request())
-
-    assert result.next_state == "HANDOFF_HUMAN"
-    assert result.requires_human is True
-
-
-@pytest.mark.asyncio
-async def test_pii_triggers_handoff() -> None:
-    decision = OttoDecision(
-        next_state="GENERATING_RESPONSE",
-        response_text="Seu email e user@example.com",
-        message_type="text",
-        confidence=0.9,
-        requires_human=False,
-    )
-    service = OttoAgentService(FakeClient(decision))
-
-    result = await service.decide(_base_request())
-
-    assert result.next_state == "HANDOFF_HUMAN"
-    assert result.requires_human is True
-
-
-@pytest.mark.asyncio
-async def test_low_confidence_triggers_handoff() -> None:
-    decision = OttoDecision(
-        next_state="GENERATING_RESPONSE",
-        response_text="Entendi.",
-        message_type="text",
-        confidence=0.5,
-        requires_human=False,
-    )
-    service = OttoAgentService(FakeClient(decision))
-
-    result = await service.decide(_base_request())
-
-    assert result.next_state == "HANDOFF_HUMAN"
-    assert result.requires_human is True
-
-
-@pytest.mark.asyncio
-async def test_gray_zone_sets_requires_human_flag() -> None:
+async def test_client_error_returns_handoff() -> None:
     decision = OttoDecision(
         next_state="GENERATING_RESPONSE",
         response_text="Entendi sua necessidade.",
@@ -106,9 +54,9 @@ async def test_gray_zone_sets_requires_human_flag() -> None:
         confidence=0.75,
         requires_human=False,
     )
-    service = OttoAgentService(FakeClient(decision))
+    service = OttoAgentService(FakeClient(None))
 
     result = await service.decide(_base_request())
 
-    assert result.next_state == "GENERATING_RESPONSE"
+    assert result.next_state == "HANDOFF_HUMAN"
     assert result.requires_human is True

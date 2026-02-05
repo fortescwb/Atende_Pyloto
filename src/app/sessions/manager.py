@@ -217,29 +217,30 @@ class SessionManager:
 
         # Converte LeadData para ContactCard
         contact_card: ContactCard | None = None
-        if lead_data is not None:
-            if whatsapp_name:
-                primary_interest = lead_data.primary_intent or None
-                if primary_interest not in {
-                    "saas",
-                    "sob_medida",
-                    "gestao_perfis",
-                    "trafego_pago",
-                    "automacao_atendimento",
-                    "intermediacao",
-                    None,
-                }:
-                    primary_interest = None
-                contact_card = ContactCard(
-                    wa_id=wa_id,
-                    phone=wa_id,
-                    whatsapp_name=whatsapp_name,
-                    full_name=lead_data.name or None,
-                    email=lead_data.email or None,
-                    primary_interest=primary_interest,
-                    total_messages=lead_data.total_messages or 0,
-                    last_updated_at=datetime.now(UTC),
-                )
+        if lead_data is not None and whatsapp_name:
+            primary_interest = lead_data.primary_intent or None
+            if primary_interest not in {
+                "saas",
+                "sob_medida",
+                "gestao_perfis_trafego",
+                "intermediacao_entregas",
+                "gestao_perfis",
+                "trafego_pago",
+                "automacao_atendimento",
+                "intermediacao",
+                None,
+            }:
+                primary_interest = None
+            contact_card = ContactCard(
+                wa_id=wa_id,
+                phone=wa_id,
+                whatsapp_name=whatsapp_name,
+                full_name=lead_data.name or None,
+                email=lead_data.email or None,
+                primary_interest=primary_interest,
+                total_messages=lead_data.total_messages or 0,
+                last_updated_at=datetime.now(UTC),
+            )
 
         # Converte ConversationMessage para HistoryEntry
         history: list[HistoryEntry] = []

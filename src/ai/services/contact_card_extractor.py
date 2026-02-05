@@ -22,6 +22,13 @@ from ai.prompts.contact_card_extractor_prompt import (
 
 logger = logging.getLogger(__name__)
 
+_PRIMARY_INTEREST_ALIASES = {
+    "gestao_perfis": "gestao_perfis_trafego",
+    "trafego_pago": "gestao_perfis_trafego",
+    "intermediacao": "intermediacao_entregas",
+    "automacao": "automacao_atendimento",
+}
+
 if TYPE_CHECKING:
     from ai.core.contact_card_extractor_client import ContactCardExtractorClientProtocol
 
@@ -93,6 +100,8 @@ class ContactCardExtractorService:
                     continue
                 if field in {"primary_interest", "urgency", "company_size"}:
                     cleaned = cleaned.lower().replace(" ", "_").replace("-", "_")
+                    if field == "primary_interest":
+                        cleaned = _PRIMARY_INTEREST_ALIASES.get(cleaned, cleaned)
                 if field == "email":
                     cleaned = cleaned.lower()
                 normalized[field] = cleaned

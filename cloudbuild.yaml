@@ -119,7 +119,7 @@ steps:
         SECRETS="$$SECRETS,REDIS_URL=redis-url-${_ENV}:latest"
 
         # Variáveis de ambiente
-        ENV_VARS="ENV=${_ENV}"
+        ENV_VARS="ENVIRONMENT=${_ENV}"
         ENV_VARS="$$ENV_VARS,LOG_LEVEL=INFO"
         ENV_VARS="$$ENV_VARS,UVICORN_WORKERS=1"
 

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
+from app.domain.contact_card import ContactCard
 from app.sessions.models import HistoryRole, Session, SessionContext
 from fsm.states import SessionState
 
@@ -140,6 +142,26 @@ class TestSession:
         assert data["session_id"] == "sess-123"
         assert data["current_state"] == "TRIAGE"
         assert "created_at" in data
+
+    def test_to_dict_json_serializable_with_contact_card(self) -> None:
+        """to_dict deve ser serializável em JSON mesmo com ContactCard."""
+        contact_card = ContactCard(
+            wa_id="5511999998888",
+            phone="5511999998888",
+            whatsapp_name="Joao",
+        )
+        session = Session(
+            session_id="sess-cc",
+            sender_id="sender-hash",
+            current_state=SessionState.TRIAGE,
+            contact_card=contact_card,
+        )
+
+        data = session.to_dict()
+
+        # Não pode levantar TypeError por datetime não-serializável.
+        json.dumps(data)
+        assert isinstance(data["contact_card"]["first_contact_at"], str)
 
     def test_from_dict(self) -> None:
         """Verifica deserialização de dict."""

@@ -75,6 +75,31 @@ def _get_inbound_use_case():
     return _inbound_use_case
 
 
+async def _process_inbound_payload_safe(
+    *,
+    payload: dict[str, Any],
+    correlation_id: str,
+    use_case: Any,
+    tenant_id: str,
+) -> None:
+    """Executa processamento inbound em background sem propagar exceções."""
+    try:
+        await process_inbound_payload(
+            payload=payload,
+            correlation_id=correlation_id,
+            use_case=use_case,
+            tenant_id=tenant_id,
+        )
+    except Exception:
+        logger.exception(
+            "webhook_processing_failed",
+            extra={
+                "channel": "whatsapp",
+                "correlation_id": correlation_id,
+            },
+        )
+
+
 @router.get("/")
 async def verify_webhook(request: Request) -> Response:
     """Verificação de webhook — responde ao challenge da Meta.
@@ -183,7 +208,7 @@ async def receive_webhook(request: Request) -> Response | dict[str, Any]:
             use_case = _get_inbound_use_case()
             if use_case is not None:
                 task = asyncio.create_task(
-                    process_inbound_payload(
+                    _process_inbound_payload_safe(
                         payload=_payload,
                         correlation_id=get_correlation_id(),
                         use_case=use_case,

@@ -34,11 +34,6 @@ COPY src/ /app/src/
 RUN pip install --upgrade pip \
     && pip install .
 
-# Copiar configurações de agentes (YAML)
-# Nota: config/agents/ contém YAMLs de configuração dos 4 agentes LLM
-# Se não existir, o COPY não falhará por causa do wildcard
-COPY --chown=1000:1000 src/config/agents/ /app/src/config/agents/
-
 # Criar usuário não-root para segurança
 RUN groupadd --gid 1000 appgroup \
     && useradd --uid 1000 --gid appgroup --shell /bin/bash appuser \
@@ -57,4 +52,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Usar dumb-init para signal handling correto
 # uvicorn com workers configuráveis via env
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["sh", "-c", "uvicorn app.app:app --host 0.0.0.0 --port ${PORT:-8080} --workers ${UVICORN_WORKERS:-1}"]
+CMD ["sh", "-c", "uvicorn app.app:app --host 0.0.0.0 --port ${PORT:-8080} --workers ${UVICORN_WORKERS:-1} --no-access-log"]

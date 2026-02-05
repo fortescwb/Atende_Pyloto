@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ai.models.otto import OttoDecision, OttoRequest
+from ai.services.decision_validator import DecisionValidatorService
 from ai.utils.sanitizer import sanitize_pii
 from app.use_cases.whatsapp._inbound_helpers import (
     build_outbound_payload,
@@ -47,6 +49,7 @@ class InboundMessageProcessor:
         session_manager: SessionManagerProtocol,
         dedupe: AsyncDedupeProtocol,
         otto_agent: OttoAgentService,
+        decision_validator: DecisionValidatorService | None = None,
         outbound_sender: OutboundSenderProtocol,
         contact_card_store: ContactCardStoreProtocol | None = None,
         transcription_service: TranscriptionServiceProtocol | None = None,
@@ -55,6 +58,7 @@ class InboundMessageProcessor:
         self._session_manager = session_manager
         self._dedupe = dedupe
         self._otto_agent = otto_agent
+        self._decision_validator = decision_validator or DecisionValidatorService()
         self._outbound_sender = outbound_sender
         self._contact_card_store = contact_card_store
         self._transcription_service = transcription_service
@@ -87,7 +91,7 @@ class InboundMessageProcessor:
             msg, session
         )
 
-        decision, extraction = await self._run_agents(
+        otto_request, decision, extraction = await self._run_agents(
             session=session,
             sanitized_input=sanitized_input,
             history=history,
@@ -96,6 +100,8 @@ class InboundMessageProcessor:
             card_serialized=card_serialized,
             raw_user_text=raw_user_text,
         )
+
+        decision = await self._validate_decision(decision, otto_request)
 
         if self._contact_card_store and contact_card and extraction:
             await self._apply_contact_card_patch(contact_card, extraction)
@@ -156,7 +162,7 @@ class InboundMessageProcessor:
         card_summary: str,
         card_serialized: str,
         raw_user_text: str,
-    ) -> tuple[OttoDecision, Any]:
+    ) -> tuple[OttoRequest, OttoDecision, Any]:
         otto_request = self._build_otto_request(
             session=session,
             sanitized_input=sanitized_input,
@@ -172,9 +178,20 @@ class InboundMessageProcessor:
         otto_task = self._otto_agent.decide(otto_request)
         if extraction_task:
             decision, extraction = await asyncio.gather(otto_task, extraction_task)
-            return decision, extraction
+            return otto_request, decision, extraction
         decision = await otto_task
-        return decision, None
+        return otto_request, decision, None
+
+    async def _validate_decision(
+        self,
+        decision: OttoDecision,
+        otto_request: OttoRequest,
+    ) -> OttoDecision:
+        validated, result = await self._decision_validator.validate(decision, otto_request)
+        if result.corrections:
+            with contextlib.suppress(Exception):
+                validated = validated.model_copy(update=result.corrections)
+        return validated
 
     def _build_otto_request(
         self,

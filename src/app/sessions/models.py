@@ -189,7 +189,9 @@ class Session:
             },
             "history": [entry.to_dict() for entry in self.history],
             "contact_card": (
-                self.contact_card.to_firestore_dict() if self.contact_card else {}
+                self.contact_card.model_dump(mode="json", exclude_none=True)
+                if self.contact_card
+                else {}
             ),
             "turn_count": self.turn_count,
             "created_at": self.created_at.isoformat(),

@@ -1,9 +1,10 @@
-# TODO — Implementação Sistema de 4 Agentes de IA
+# TODO — Implementação Sistema de 4 Agentes de IA (LEGADO)
 
 > **Data:** 02/fev/2026  
 > **Status:** ✅ Todas as fases concluídas  
 > **Última atualização:** 395 testes passando  
-> **Objetivo:** Implementar pipeline de 4 agentes LLM conforme README.md
+> **Objetivo:** Implementar pipeline de 4 agentes LLM conforme README.md  
+> **Nota (05/fev/2026):** Pipeline legado foi removido e substituído pela arquitetura Otto (agente único + utilitários). Este registro é mantido apenas para histórico.
 
 ---
 

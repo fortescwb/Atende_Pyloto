@@ -18,8 +18,10 @@ REGRAS CRITICAS:
 
 CAMPOS POSSIVEIS (somente se novos):
 - full_name, email, company, role, location
-- primary_interest: saas | sob_medida | gestao_perfis
-  | trafego_pago | automacao_atendimento | intermediacao
+- primary_interest: saas | sob_medida | gestao_perfis_trafego
+  | automacao_atendimento | intermediacao_entregas
+  (normalize: gestao_perfis/trafego_pago -> gestao_perfis_trafego;
+   intermediacao -> intermediacao_entregas)
 - secondary_interests: lista de interesses adicionais
 - urgency: low | medium | high | urgent
 - budget_indication, specific_need, company_size (mei | micro | pequena | media | grande)

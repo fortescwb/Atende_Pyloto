@@ -1,15 +1,9 @@
-"""Core do módulo AI.
+"""Core do módulo AI — protocolos utilizados pelos agentes ativos."""
 
-Exporta protocols e clients para uso externo.
-A implementação OpenAIClient está em app/infra/ai/ (IO).
-"""
-
-from ai.core.client import AIClientProtocol
-from ai.core.mock_client import MockAIClient
+from ai.core.contact_card_extractor_client import ContactCardExtractorClientProtocol
 from ai.core.otto_client import OttoClientProtocol
 
 __all__ = [
-    "AIClientProtocol",
-    "MockAIClient",
+    "ContactCardExtractorClientProtocol",
     "OttoClientProtocol",
 ]

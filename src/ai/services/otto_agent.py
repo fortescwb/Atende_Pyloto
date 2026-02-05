@@ -8,11 +8,6 @@ from typing import TYPE_CHECKING
 from ai.config.institutional_loader import get_institutional_prompt_section
 from ai.models.otto import OttoDecision, OttoRequest
 from ai.prompts.otto_prompt import OTTO_SYSTEM_PROMPT, format_otto_prompt
-from ai.rules.otto_guardrails import (
-    contains_disallowed_pii,
-    contains_prohibited_promises,
-    is_response_length_valid,
-)
 from ai.utils.sanitizer import mask_history
 
 if TYPE_CHECKING:
@@ -21,9 +16,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _MAX_HISTORY_MESSAGES = 6
-_MAX_RESPONSE_CHARS = 500
-_CONFIDENCE_APPROVE = 0.85
-_CONFIDENCE_ESCALATE = 0.7
 
 _HANDOFF_TEXT = (
     "Vou conectar voce com nossa equipe para continuar o atendimento. "
@@ -38,7 +30,7 @@ class OttoAgentService:
         self._client = client
 
     async def decide(self, request: OttoRequest) -> OttoDecision:
-        """Executa OttoAgent e aplica gate deterministico."""
+        """Executa OttoAgent e retorna decisão bruta (gates externos)."""
         institutional_context = get_institutional_prompt_section()
         history = mask_history(request.history, max_messages=_MAX_HISTORY_MESSAGES)
         conversation_history = "\n".join(history) if history else "(sem historico)"
@@ -69,43 +61,7 @@ class OttoAgentService:
             logger.warning("otto_client_empty")
             return _handoff_decision("empty_response")
 
-        return _apply_gate(decision, request)
-
-
-def _apply_gate(decision: OttoDecision, request: OttoRequest) -> OttoDecision:
-    if decision.requires_human:
-        return _handoff_decision("requires_human_flag")
-
-    if not _is_transition_valid(decision.next_state, request):
-        return _handoff_decision("invalid_transition")
-
-    response_text = decision.response_text.strip()
-    if not is_response_length_valid(response_text, max_chars=_MAX_RESPONSE_CHARS):
-        return _handoff_decision("invalid_response_size")
-
-    if contains_disallowed_pii(response_text):
-        return _handoff_decision("pii_detected")
-
-    if contains_prohibited_promises(response_text):
-        return _handoff_decision("prohibited_promise")
-
-    if decision.confidence < _CONFIDENCE_ESCALATE:
-        return _handoff_decision("low_confidence")
-
-    if decision.confidence < _CONFIDENCE_APPROVE:
-        return decision.model_copy(update={"requires_human": True})
-
-    if response_text != decision.response_text:
-        return decision.model_copy(update={"response_text": response_text})
-
-    return decision
-
-
-def _is_transition_valid(next_state: str, request: OttoRequest) -> bool:
-    valid_transitions = list(request.valid_transitions)
-    if not valid_transitions:
-        return next_state == request.session_state
-    return next_state in valid_transitions
+        return decision
 
 
 def _handoff_decision(reason: str) -> OttoDecision:

@@ -6,8 +6,8 @@ Evita PII em logs; PII fica apenas no modelo persistido.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 import re
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -36,12 +36,9 @@ class ContactCard(BaseModel):
 
     # Interesse e qualificacao
     primary_interest: Literal[
-        "saas",
-        "sob_medida",
-        "gestao_perfis",
-        "trafego_pago",
-        "automacao_atendimento",
-        "intermediacao",
+        "saas", "sob_medida", "gestao_perfis_trafego",
+        "automacao_atendimento", "intermediacao_entregas",
+        "gestao_perfis", "trafego_pago", "intermediacao",
     ] | None = None
     secondary_interests: list[str] = Field(default_factory=list)
     urgency: Literal["low", "medium", "high", "urgent"] | None = None
@@ -180,12 +177,9 @@ class ContactCardPatch(BaseModel):
     role: str | None = None
     location: str | None = None
     primary_interest: Literal[
-        "saas",
-        "sob_medida",
-        "gestao_perfis",
-        "trafego_pago",
-        "automacao_atendimento",
-        "intermediacao",
+        "saas", "sob_medida", "gestao_perfis_trafego",
+        "automacao_atendimento", "intermediacao_entregas",
+        "gestao_perfis", "trafego_pago", "intermediacao",
     ] | None = None
     secondary_interests: list[str] | None = None
     urgency: Literal["low", "medium", "high", "urgent"] | None = None

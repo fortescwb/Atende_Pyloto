@@ -13,7 +13,7 @@
 | Severidade | Original | Corrigido | Descrição |
 |------------|----------|-----------|-----------|
 | 🔴 **Crítico** | 1 | ✅ 0 | Coordinator → usa FlowCryptoProtocol via injeção |
-| 🟠 **Alto** | 2 | ✅ 0 | Use cases → protocolos MasterDecider/SessionManager |
+| 🟠 **Alto** | 2 | ✅ 0 | Use cases → protocolos SessionManager (MasterDecider removido) |
 | 🟡 **Médio** | 6 | ✅ 0 | Documentação atualizada, arquivos removidos |
 | 🔵 **Baixo** | 5 | ✅ 0 | Código legado removido, pipeline unificado |
 
@@ -21,7 +21,7 @@
 
 | Camada | Status | Achados Críticos |
 |--------|--------|------------------|
-| `src/ai/` | ✅ Saudável | 0 — pipeline 4 agentes unificado |
+| `src/ai/` | ✅ Saudável | 0 — arquitetura Otto (pipeline legado removido) |
 | `src/api/` | ✅ Saudável | 0 — validator_dispatcher renomeado |
 | `src/app/` | ✅ Saudável | 0 — protocolos implementados |
 | `src/config/` | ✅ Saudável | 0 — settings.py deprecated removido |
