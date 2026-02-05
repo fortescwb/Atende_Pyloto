@@ -6,7 +6,7 @@ Conforme REGRAS_E_PADROES.md § 2.1: ai/config contém configuração e contrato
 Arquitetura de modelos (conforme documentação oficial OpenAI):
 - StateAgent (Agente 1): gpt-5-nano — seletor de estado, rápido e focado
 - ResponseAgent (Agente 2): gpt-5-chat-latest — tom conversacional
-- LeadProfileAgent (Agente 2-B): gpt-5-nano — extração de dados para LeadProfile
+- ContactCardExtractor (Agente 2-B): gpt-5-nano — extração de dados para ContactCard
 - MessageTypeAgent (Agente 3): gpt-5-nano — classificação de tipo de mensagem
 - DecisionAgent (Agente 4): gpt-5.1 — decisão final com contexto completo
 """
@@ -22,7 +22,7 @@ class AgentRole(Enum):
 
     STATE = "state"  # Agente 1: Seletor de estado (gpt-5-nano)
     RESPONSE = "response"  # Agente 2: Geração de resposta (gpt-5-chat-latest)
-    LEAD_PROFILE = "lead_profile"  # Agente 2-B: Extração de dados (gpt-5-nano)
+    CONTACT_CARD_EXTRACTOR = "contact_card_extractor"  # Agente 2-B
     MESSAGE_TYPE = "message_type"  # Agente 3: Tipo de mensagem (gpt-5-nano)
     DECISION = "decision"  # Agente 4: Decisor final (gpt-5.1)
 
@@ -83,7 +83,7 @@ class AgentModelConfig:
             reasoning_level=ReasoningLevel.NONE,
         )
     )
-    lead_profile: AIModelSettings = field(
+    contact_card_extractor: AIModelSettings = field(
         default_factory=lambda: AIModelSettings(
             model=MODEL_GPT5_NANO,  # Nano para extração de dados
             temperature=0.1,  # Determinístico para extração precisa
@@ -113,7 +113,7 @@ class AgentModelConfig:
         return {
             AgentRole.STATE: self.state,
             AgentRole.RESPONSE: self.response,
-            AgentRole.LEAD_PROFILE: self.lead_profile,
+            AgentRole.CONTACT_CARD_EXTRACTOR: self.contact_card_extractor,
             AgentRole.MESSAGE_TYPE: self.message_type,
             AgentRole.DECISION: self.decision,
         }[role]

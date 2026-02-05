@@ -41,6 +41,7 @@ router = APIRouter()
 
 # Lazy-loaded use case (inicializado na primeira requisição)
 _inbound_use_case = None
+_background_tasks: set[asyncio.Task] = set()
 
 
 def _get_inbound_use_case():
@@ -48,10 +49,12 @@ def _get_inbound_use_case():
     global _inbound_use_case
     if _inbound_use_case is None:
         from app.bootstrap.dependencies import (
-            create_ai_orchestrator,
             create_async_dedupe_store,
             create_async_session_store,
-            create_lead_profile_store,
+            create_contact_card_extractor_service,
+            create_contact_card_store,
+            create_otto_agent_service,
+            create_transcription_service,
         )
         from app.bootstrap.whatsapp_factory import (
             create_process_inbound_canonical,
@@ -63,10 +66,11 @@ def _get_inbound_use_case():
             normalizer=create_whatsapp_normalizer(),
             session_store=create_async_session_store(),
             dedupe=create_async_dedupe_store(),
-            ai_orchestrator=create_ai_orchestrator(),
+            otto_agent=create_otto_agent_service(),
             outbound_sender=create_whatsapp_outbound_sender(),
-            audit_store=None,  # TODO: Adicionar audit store
-            lead_profile_store=create_lead_profile_store(),
+            contact_card_store=create_contact_card_store(),
+            transcription_service=create_transcription_service(),
+            contact_card_extractor=create_contact_card_extractor_service(),
         )
     return _inbound_use_case
 
@@ -178,7 +182,7 @@ async def receive_webhook(request: Request) -> Response | dict[str, Any]:
             # Responde 200 OK imediatamente para o Meta
             use_case = _get_inbound_use_case()
             if use_case is not None:
-                asyncio.create_task(
+                task = asyncio.create_task(
                     process_inbound_payload(
                         payload=_payload,
                         correlation_id=get_correlation_id(),
@@ -186,6 +190,8 @@ async def receive_webhook(request: Request) -> Response | dict[str, Any]:
                         tenant_id="default",
                     )
                 )
+                _background_tasks.add(task)
+                task.add_done_callback(_background_tasks.discard)
                 logger.info(
                     "webhook_processing_scheduled",
                     extra={

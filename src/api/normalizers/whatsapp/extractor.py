@@ -109,6 +109,12 @@ def extract_payload_messages(payload: dict[str, Any]) -> list[dict[str, Any]]:
     for entry in payload.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
+            contacts = value.get("contacts") or []
+            whatsapp_name = None
+            if contacts and isinstance(contacts[0], dict):
+                profile = contacts[0].get("profile") or {}
+                if isinstance(profile, dict):
+                    whatsapp_name = profile.get("name")
             for msg in value.get("messages", []) or []:
                 message_id = msg.get("id")
                 if not message_id:
@@ -122,6 +128,7 @@ def extract_payload_messages(payload: dict[str, Any]) -> list[dict[str, Any]]:
                         "from_number": msg.get("from"),
                         "timestamp": msg.get("timestamp"),
                         "message_type": message_type or "unknown",
+                        "whatsapp_name": whatsapp_name,
                         "fields": fields,
                     }
                 )

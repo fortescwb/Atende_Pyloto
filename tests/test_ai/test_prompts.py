@@ -77,7 +77,7 @@ class TestFormatPrompts:
         prompt = format_response_agent_prompt(
             user_input="Olá",
             current_state="INITIAL",
-            lead_profile="Nome: João",
+            contact_card="Nome: João",
             is_first_message=True,
         )
 

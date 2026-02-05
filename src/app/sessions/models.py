@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
+from app.domain.contact_card import ContactCard
 from fsm.states import DEFAULT_INITIAL_STATE, SessionState
 
 
@@ -69,54 +70,6 @@ class HistoryEntry:
         return f"{prefix}: {self.content}"
 
 
-@dataclass(slots=True)
-class LeadProfile:
-    """Perfil do lead coletado durante a conversa.
-
-    Atributos:
-        name: Nome do lead (quando coletado)
-        email: Email do lead (quando coletado)
-        phone: Telefone do lead (hash, não o número real)
-        primary_intent: Intenção principal detectada
-        collected_data: Dados adicionais coletados
-        pending_questions: Perguntas pendentes a fazer
-    """
-
-    name: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    primary_intent: str | None = None
-    collected_data: dict[str, Any] = field(default_factory=dict)
-    pending_questions: list[str] = field(default_factory=list)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serializa para persistência."""
-        return {
-            "name": self.name,
-            "email": self.email,
-            "phone": self.phone,
-            "primary_intent": self.primary_intent,
-            "collected_data": self.collected_data,
-            "pending_questions": self.pending_questions,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> LeadProfile:
-        """Deserializa de persistência."""
-        return cls(
-            name=data.get("name"),
-            email=data.get("email"),
-            phone=data.get("phone"),
-            primary_intent=data.get("primary_intent"),
-            collected_data=data.get("collected_data", {}),
-            pending_questions=data.get("pending_questions", []),
-        )
-
-    def has_contact_info(self) -> bool:
-        """Verifica se tem informação de contato."""
-        return bool(self.email or self.phone)
-
-
 @dataclass(frozen=True, slots=True)
 class SessionContext:
     """Contexto institucional mínimo de uma sessão.
@@ -147,7 +100,7 @@ class Session:
         current_state: Estado atual da FSM
         context: Contexto institucional
         history: Histórico de mensagens estruturado
-        lead_profile: Perfil do lead coletado
+        contact_card: Perfil do lead coletado
         turn_count: Número de turnos na sessão
         created_at: Timestamp de criação
         updated_at: Timestamp da última atualização
@@ -159,7 +112,7 @@ class Session:
     current_state: SessionState = DEFAULT_INITIAL_STATE
     context: SessionContext = field(default_factory=SessionContext)
     history: list[HistoryEntry] = field(default_factory=list)
-    lead_profile: LeadProfile = field(default_factory=LeadProfile)
+    contact_card: ContactCard | None = None
     turn_count: int = 0
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
@@ -235,7 +188,9 @@ class Session:
                 "limits": self.context.limits,
             },
             "history": [entry.to_dict() for entry in self.history],
-            "lead_profile": self.lead_profile.to_dict(),
+            "contact_card": (
+                self.contact_card.to_firestore_dict() if self.contact_card else {}
+            ),
             "turn_count": self.turn_count,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
@@ -272,8 +227,13 @@ class Session:
                 history.append(HistoryEntry.from_dict(item))
 
         # Deserializa lead profile
-        lead_data = data.get("lead_profile", {})
-        lead_profile = LeadProfile.from_dict(lead_data) if lead_data else LeadProfile()
+        contact_data = data.get("contact_card") or data.get("lead_profile") or {}
+        contact_card: ContactCard | None = None
+        if contact_data:
+            try:
+                contact_card = ContactCard.from_firestore_dict(contact_data)
+            except Exception:
+                contact_card = None
 
         return cls(
             session_id=data["session_id"],
@@ -286,7 +246,7 @@ class Session:
                 limits=context_data.get("limits", {}),
             ),
             history=history,
-            lead_profile=lead_profile,
+            contact_card=contact_card,
             turn_count=data.get("turn_count", 0),
             created_at=(
                 datetime.fromisoformat(data["created_at"])

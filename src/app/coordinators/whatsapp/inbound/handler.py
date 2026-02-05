@@ -1,6 +1,6 @@
 """Processamento inbound: normaliza, orquestra e enfileira outbound.
 
-Utiliza ProcessInboundCanonicalUseCase (pipeline de 4 agentes LLM).
+Utiliza ProcessInboundCanonicalUseCase (pipeline Otto + utilitários).
 """
 
 from __future__ import annotations

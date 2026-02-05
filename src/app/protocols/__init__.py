@@ -20,6 +20,7 @@ from .normalizer import MessageNormalizerProtocol
 from .outbound_sender import OutboundSenderProtocol
 from .payload_builder import PayloadBuilderProtocol
 from .session_store import AsyncSessionStoreProtocol, SessionStoreProtocol
+from .transcription_service import TranscriptionResult, TranscriptionServiceProtocol
 from .validator import OutboundRequestValidatorProtocol, ValidationError
 
 __all__ = [
@@ -40,6 +41,8 @@ __all__ = [
     "OutboundSenderProtocol",
     "PayloadBuilderProtocol",
     "SessionStoreProtocol",
+    "TranscriptionResult",
+    "TranscriptionServiceProtocol",
     "ValidationError",
     "WebhookProcessingSummary",
     "WhatsAppHttpClientProtocol",

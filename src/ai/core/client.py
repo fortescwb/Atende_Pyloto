@@ -3,7 +3,7 @@
 Define o contrato AIClientProtocol para implementações concretas.
 Conforme REGRAS_E_PADROES.md § 2.1: ai/core contém interfaces e pipeline.
 Conforme REGRAS_E_PADROES.md § 3: ai/ não faz IO direto (HTTP via protocol).
-Conforme README.md: 5 agentes LLM (State, Response, LeadProfile, MessageType, Decision).
+Conforme README.md: 5 agentes LLM (State, Response, ContactCard, MessageType, Decision).
 """
 
 from __future__ import annotations
@@ -12,12 +12,12 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
+    from ai.models.contact_card_extraction import (
+        ContactCardExtractionRequest,
+        ContactCardExtractionResult,
+    )
     from ai.models.decision_agent import DecisionAgentRequest, DecisionAgentResult
     from ai.models.event_detection import EventDetectionRequest, EventDetectionResult
-    from ai.models.lead_profile_extraction import (
-        LeadProfileExtractionRequest,
-        LeadProfileExtractionResult,
-    )
     from ai.models.message_type_selection import (
         MessageTypeSelectionRequest,
         MessageTypeSelectionResult,
@@ -56,7 +56,7 @@ class AIClientProtocol(Protocol):
         self,
         request: ResponseGenerationRequest,
         conversation_history: str = "",
-        lead_profile: str = "",
+        contact_card: str = "",
         is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Gera resposta usando LLM.
@@ -64,7 +64,7 @@ class AIClientProtocol(Protocol):
         Args:
             request: Dados para geração
             conversation_history: Histórico recente (sanitizado)
-            lead_profile: LeadProfile resumido para prompt
+            contact_card: ContactCard resumido para prompt
             is_first_message: Se é primeira mensagem da conversa
 
         Returns:
@@ -123,19 +123,19 @@ class AIClientProtocol(Protocol):
         ...
 
     @abstractmethod
-    async def extract_lead_profile(
+    async def extract_contact_card(
         self,
-        request: LeadProfileExtractionRequest,
-    ) -> LeadProfileExtractionResult:
-        """Extrai dados do perfil do lead usando LLM (LeadProfileAgent - Agente 2-B).
+        request: ContactCardExtractionRequest,
+    ) -> ContactCardExtractionResult:
+        """Extrai dados do contato usando LLM (ContactCardExtractor - Agente 2-B).
 
-        Analisa a mensagem do usuário e extrai informações pessoais,
-        necessidades e outros dados relevantes para o CRM.
+        Analisa a mensagem do usuário e extrai apenas dados novos
+        para preencher o ContactCard (retorna patch parcial).
 
         Args:
-            request: Dados para extração (mensagem + perfil atual)
+            request: Dados para extracao (mensagem + contato atual)
 
         Returns:
-            Dados extraídos (ou resultado vazio se nenhuma info nova)
+            Patch com dados extraídos (ou resultado vazio se nenhuma info nova)
         """
         ...

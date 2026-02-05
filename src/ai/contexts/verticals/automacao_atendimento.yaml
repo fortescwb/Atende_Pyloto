@@ -1,0 +1,361 @@
+# src/ai/contexts/verticals/automacao_atendimento.yaml
+
+vertical: automacao_atendimento
+version: 2.0.0
+updated_at: "2026-02-05"
+
+# ============================================================
+# DESCRIÇÃO E POSICIONAMENTO
+# ============================================================
+
+description: |
+  Automação de atendimento via WhatsApp usando IA conversacional.
+  Substitui ou complementa equipe humana com assistente virtual inteligente.
+
+posicionamento_mercado: |
+  Diferenciação vs ManyChat/Chatfuel (regras fixas):
+  - NLP real (entende intenção, não só keywords)
+  - Aprendizado contínuo (melhora com uso)
+  - Integração profunda com sistemas (CRM, ERP, APIs)
+
+# ============================================================
+# PÚBLICO-ALVO E PERFIL IDEAL
+# ============================================================
+
+target_audience:
+  ideal_customer:
+    - "Empresas com equipe de atendimento (2+ pessoas)"
+    - "Volume alto de mensagens (>500/dia)"
+    - "Perguntas repetitivas consomem tempo da equipe"
+    - "Budget operacional atual >R$ 8k/mês em atendimento"
+  
+  verticals_principais:
+    - "Clínicas/consultórios (agendamento + FAQ)"
+    - "E-commerce (status pedido + suporte)"
+    - "Imobiliárias (agendamento visitas + qualificação)"
+    - "Prestadores de serviço (orçamentos + follow-up)"
+    - "Barbearias/salões (agendamento + promoções)"
+    - "Educação (informações cursos + matrículas)""
+  
+  red_flags:  # Não é fit
+    - "MEI sem funcionários (não tem volume)"
+    - "Budget total < R$ 5k (não fecha conta)"
+    - "Quer testar 'só pra ver' sem comprometimento"
+
+# ============================================================
+# MODALIDADES (2 OPÇÕES)
+# ============================================================
+
+modalidades:
+  - name: "Automação Padrão"
+    description: "Chatbot baseado em regras (árvore de decisão)"
+    
+    ideal_para:
+      - "FAQ simples (10-20 perguntas comuns)"
+      - "Fluxos lineares (ex: agendamento passo-a-passo)"
+      - "Budget limitado (setup < R$ 5k)"
+    
+    features:
+      - "Respostas baseadas em keywords"
+      - "Fluxos conversacionais fixos (botões/listas)"
+      - "Integração básica (planilhas, Zapier)"
+      - "Dashboard de métricas"
+    
+    limitacoes:
+      - "Não entende variações de linguagem natural"
+      - "Precisa manutenção manual para novos fluxos"
+      - "Não aprende com interações"
+    
+    pricing:
+      setup: 1000
+      monthly: 200
+      per_extra_flow: 200
+    
+    roi_timeline: "1-2 semanas"
+  
+  - name: "Automação Avançada com IA"
+    description: "Assistente virtual com NLP (como este que você está falando)"
+    
+    ideal_para:
+      - "Perguntas complexas/variadas"
+      - "Volume alto/volume relevante (>200 msgs/dia)"
+      - "Precisa integrar com sistemas internos (CRM, ERP) ou agendamento"
+      - "Empresa quer escalar atendimento sem contratar"
+    
+    features:
+      - "NLP avançado (entende intenção, contexto, sinônimos)"
+      - "Integração com CRMs (Pipedrive, HubSpot, RD Station)"
+      - "Integração com agendas (Google Calendar, Calendly)"
+      - "Transferência inteligente para humano (detecta quando não sabe)"
+      - "Aprendizado supervisionado (melhora com feedback)"
+      - "Suporte multi-idioma (português + espanhol + inglês)"
+      - "Analytics avançado (intent detection, sentiment analysis)"
+    
+    diferenciais_tecnicos:
+      - "GPT-5 fine-tuned no domínio do cliente"
+      - "Context window de 10+ mensagens (não perde contexto)"
+      - "Safety rails (valida respostas antes de enviar)"
+      - "Fallback para humano se confidence < 85%"
+    
+    pricing:
+      setup:
+        base: 5000
+        with_crm_integration: 5000  # +5k por integração complexa
+        with_custom_training: 10000  # +10k se precisa treinar modelo custom
+      
+      monthly:
+        base: 500
+        per_10k_messages: 500  # Custo variável
+        typical_client: 2500   # Cliente médio (15k msgs/mês)
+      
+      integrations:  # Custo adicional
+        crm_basic: 2000  # Pipedrive, RD Station (webhooks simples)
+        crm_advanced: 5000  # SAP, Salesforce (OAuth + API complexa)
+        calendar: 1500  # Google Cal, Outlook
+        payment: 1500  # PagSeguro, Stripe
+        custom_api: "orçamento"  # API proprietária
+    
+    roi_explanation: |
+      ROI típico:
+      - Substitui 1-2 atendentes (economia R$ 4-8k/mês em salários)
+      - Reduz tempo de resposta de 5min → 10seg (↑40% satisfação cliente)
+      - Funciona 24/7 (captura leads fora do horário = +25% conversão)
+      
+      Payback: 3-6 meses (considerando economia + aumento vendas)
+    
+    roi_timeline: "3-6 meses"
+    
+    implementation_timeline: "3-5 semanas (setup + treinamento + homologação)"
+
+# ============================================================
+# USE CASES (EXEMPLOS CONCRETOS)
+# ============================================================
+
+use_cases:
+  - vertical: "Clínica Odontológica"
+    problema: "3 recepcionistas gastavam 60% do tempo respondendo 'qual o horário?', 'aceita convênio X?'"
+    solucao: "Automação Avançada com IA integrada ao Google Calendar"
+    resultado:
+      - "80% das perguntas resolvidas automaticamente"
+      - "Liberou 1.5 recepcionistas para tarefas estratégicas"
+      - "Agendamentos fora de horário aumentaram 35%"
+    quote: "Economizamos R$ 6k/mês e pacientes adoraram o atendimento 24h"
+  
+  - vertical: "E-commerce Moda Feminina"
+    problema: "1200 msgs/dia sobre status de pedido e trocas"
+    solucao: "Automação Avançada integrada ao ERP + rastreio Correios"
+    resultado:
+      - "70% das consultas resolvidas sem humano"
+      - "Tempo médio de resposta: 5min → 10seg"
+      - "NPS aumentou de 65 → 82"
+    quote: "Cliente não espera mais 2h pra saber onde está o pedido"
+  
+  - vertical: "Imobiliária"
+    problema: "Leads perguntavam sobre imóveis fora do horário (perdiam interesse)"
+    solucao: "Automação Avançada com catálogo de imóveis integrado"
+    resultado:
+      - "Captura 40% mais leads (atendimento 24/7)"
+      - "Qualificação automática (budget, localização, urgência)"
+      - "Corretores só falam com leads quentes"
+    quote: "Vendas aumentaram 28% sem contratar mais corretores"
+
+# ============================================================
+# OBJEÇÕES COMUNS (CRÍTICO PARA VENDAS)
+# ============================================================
+
+objections:
+  - objection: "Muito caro"
+    response_strategy: "Mostrar ROI com números do negócio deles"
+    response_template: |
+      Entendo. Vamos aos números:
+      
+      Quanto você gasta hoje com atendimento? (salários + encargos)
+      Se tem 2 atendentes = ~R$ 8k/mês
+      
+      Nossa Automação Avançada:
+      - Custo: R$ 2.5k/mês (média)
+      - Reduz carga: 70-80%
+      - Economia: R$ 4-5k/mês (libera 1 atendente)
+      
+      Payback em 6 meses + ganho recorrente de R$ 1.5k/mês.
+      Faz sentido?
+  
+  - objection: "Já uso ManyChat/Chatfuel/outro chatbot"
+    response_strategy: "Diferenciar tecnicamente (NLP vs regras)"
+    response_template: |
+      ManyChat é ótimo para fluxos simples. A diferença:
+      
+      ManyChat (regras):
+      ❌ Se usuário escrever diferente, quebra
+      ❌ Não entende contexto de mensagens anteriores
+      ❌ Precisa criar fluxo manual pra cada variação
+      
+      Pyloto IA:
+      ✅ Entende "quero agendar", "preciso marcar", "tem horário amanhã?"
+      ✅ Lembra que usuário falou o nome 3 msgs atrás
+      ✅ Aprende sozinho com interações
+      ✅ Mantem histórico completo e cria vínculo com o cliente:
+        - "Oi, fulano, faz tempo que não te vejo! Quer agendar uma limpeza?"
+        - "Vi que você comprou um produto X mês passado, precisa de ajuda?"
+      
+      É como comparar GPS Waze (inteligente) vs mapa impresso.
+  
+  - objection: "E se a IA responder errado e perder cliente?"
+    response_strategy: "Explicar safety rails + fallback humano"
+    response_template: |
+      Ótima preocupação. Temos 3 camadas de segurança:
+      
+      1. **Validação antes de enviar**: IA valida própria resposta
+      2. **Confidence check**: Se <85% segura, escala pra humano
+      3. **Monitoramento**: Dashboard mostra todas conversas (revisão)
+      
+      Na prática: Taxa de erro <2% (vs 5-8% de atendente humano cansado).
+      
+      Quer ver demo com dados reais?
+  
+  - objection: "Minha equipe não é técnica, vai ser difícil usar"
+    response_strategy: "Tranquilizar sobre onboarding + suporte"
+    response_template: |
+      Zero código necessário. Funciona assim:
+      
+      1. **Setup (fazemos pra você)**: 3-5 semanas
+      2. **Treinamento**: 2 sessões de 1h (sua equipe aprende interface)
+      3. **Suporte contínuo**: Chat direto com time técnico
+      
+      Interface é simples: dashboard tipo Google Analytics.
+      Cliente clinica_exemplo tem recepcionista de 55 anos usando sem problema.
+  
+  - objection: "Quanto tempo pra implementar? Preciso de algo rápido"
+    response_strategy: "Ser realista mas mostrar fast-track"
+    response_template: |
+      Timeline realista:
+      
+      **Automação Padrão**: 1-2 semanas
+      - Semana 1: Setup + fluxos básicos
+      - Semana 2: Testes + ajustes
+      
+      **Automação Avançada**: 3-5 semanas
+      - Semana 1-2: Setup + integrações
+      - Semana 3-4: Treinamento da IA + testes
+      - Semana 5: Homologação + go-live
+      
+      Posso fazer fast-track (2-3 semanas) se urgência real.
+      Qual seu deadline?
+  
+  - objection: "Vou perder o toque humano no atendimento"
+    response_strategy: "Reposicionar como 'melhor uso do humano'"
+    response_template: |
+      Exatamente o contrário. Veja:
+      
+      **Antes**: Humano gasta tempo com
+      ❌ "Qual o horário?" (repetitivo)
+      ❌ "Aceita cartão?" (básico)
+      ❌ Transferir ligação (operacional)
+      
+      **Depois**: Humano foca em
+      ✅ Casos complexos (objeções, negociação)
+      ✅ Upsell (cliente satisfeito + confiança)
+      ✅ Relacionamento (follow-up estratégico)
+      
+      IA faz o básico. Humano faz o que gera valor.
+      Seu time vai adorar.
+
+# ============================================================
+# PRÓXIMOS PASSOS (O QUE OTTO OFERECE)
+# ============================================================
+
+next_steps:
+  - step: "Demo ao vivo"
+    when: "Lead demonstrou interesse mas quer ver funcionando"
+    action: "Agendar 15min de demo com dados simulados do negócio dele"
+    cta: "Quer agendar uma demo de 15min? Mostro funcionando com dados do seu negócio."
+  
+  - step: "Proposta customizada"
+    when: "Lead está qualificado (budget + fit) e quer pricing detalhado"
+    action: "Conectar com time comercial para montar proposta"
+    cta: "Vou conectar você com {nome_vendedor} pra montar proposta sob medida. Qual melhor horário?"
+  
+  - step: "Trial de 7 dias"
+    when: "Lead hesitante mas qualificado (não oferece pra todo mundo)"
+    action: "Oferecer trial limitado (50 conversas) se score >= 70"
+    cta: "Tenho 1 trial disponível este mês (7 dias, 50 conversas). Quer testar?"
+    criteria: "Apenas se qualification_score >= 70"
+  
+  - step: "Case study relevante"
+    when: "Lead do mesmo vertical dos cases (clinica, ecommerce, imobiliária)"
+    action: "Enviar case PDF por email"
+    cta: "Tenho case de uma {vertical} parecida. Qual seu email pra enviar?"
+  
+  - step: "Calcular ROI juntos"
+    when: "Lead mencionou custo operacional atual"
+    action: "Fazer conta de ROI na conversa"
+    cta: "Vamos fazer a conta juntos? Quanto você gasta hoje com atendimento?"
+
+# ============================================================
+# FAQ ESTRUTURADA
+# ============================================================
+
+faq:
+  - question: "Funciona em outros canais além de WhatsApp?"
+    answer: "Sim. WhatsApp é o principal, mas integramos Instagram DM, Facebook Messenger e webchat (site). Custo adicional por canal."
+  
+  - question: "Posso treinar a IA com meu conteúdo específico?"
+    answer: "Sim. Na Automação Avançada, fazemos fine-tuning com seus materiais (FAQ, scripts, base de conhecimento). Isso deixa respostas 90% mais precisas."
+  
+  - question: "Quanto tempo a IA demora pra responder?"
+    answer: "2-4 segundos em média (vs 2-5min de humano). Usuário vê 'digitando...' instantaneamente."
+  
+  - question: "Posso revisar/editar respostas depois?"
+    answer: "Sim. Dashboard permite revisar conversas e dar feedback ('resposta boa' ou 'resposta ruim'). IA aprende com isso."
+  
+  - question: "E se precisar mudar algo depois de implementado?"
+    answer: "Ajustes básicos (adicionar FAQ, mudar texto): você faz no dashboard. Mudanças grandes (nova integração): nosso time faz, sem custo adicional se no escopo original."
+  
+  - question: "Tem limite de mensagens?"
+    answer: |
+      Automação Padrão: ilimitado (fixo R$ 500/mês)
+      Automação Avançada: R$ 2500 base (até 10k msgs) + R$ 500/10k adicional
+      
+      Cliente médio: 15k msgs/mês = R$ 3k total
+  
+  - question: "Posso cancelar quando quiser?"
+    answer: "Sim. Sem fidelidade após 3 meses iniciais (período de implementação). Cancela com 30 dias de aviso."
+
+# ============================================================
+# CRITÉRIOS DE ESCALAÇÃO PARA HUMANO
+# ============================================================
+
+escalation_criteria:
+  - trigger: "Lead solicita falar com humano explicitamente"
+    action: "ESCALAR IMEDIATAMENTE"
+  
+  - trigger: "Pergunta técnica muito específica que não está no contexto"
+    action: "ESCALAR (ex: 'vocês integram com ERP SAP versão X.Y.Z?')"
+  
+  - trigger: "Objeção complexa que não tem resposta preparada"
+    action: "ESCALAR (ex: 'meu advogado disse que IA não pode coletar dados pessoais')"
+  
+  - trigger: "Lead muito qualificado (score >= 80) e quer proposta"
+    action: "ESCALAR PARA COMERCIAL (não perde tempo com IA)"
+  
+  - trigger: "Reclamação ou insatisfação (sentiment negativo detectado)"
+    action: "ESCALAR IMEDIATAMENTE (ex: 'isso não funciona', 'péssimo atendimento')"
+
+# ============================================================
+# METADATA (PARA CONTEXTO INJECTION)
+# ============================================================
+
+metadata:
+  injection_weight: "high"  # Contexto pesado (2k+ tokens)
+  priority_keywords:  # Se usuário menciona isso, injeta este contexto
+    - "automação"
+    - "chatbot"
+    - "atendimento automático"
+    - "IA"
+    - "assistente virtual"
+  
+  exclusion_keywords:  # Se menciona isso, NÃO injeta (outro contexto)
+    - "site"  # Sob medida
+    - "sistema"  # SaaS ou Sob Medida
+    - "instagram"  # Gestão de perfis
+    - "anúncio"  # Tráfego pago

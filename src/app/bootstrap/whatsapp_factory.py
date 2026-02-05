@@ -103,11 +103,12 @@ def create_process_inbound_canonical(
     normalizer,
     session_store,
     dedupe,
-    ai_orchestrator,
+    otto_agent,
     outbound_sender,
-    audit_store: Any | None = None,
     conversation_store: Any | None = None,
-    lead_profile_store: Any | None = None,
+    contact_card_store: Any | None = None,
+    transcription_service: Any | None = None,
+    contact_card_extractor: Any | None = None,
 ) -> Any:
     """Wiring para `ProcessInboundCanonicalUseCase` — injeta protocolos concretos.
 
@@ -115,13 +116,11 @@ def create_process_inbound_canonical(
         normalizer: Normalizador de mensagens
         session_store: Store de sessão (Redis)
         dedupe: Serviço de dedupe
-        ai_orchestrator: Orquestrador de IA
+        otto_agent: Agente principal Otto
         outbound_sender: Sender outbound
-        audit_store: Store de auditoria (opcional)
         conversation_store: Store de conversas permanente (Firestore, opcional)
-        lead_profile_store: Store de LeadProfile (opcional, Redis/Memory)
+        contact_card_store: Store de ContactCard (opcional)
     """
-    from app.services.master_decider import MasterDecider
     from app.sessions.manager import SessionManager
     from app.use_cases.whatsapp.process_inbound_canonical import (
         ProcessInboundCanonicalUseCase,
@@ -131,15 +130,14 @@ def create_process_inbound_canonical(
         store=session_store,
         conversation_store=conversation_store,
     )
-    master_decider = MasterDecider()
 
     return ProcessInboundCanonicalUseCase(
         normalizer=normalizer,
         session_manager=session_manager,
         dedupe=dedupe,
-        ai_orchestrator=ai_orchestrator,
+        otto_agent=otto_agent,
         outbound_sender=outbound_sender,
-        audit_store=audit_store,
-        master_decider=master_decider,
-        lead_profile_store=lead_profile_store,
+        contact_card_store=contact_card_store,
+        transcription_service=transcription_service,
+        contact_card_extractor=contact_card_extractor,
     )

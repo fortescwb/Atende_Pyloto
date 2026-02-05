@@ -19,6 +19,7 @@ from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
     MessageTypeSelectionResult,
 )
+from ai.models.otto import OttoDecision, OttoRequest
 from ai.models.response_generation import (
     ResponseCandidate,
     ResponseGenerationRequest,
@@ -37,23 +38,20 @@ __all__ = [
     "ESCALATION_CONSECUTIVE_FAILURES",
     "FALLBACK_RESPONSE",
     "VALID_MESSAGE_TYPES",
-    # Decision Agent (LLM #4 - novo)
     "DecisionAgentRequest",
     "DecisionAgentResult",
-    # Event Detection (LLM #1 legado - será substituído por StateAgent)
     "EventDetectionRequest",
     "EventDetectionResult",
     "MessageType",
-    # Message Type Selection (LLM #3)
     "MessageTypeSelectionRequest",
     "MessageTypeSelectionResult",
+    "OttoDecision",
+    "OttoRequest",
     "ResponseCandidate",
-    # Response Generation (LLM #2)
     "ResponseGenerationRequest",
     "ResponseGenerationResult",
     "ResponseOption",
     "ResponseTone",
-    # State Agent (LLM #1 - novo)
     "StateAgentRequest",
     "StateAgentResult",
     "SuggestedState",

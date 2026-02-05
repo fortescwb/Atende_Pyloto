@@ -8,12 +8,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ai.models.contact_card_extraction import (
+    ContactCardExtractionRequest,
+    ContactCardExtractionResult,
+    ContactCardPatch,
+)
 from ai.models.decision_agent import DecisionAgentRequest, DecisionAgentResult
 from ai.models.event_detection import EventDetectionRequest, EventDetectionResult
-from ai.models.lead_profile_extraction import (
-    LeadProfileExtractionRequest,
-    LeadProfileExtractionResult,
-)
 from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
     MessageTypeSelectionResult,
@@ -71,7 +72,7 @@ class MockAIClient:
         self,
         request: ResponseGenerationRequest,
         conversation_history: str = "",
-        lead_profile: str = "",
+        contact_card: str = "",
         is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Retorna resposta mock genérica."""
@@ -175,28 +176,31 @@ class MockAIClient:
             rationale="Mock: decisão baseada em média ponderada de confiança",
         )
 
-    async def extract_lead_profile(
+    async def extract_contact_card(
         self,
-        request: LeadProfileExtractionRequest,
-    ) -> LeadProfileExtractionResult:
-        """Retorna extração mock de perfil de lead.
+        request: ContactCardExtractionRequest,
+    ) -> ContactCardExtractionResult:
+        """Retorna extracao mock do contato.
 
         Usa extração determinística por regex quando possível.
         """
         from ai.services.lead_extractor import extract_lead_data
 
-        extracted = extract_lead_data(request.user_input)
+        extracted = extract_lead_data(request.user_message)
 
-        personal_data: dict[str, str] = {}
+        patch = ContactCardPatch()
+        updates: dict[str, str] = {}
         if extracted.name:
-            personal_data["name"] = extracted.name
+            updates["full_name"] = extracted.name
         if extracted.email:
-            personal_data["email"] = extracted.email
+            updates["email"] = extracted.email
 
-        return LeadProfileExtractionResult(
-            personal_data=personal_data,
-            personal_info_update=None,
-            need=None,
-            confidence=0.7 if personal_data else 0.5,
-            raw_response="Mock: extração determinística por regex",
+        if updates:
+            patch = ContactCardPatch.model_validate(updates)
+
+        confidence = 0.7 if updates else 0.5
+        return ContactCardExtractionResult(
+            updates=patch,
+            confidence=confidence,
+            evidence=[],
         )

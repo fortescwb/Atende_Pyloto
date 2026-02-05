@@ -81,6 +81,7 @@ class TestSessionCreation:
             sender_id="5511999998888",
             tenant_id="tenant-123",
             vertente="vendas",
+            whatsapp_name="Joao",
         )
 
         assert session.session_id.startswith("sess_")
@@ -103,7 +104,7 @@ class TestSessionCreation:
             "current_state": "TRIAGE",
             "context": {"tenant_id": "tenant-123", "vertente": "vendas"},
             "history": [],
-            "lead_profile": {},
+            "contact_card": {},
             "turn_count": 3,
             "created_at": datetime.now(UTC).isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
@@ -205,12 +206,12 @@ class TestFirestoreRecovery:
     """Testes de recuperação de histórico do Firestore."""
 
     @pytest.mark.asyncio
-    async def test_recovery_loads_lead_profile(
+    async def test_recovery_loads_contact_card(
         self,
         manager_with_firestore: SessionManager,
         mock_conversation_store: AsyncMock,
     ) -> None:
-        """Recupera perfil do lead do Firestore."""
+        """Recupera contato do Firestore."""
         mock_conversation_store.get_lead.return_value = LeadData(
             phone_hash="hash123",
             name="Maria",
@@ -222,11 +223,13 @@ class TestFirestoreRecovery:
         session = await manager_with_firestore.resolve_or_create(
             sender_id="5511999998888",
             tenant_id="tenant-123",
+            whatsapp_name="Maria",
         )
 
-        assert session.lead_profile.name == "Maria"
-        assert session.lead_profile.email == "maria@example.com"
-        assert session.lead_profile.primary_intent == "sob_medida"
+        assert session.contact_card is not None
+        assert session.contact_card.full_name == "Maria"
+        assert session.contact_card.email == "maria@example.com"
+        assert session.contact_card.primary_interest == "sob_medida"
 
     @pytest.mark.asyncio
     async def test_recovery_loads_message_history(
@@ -255,6 +258,7 @@ class TestFirestoreRecovery:
         session = await manager_with_firestore.resolve_or_create(
             sender_id="5511999998888",
             tenant_id="tenant-123",
+            whatsapp_name="Maria",
         )
 
         assert len(session.history) == 2
@@ -276,7 +280,7 @@ class TestFirestoreRecovery:
         )
 
         assert session.session_id.startswith("sess_")
-        assert session.lead_profile.name is None  # Fallback vazio
+        assert session.contact_card is None  # Fallback vazio
 
     @pytest.mark.asyncio
     async def test_no_recovery_without_firestore(
@@ -287,7 +291,7 @@ class TestFirestoreRecovery:
         session = await manager.resolve_or_create(sender_id="5511999998888")
 
         assert session.history == []
-        assert session.lead_profile.name is None
+        assert session.contact_card is None
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -295,36 +299,38 @@ class TestFirestoreRecovery:
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-class TestUpdateLeadProfile:
-    """Testes de atualização de perfil do lead."""
+class TestUpdateContactCard:
+    """Testes de atualizacao do contato."""
 
     @pytest.mark.asyncio
-    async def test_update_lead_profile(
+    async def test_update_contact_card(
         self,
         manager_with_firestore: SessionManager,
         mock_session_store: AsyncMock,
         mock_conversation_store: AsyncMock,
     ) -> None:
-        """Atualiza perfil e persiste no Firestore."""
+        """Atualiza contato e persiste no Firestore."""
         import asyncio
 
         session = await manager_with_firestore.resolve_or_create(
             sender_id="5511999998888",
             tenant_id="tenant-123",
+            whatsapp_name="Maria",
         )
 
-        await manager_with_firestore.update_lead_profile(
+        await manager_with_firestore.update_contact_card(
             session,
-            name="Maria",
+            full_name="Maria",
             email="maria@example.com",
-            primary_intent="sob_medida",
+            primary_interest="sob_medida",
         )
 
         # Aguarda tasks pendentes
         await asyncio.sleep(0.1)
 
-        assert session.lead_profile.name == "Maria"
-        assert session.lead_profile.email == "maria@example.com"
+        assert session.contact_card is not None
+        assert session.contact_card.full_name == "Maria"
+        assert session.contact_card.email == "maria@example.com"
         mock_conversation_store.upsert_lead.assert_called_once()
 
 

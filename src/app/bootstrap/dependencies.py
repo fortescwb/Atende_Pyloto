@@ -19,19 +19,20 @@ from app.bootstrap.clients import (
 )
 from app.infra.stores import (
     FirestoreAuditStore,
+    FirestoreContactCardStore,
     MemoryAuditStore,
+    MemoryContactCardStore,
     MemoryDedupeStore,
-    MemoryLeadProfileStore,
     MemorySessionStore,
+    RedisContactCardStore,
     RedisDedupeStore,
-    RedisLeadProfileStore,
     RedisSessionStore,
 )
 from app.protocols.dedupe import AsyncDedupeProtocol, DedupeProtocol
-from app.protocols.lead_profile_store import AsyncLeadProfileStoreProtocol
 from app.protocols.session_store import AsyncSessionStoreProtocol, SessionStoreProtocol
 
 if TYPE_CHECKING:
+    from app.protocols.contact_card_store import ContactCardStoreProtocol
     from app.protocols.decision_audit_store import DecisionAuditStoreProtocol
 
 logger = logging.getLogger(__name__)
@@ -195,23 +196,44 @@ def create_ai_orchestrator():
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# LeadProfile Store Factory
+# Otto Agent Factory
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def create_lead_profile_store() -> AsyncLeadProfileStoreProtocol:
-    """Cria store de LeadProfile baseado na configuração.
+def create_otto_agent_service():
+    """Cria OttoAgentService com client OpenAI configurado."""
+    from ai.services.otto_agent import OttoAgentService
+    from app.infra.ai.otto_client import OttoClient
 
-    Lê LEAD_PROFILE_BACKEND da env:
-    - "memory": MemoryLeadProfileStore (dev only)
-    - "redis": RedisLeadProfileStore (staging/production)
+    client = OttoClient()
+    service = OttoAgentService(client=client)
+    logger.info("otto_agent_service_created")
+    return service
 
-    Returns:
-        Implementação de AsyncLeadProfileStoreProtocol
+
+# ──────────────────────────────────────────────────────────────────────────────
+# ContactCard Store Factory
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def create_contact_card_store() -> ContactCardStoreProtocol:
+    """Cria store de ContactCard baseado na configuracao.
+
+    Lê CONTACT_CARD_BACKEND da env (fallback para LEAD_PROFILE_BACKEND):
+    - "firestore": FirestoreContactCardStore (staging/production)
+    - "redis": RedisContactCardStore (opcional)
+    - "memory": MemoryContactCardStore (dev/test)
     """
     environment = os.getenv("ENVIRONMENT", "development").lower()
-    default_backend = "redis" if environment in ("staging", "production") else "memory"
-    backend = os.getenv("LEAD_PROFILE_BACKEND", default_backend).lower()
+    default_backend = "firestore" if environment in ("staging", "production") else "memory"
+    backend = os.getenv("CONTACT_CARD_BACKEND") or os.getenv("LEAD_PROFILE_BACKEND")
+    backend = (backend or default_backend).lower()
+
+    if backend == "firestore":
+        firestore_client = create_firestore_client()
+        store = FirestoreContactCardStore(firestore_client)
+        logger.info("contact_card_store_created", extra={"backend": "firestore"})
+        return store
 
     if backend == "redis":
         redis_client = create_redis_client()
@@ -219,19 +241,49 @@ def create_lead_profile_store() -> AsyncLeadProfileStoreProtocol:
             async_client = create_async_redis_client()
         except Exception:
             async_client = None
-        store = RedisLeadProfileStore(redis_client, async_client)
-        logger.info("lead_profile_store_created", extra={"backend": "redis"})
+        store = RedisContactCardStore(redis_client, async_client)
+        logger.info("contact_card_store_created", extra={"backend": "redis"})
         return store
 
     if backend == "memory":
         if environment not in ("development", "test"):
             logger.warning(
-                "memory_lead_profile_in_non_dev",
+                "memory_contact_card_in_non_dev",
                 extra={"backend": "memory", "environment": environment},
             )
-        store = MemoryLeadProfileStore()
-        logger.info("lead_profile_store_created", extra={"backend": "memory"})
+        store = MemoryContactCardStore()
+        logger.info("contact_card_store_created", extra={"backend": "memory"})
         return store
 
-    msg = f"LEAD_PROFILE_BACKEND inválido: {backend}"
+    msg = f"CONTACT_CARD_BACKEND invalido: {backend}"
     raise ValueError(msg)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# ContactCardExtractor Factory
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def create_contact_card_extractor_service():
+    """Cria ContactCardExtractorService com client OpenAI."""
+    from ai.services.contact_card_extractor import ContactCardExtractorService
+    from app.infra.ai.contact_card_extractor_client import ContactCardExtractorClient
+
+    client = ContactCardExtractorClient()
+    service = ContactCardExtractorService(client=client)
+    logger.info("contact_card_extractor_service_created")
+    return service
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Transcription Service Factory
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def create_transcription_service():
+    """Cria TranscriptionAgent com dependencias padrao."""
+    from app.services.transcription_agent import TranscriptionAgent
+
+    service = TranscriptionAgent()
+    logger.info("transcription_service_created")
+    return service

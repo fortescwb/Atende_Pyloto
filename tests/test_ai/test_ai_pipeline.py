@@ -9,6 +9,11 @@ from dataclasses import dataclass
 
 import pytest
 
+from ai.models.contact_card_extraction import (
+    ContactCardExtractionRequest,
+    ContactCardExtractionResult,
+    ContactCardPatch,
+)
 from ai.models.decision_agent import (
     CONFIDENCE_THRESHOLD,
     FALLBACK_RESPONSE,
@@ -16,10 +21,6 @@ from ai.models.decision_agent import (
     DecisionAgentResult,
 )
 from ai.models.event_detection import EventDetectionRequest, EventDetectionResult
-from ai.models.lead_profile_extraction import (
-    LeadProfileExtractionRequest,
-    LeadProfileExtractionResult,
-)
 from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
     MessageTypeSelectionResult,
@@ -74,7 +75,13 @@ class MockAIClient:
             rationale="Mock suggest_state",
         )
 
-    async def generate_response(self, request: ResponseGenerationRequest) -> ResponseGenerationResult:
+    async def generate_response(
+        self,
+        request: ResponseGenerationRequest,
+        conversation_history: str = "",
+        contact_card: str = "",
+        is_first_message: bool = False,
+    ) -> ResponseGenerationResult:
         """Mock de generate_response (Agente 2)."""
         if self.should_fail:
             return ResponseGenerationResult(
@@ -94,7 +101,9 @@ class MockAIClient:
             rationale="Mock response",
         )
 
-    async def select_message_type(self, request: MessageTypeSelectionRequest) -> MessageTypeSelectionResult:
+    async def select_message_type(
+        self, request: MessageTypeSelectionRequest
+    ) -> MessageTypeSelectionResult:
         """Mock de select_message_type (Agente 3)."""
         return MessageTypeSelectionResult(
             message_type="text",
@@ -127,16 +136,14 @@ class MockAIClient:
             rationale="Mock decision",
         )
 
-    async def extract_lead_profile(
-        self, request: LeadProfileExtractionRequest
-    ) -> LeadProfileExtractionResult:
-        """Mock de extract_lead_profile (Agente 2-B)."""
-        return LeadProfileExtractionResult(
-            personal_data={},
-            personal_info_update=None,
-            need=None,
+    async def extract_contact_card(
+        self, request: ContactCardExtractionRequest
+    ) -> ContactCardExtractionResult:
+        """Mock de extract_contact_card (Agente 2-B)."""
+        return ContactCardExtractionResult(
+            updates=ContactCardPatch(),
             confidence=0.8,
-            raw_response="Mock lead profile extraction",
+            evidence=[],
         )
 
 

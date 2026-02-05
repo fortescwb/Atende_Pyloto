@@ -15,7 +15,8 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from app.sessions.models import HistoryEntry, HistoryRole, LeadProfile, Session, SessionContext
+from app.domain.contact_card import ContactCard
+from app.sessions.models import HistoryEntry, HistoryRole, Session, SessionContext
 from fsm.states import DEFAULT_INITIAL_STATE
 
 if TYPE_CHECKING:
@@ -75,6 +76,7 @@ class SessionManager:
         tenant_id: str = "",
         vertente: str = "geral",
         channel: str = "whatsapp",
+        whatsapp_name: str | None = None,
     ) -> Session:
         """Resolve sessão existente ou cria nova.
 
@@ -104,7 +106,13 @@ class SessionManager:
 
         # Sessão não encontrada no Redis, tentar recuperar do Firestore
         return await self._create_with_recovery(
-            sender_hash, session_id, tenant_id, vertente, channel
+            sender_hash,
+            session_id,
+            tenant_id,
+            vertente,
+            channel,
+            wa_id=sender_id,
+            whatsapp_name=whatsapp_name,
         )
 
     async def _create_with_recovery(
@@ -114,6 +122,9 @@ class SessionManager:
         tenant_id: str,
         vertente: str,
         channel: str,
+        *,
+        wa_id: str,
+        whatsapp_name: str | None,
     ) -> Session:
         """Cria nova sessão com recuperação de histórico do Firestore.
 
@@ -132,20 +143,23 @@ class SessionManager:
             Nova sessão (com ou sem histórico recuperado)
         """
         # Recuperar histórico do Firestore (se disponível)
-        lead_profile = LeadProfile()
+        contact_card: ContactCard | None = None
         recovered_history: list[HistoryEntry] = []
 
         if self._conversation_store is not None:
             try:
-                lead_profile, recovered_history = await self._recover_from_firestore(
-                    sender_hash, tenant_id
+                contact_card, recovered_history = await self._recover_from_firestore(
+                    sender_hash,
+                    tenant_id,
+                    wa_id=wa_id,
+                    whatsapp_name=whatsapp_name,
                 )
-                if lead_profile.name:
+                if contact_card and contact_card.full_name:
                     logger.info(
                         "session_history_recovered",
                         extra={
                             "sender_hash": sender_hash[:8],
-                            "lead_name": bool(lead_profile.name),
+                            "contact_name": True,
                             "messages_recovered": len(recovered_history),
                         },
                     )
@@ -155,13 +169,19 @@ class SessionManager:
                     "session_recovery_failed",
                     extra={"error": str(e), "sender_hash": sender_hash[:8]},
                 )
+        if contact_card is None and whatsapp_name:
+            contact_card = ContactCard(
+                wa_id=wa_id,
+                phone=wa_id,
+                whatsapp_name=whatsapp_name,
+            )
 
         return await self._create_new(
             sender_hash,
             session_id,
             tenant_id,
             vertente,
-            lead_profile=lead_profile,
+            contact_card=contact_card,
             recovered_history=recovered_history,
         )
 
@@ -169,14 +189,17 @@ class SessionManager:
         self,
         sender_hash: str,
         tenant_id: str,
-    ) -> tuple[LeadProfile, list[HistoryEntry]]:
-        """Recupera perfil e histórico do Firestore.
+        *,
+        wa_id: str,
+        whatsapp_name: str | None,
+    ) -> tuple[ContactCard | None, list[HistoryEntry]]:
+        """Recupera contato e histórico do Firestore.
 
         Returns:
-            Tuple com (LeadProfile, lista de HistoryEntry)
+            Tuple com (ContactCard, lista de HistoryEntry)
         """
         if self._conversation_store is None:
-            return LeadProfile(), []
+            return None, []
 
         # Busca lead e mensagens em paralelo
         lead_task = asyncio.create_task(
@@ -192,15 +215,31 @@ class SessionManager:
 
         lead_data, messages = await asyncio.gather(lead_task, messages_task)
 
-        # Converte LeadData para LeadProfile
-        lead_profile = LeadProfile()
+        # Converte LeadData para ContactCard
+        contact_card: ContactCard | None = None
         if lead_data is not None:
-            lead_profile = LeadProfile(
-                name=lead_data.name or None,
-                email=lead_data.email or None,
-                phone=sender_hash,
-                primary_intent=lead_data.primary_intent or None,
-            )
+            if whatsapp_name:
+                primary_interest = lead_data.primary_intent or None
+                if primary_interest not in {
+                    "saas",
+                    "sob_medida",
+                    "gestao_perfis",
+                    "trafego_pago",
+                    "automacao_atendimento",
+                    "intermediacao",
+                    None,
+                }:
+                    primary_interest = None
+                contact_card = ContactCard(
+                    wa_id=wa_id,
+                    phone=wa_id,
+                    whatsapp_name=whatsapp_name,
+                    full_name=lead_data.name or None,
+                    email=lead_data.email or None,
+                    primary_interest=primary_interest,
+                    total_messages=lead_data.total_messages or 0,
+                    last_updated_at=datetime.now(UTC),
+                )
 
         # Converte ConversationMessage para HistoryEntry
         history: list[HistoryEntry] = []
@@ -215,7 +254,7 @@ class SessionManager:
                 )
             )
 
-        return lead_profile, history
+        return contact_card, history
 
     async def _create_new(
         self,
@@ -224,7 +263,7 @@ class SessionManager:
         tenant_id: str,
         vertente: str,
         *,
-        lead_profile: LeadProfile | None = None,
+        contact_card: ContactCard | None = None,
         recovered_history: list[HistoryEntry] | None = None,
     ) -> Session:
         """Cria nova sessão com dados recuperados (se disponíveis).
@@ -234,7 +273,7 @@ class SessionManager:
             session_id: ID determinístico da sessão
             tenant_id: ID do tenant
             vertente: Vertente de atendimento
-            lead_profile: Perfil do lead (recuperado do Firestore)
+            contact_card: ContactCard (recuperado do Firestore)
             recovered_history: Histórico recuperado (limitado às últimas N msgs)
         """
         now = datetime.now(UTC)
@@ -245,7 +284,7 @@ class SessionManager:
             current_state=DEFAULT_INITIAL_STATE,
             context=SessionContext(tenant_id=tenant_id, vertente=vertente),
             history=recovered_history or [],
-            lead_profile=lead_profile or LeadProfile(),
+            contact_card=contact_card,
             turn_count=0,
             created_at=now,
             updated_at=now,
@@ -257,7 +296,7 @@ class SessionManager:
             "session_created",
             extra={
                 "session_id": session_id,
-                "recovered_lead": bool(lead_profile and lead_profile.name),
+                "recovered_contact": bool(contact_card and contact_card.full_name),
                 "recovered_history_count": len(recovered_history or []),
             },
         )
@@ -353,15 +392,15 @@ class SessionManager:
                 extra={"error": str(e), "session_id": session.session_id},
             )
 
-    async def update_lead_profile(
+    async def update_contact_card(
         self,
         session: Session,
         *,
-        name: str | None = None,
+        full_name: str | None = None,
         email: str | None = None,
-        primary_intent: str | None = None,
+        primary_interest: str | None = None,
     ) -> None:
-        """Atualiza perfil do lead na sessão e persiste no Firestore.
+        """Atualiza contato na sessao e persiste no Firestore.
 
         Args:
             session: Sessão ativa
@@ -369,13 +408,15 @@ class SessionManager:
             email: Email do lead
             primary_intent: Intenção principal
         """
-        # Atualiza perfil local
-        if name:
-            session.lead_profile.name = name
+        if session.contact_card is None:
+            return
+
+        if full_name:
+            session.contact_card.full_name = full_name
         if email:
-            session.lead_profile.email = email
-        if primary_intent:
-            session.lead_profile.primary_intent = primary_intent
+            session.contact_card.email = email
+        if primary_interest:
+            session.contact_card.primary_interest = primary_interest
 
         await self.save(session)
 
@@ -388,11 +429,15 @@ class SessionManager:
         from app.protocols.conversation_store import LeadData
 
         try:
+            contact = session.contact_card
+            if contact is None:
+                return
+
             lead = LeadData(
                 phone_hash=session.sender_id,
-                name=session.lead_profile.name or "",
-                email=session.lead_profile.email or "",
-                primary_intent=session.lead_profile.primary_intent or "",
+                name=contact.full_name or contact.whatsapp_name or "",
+                email=contact.email or "",
+                primary_intent=contact.primary_interest or "",
                 tenant_id=session.context.tenant_id or "default",
                 last_contact=datetime.now(UTC),
             )

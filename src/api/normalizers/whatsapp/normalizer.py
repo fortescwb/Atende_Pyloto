@@ -21,6 +21,7 @@ def _build_normalized_message(message_data: dict[str, Any]) -> NormalizedWhatsAp
     return NormalizedWhatsAppMessage(
         message_id=message_data["message_id"],
         from_number=message_data.get("from_number"),
+        whatsapp_name=message_data.get("whatsapp_name"),
         timestamp=message_data.get("timestamp"),
         message_type=message_data.get("message_type", "unknown"),
         **fields,

@@ -1,128 +1,627 @@
-# README antes de qualquer alteração implantação de código
+# Atende Pyloto - Sistema de Atendimento IA via WhatsApp
 
-Esse arquivo explica o que deverá existir em cada pasta dentro de `Atende_Pyloto/src`
-Esse repositório esta em início de desenvolvimento, nenhum teste ou uso real foi feito.
+**Status:** Em desenvolvimento ativo - Refatoração para arquitetura Otto (agente único + utilitários)
 
-## 2) Estrutura do repositório (SRC) e responsabilidades
+Este repositório implementa um sistema de atendimento automatizado para WhatsApp usando IA conversacional (OpenAI GPT-4), com foco em qualificação de leads B2B para a Pyloto.
 
-A estrutura em `src/` é o contrato de organização. Cada pasta tem papel claro; arquivos fora do lugar viram dívida IMEDIATA.
+---
 
-```tree
-src/
-├── ai/
-├── api/
-├── app/
-├── config/
-├── fsm/
-└── utils/
+## Arquitetura
+
+### Visão Geral
+
+O sistema utiliza **arquitetura de agente único (Otto) + agentes utilitários**, substituindo o pipeline sequencial de 4 agentes LLM por uma abordagem mais eficiente:
+
+```Fluxo
+
+┌──────────────────────────────────────────────────────────────┐
+│                    INCOMING MESSAGE                           │
+└───────────────────────┬──────────────────────────────────────┘
+│
+┌───────────┴───────────┐
+│ TranscriptionAgent    │ (se áudio, 30% msgs)
+│ Whisper API: 500-1200ms│
+└───────────┬───────────┘
+│
+┌───────────────┴──────────────────┐
+│  PARALLEL EXECUTION              │
+│  ┌─────────────┬──────────────┐  │
+│  │ OttoAgent   │ ExtractionAgent│ │
+│  │ Decide +    │ Extrai dados │  │
+│  │ Responde    │ estruturados │  │
+│  │ 1200-1800ms │ 400-800ms    │  │
+│  └──────┬──────┴──────┬───────┘  │
+└─────────┼─────────────┼──────────┘
+│             │
+▼             ▼
+OttoDecision  ExtractedLeadInfo
+│             │
+└──────┬──────┘
+│
+┌────────────┴──────────────┐
+│ Merge → LeadContact       │
+│ (atualiza perfil do lead) │
+└────────────┬───────────────┘
+│
+┌────────────┴──────────────┐
+│ ValidationPipeline        │
+│ 3-gate: Determinístico +  │
+│ Confidence + LLM Review   │
+└────────────┬───────────────┘
+│
+┌──────┴──────┐
+│ Approved?   │
+└──────┬──────┘
+│
+YES  │  NO
+┌───────┴───────┐
+│               │
+▼               ▼
+SEND MESSAGE    ESCALA HUMANO
+
 ```
 
-### 2.1 `src/ai/` — Inteligência (LLM e regras relacionadas)
+### Componentes Principais
 
-**Escopo:** LLM, prompts, validações e utilitários específicos de IA.  
-**Não pode:** importar `api/` nem fazer IO direto (rede/banco/filesystem).
+#### 1. **OttoAgent** (Agente Principal)
 
-Subpastas: - `ai/config/`: configuração e contratos de IA (modelos, thresholds, timeouts). - `ai/core/`: core de execução/orquestração interna de IA (interfaces e pipeline interno de IA). - `ai/models/`: modelos/DTOs para IA (entradas/saídas). - `ai/prompts/`: prompts versionados: - `base_prompts/`: peças reutilizáveis (system/base templates). - `state_prompts/`: prompts de seleção de estado/fluxo. - `validation_prompts/`: prompts de validação/guardrails. - `ai/rules/`: regras determinísticas que não dependem de LLM. - `ai/services/`: serviços de alto nível (ex.: classificar intenção, gerar opções). - `ai/utils/`: helpers de IA (parsers, normalizadores de output, etc.).
+- **Responsabilidade:** Decisão de estado FSM + geração de resposta + seleção de tipo de mensagem (tudo em 1 chamada LLM)
+- **Modelo:** `gpt-5.1` (structured outputs)
+- **Latência:** 1200-1800ms
+- **Output:** `OttoDecision` (Pydantic structured)
+  - `next_state`: Próximo estado FSM
+  - `response_text`: Resposta natural (max 500 chars)
+  - `message_type`: `text` | `interactive_button` | `interactive_list`
+  - `confidence`: 0.0-1.0
 
-### 2.2 `src/api/` — Interface/Edge (entrada e saída do mundo externo)
+#### 2. **ExtractionAgent** (Utilitário)
 
-**Escopo:** camada de borda e adapters de canais.  
-**Responsabilidade:** receber requests, validar assinatura, normalizar payload, construir payloads, aplicar limites/validações de API.
+- **Responsabilidade:** Extrair informações estruturadas para preencher `LeadContact`
+- **Modelo:** `gpt-5.1-mini` (barato e rápido)
+- **Latência:** 400-800ms
+- **Execução:** Paralelo com OttoAgent (não aumenta latência)
+- **Output:** `ExtractedLeadInfo`
+  - Dados pessoais: nome, email, telefone, empresa, cargo
+  - Interesse: `primary_interest` (saas, sob_medida, gestão_perfis, tráfego_pago, automação_atendimento, intermediação) # apenas 1
+  - Outros interesses: `others_interest` (sob_medida + automacao_atendimento) # até 3
+  - Qualificação: urgência, necessidade específica, budget
 
-Subpastas: - `api/connectors/`: conectores por canal. - `api/connectors/whatsapp/`: - `webhook/`: receive/verify/signature. - `inbound/`: entrada processável (event_id, handler, normalize). - `outbound/`: estruturas/rotinas outbound (quando existirem). - `outbound_flow/`: fluxo de envio (client e coordenação). - módulos locais (`http_client.py`, `signature.py`, `message_builder.py`, etc.) devem ser SRP e pequenos. - `api/normalizers/`: normalizadores por fornecedor/protocolo (ex.: `graph_api/`, `linkedin`, `google` e outros). - `api/payload_builders/`: builders por destino (apple/google/graph_api/linkedin/tiktok). - `api/validators/`: validações por canal/protocolo (ex.: `validators/graphapi/`).
+#### 3. **TranscriptionAgent** (Utilitário)
 
-**Não pode:** conter decisão de FSM, regras de sessão, policies globais, ou orquestração de casos de uso. Isso é `app/` e `fsm/`.
+- **Responsabilidade:** Transcrever áudios do WhatsApp para texto
+- **Modelo:** Whisper API (OpenAI)
+- **Latência:** 500-1200ms (30% das mensagens)
+- **Execução:** Antes do pipeline principal (bloqueante)
 
-### 2.3 `src/app/` — Aplicação (orquestração, casos de uso e infraestrutura interna)
+#### 4. **ContextInjector** (Serviço)
 
-**Escopo:** “coração” do sistema: coordena regras, FSM, IA e infraestrutura.  
-**Padrão mental:** `app` executa; `api` adapta; `ai` decide; `fsm` governa; `utils` apoia.
+- **Responsabilidade:** Injetar contexto dinâmico por vertente Pyloto
+- **Lógica:** Lê `LeadContact.primary_interest` → Injeta contexto vertical relevante
+- **Contextos:** 6 verticais (SaaS, Sob Medida, Gestão Perfis, Tráfego Pago, Automação, Intermediação)
+- **Economia:** 70% de tokens (injeta apenas contexto relevante vs todos contextos)
 
-Subpastas: - `app/bootstrap/`: composition root (factories, inicialização, wiring). - `app/coordinators/`: fluxos end‑to‑end (inbound → pipeline → outbound). - `app/use_cases/`: casos de uso (inputs/outputs, sem IO direto). - `app/services/`: serviços de aplicação (unidades reutilizáveis de orquestração). - `app/infra/`: implementações concretas de IO internas (stores, filas, http, redis, firestore, secrets). - `app/protocols/`: contratos/interfaces que o app exige (store, queue, http, etc.). - `app/sessions/`: modelos e componentes de sessão (regras de idempotência e persistência via protocolos). - `app/policies/`: políticas (rate limit, abuse detection, dedupe/TTL/retry). - `app/observability/`: logs estruturados, tracing/correlation, métricas. - `app/constants/`: constantes da aplicação (não específicas de canal).
+#### 5. **DecisionValidator** (Pipeline Híbrido)
 
-### 2.4 `src/config/` — Configuração e settings
+- **Gate 1 - Determinístico (sempre):** Valida FSM, PII, promessas proibidas
+- **Gate 2 - Confidence Check:** >= 0.85 aprova | < 0.7 escala | 0.7-0.85 → Gate 3
+- **Gate 3 - LLM Review (seletivo):** Validação leve com `gpt-4o-mini` apenas em zona cinza
 
-**Escopo:** settings tipados, carregamento de env, defaults, validação de config. - `config/settings/`: settings por canal/provedor e agregador. - `config/logging/`: logging config por canal/provedor e agregador.
+---
 
-### 2.5 `src/fsm/` — Máquina de estados (domínio determinístico)
+## Estrutura do Repositório (`src/`)
 
-**Escopo:** estados, transições e regras determinísticas. - `fsm/states/`: definições dos estados. - `fsm/transitions/`: transições permitidas. - `fsm/rules/`: regras de transição. - `fsm/manager/`: aplicação/validação da FSM.
+A estrutura é o **contrato de organização**. Cada pasta tem papel claro; arquivos fora do lugar viram dívida técnica.
 
-### 2.6 `src/utils/` — Utilitários comuns (cross‑cutting)
+```tree
 
-**Escopo:** helpers genéricos (sem regra de negócio). - `utils/errors/`: exceções tipadas - `utils/ids.py`: IDs/fingerprints - `utils/audit.py`: helpers de auditoria (sem PII) - `utils/timing.py`: medições/latências - demais arquivos somente se forem realmente transversais
+src/
+├── ai/                    \# Inteligência (LLM, prompts, agentes)
+├── api/                   \# Interface/Edge (webhooks, adapters)
+├── app/                   \# Aplicação (casos de uso, orquestração)
+├── config/                \# Configuração e settings
+├── fsm/                   \# Máquina de estados (domínio)
+└── utils/                 \# Utilitários cross-cutting
 
-## Funcionamento
+```
 
-┌─────────────────────────────────────────────────────────────────┐
-│ ProcessInboundCanonicalUseCase │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        AIOrchestrator                           │
-│              (coordena 4 agentes em sequência)                  │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-       ┌───────────────────────┼──────────────────────────┐
-       │                       │                          │
-       ▼                       ▼                          ▼
-┌───────────────┐ ┌───────────────────┐ ┌─────────────────┐
-│   StateAgent  │ │     ResponseAgent │ │ MessageTypeAgent│
-│   (LLM #1)    │ │       (LLM #2)    │ │    (LLM #3)     │
-│               │ │                   │ │                 │
-│ - prev_state  │ │ - 2-3 candidatos  │ │ - tipo sugerido │
-│ - curr_state  │ │ - confidence cada │ │ - parâmetros    │
-│ - next_states │ │ - tom/estilo      │ │ - confidence    │
-└───────┬───────┘ └─────────┬─────────┘ └────────┬────────┘
-        │                   │                    │
-        └───────────────────┼────────────────────┘
-                            │
-                            ▼
-                 ┌───────────────────────┐
-                 │ DecisionAgent         │
-                 │ (LLM #4)              │
-                 │                       │
-                 │ - consolida 3 outputs │
-                 │ - escolhe resposta    │
-                 │ - escolhe estado      │
-                 │ - aplica threshold    │
-                 │ - confidence final    │
-                 └───────────┬───────────┘
-                             │
-                             ▼
-                 ┌───────────────────────┐
-                 │ MasterDecision        │
-                 │ - final_text          │
-                 │ - final_state         │
-                 │ - final_message_type  │
-                 │ - understood: bool    │
-                 │ - confidence: float   │
-                 └───────────────────────┘
-**Os tipos de mensagens que a IA pode sugerir para a resposta, devem ser os mesmos disponíveis para o canal whatsapp**
+### `src/ai/` — Inteligência
 
-Para cada agente deve existir um arquivo de configuração em formato yaml ou outro mais lógico, assim, poderemos versionar os agentes, dar contexto e torna-los mais assertivos
+**Escopo:** LLM, prompts, agentes e validações de IA.  
+**Proibido:** Importar `api/` ou fazer IO direto (rede/banco).
 
-**A estrutura e criação de arquivos deve serguir as [REGAS_E_PADROES.md] bem como o padrão adotado no repositório. IA dentro da pasta IA, config em config, etc, etc.**
+```tree
 
-Próximos Passos (Priorizados)
-[CRÍTICO] Criar contratos para StateAgentResult e DecisionAgentResult
-[CRÍTICO] Atualizar AIClientProtocol com novos métodos
-[ALTO] Implementar prompts para os 4 agentes
-[ALTO] Refatorar AIOrchestrator para 4 pontos
-[MÉDIO] Modificar ResponseGenerationResult para candidatos
-[MÉDIO] Adicionar threshold de confiança
-[BAIXO] Adicionar tipo reaction em MessageType
-[BAIXO] Implementar paralelização de agentes 1-3
+ai/
+├── contexts/              \# Contextos por vertente Pyloto
+│   ├── __init__.py
+│   └── pyloto_verticals.py  \# SAAS_CONTEXT, SOB_MEDIDA_CONTEXT, etc
+├── models/                \# DTOs de entrada/saída
+│   ├── extraction.py      \# ExtractedLeadInfo
+│   ├── otto_decision.py   \# OttoDecision
+│   └── validation.py      \# ValidationResult, QualityAssessment
+├── services/              \# Agentes e serviços de IA
+│   ├── otto_agent.py           \# Agente principal (único)
+│   ├── extraction_agent.py     \# Extração de dados estruturados
+│   ├── transcription_agent.py  \# Transcrição de áudios
+│   ├── context_injector.py     \# Injeção de contexto dinâmico
+│   ├── decision_validator.py   \# Pipeline de validação 3-gate
+│   ├── response_quality_agent.py    \# [FASE 2] Auto-QA de respostas
+│   ├── intent_clarification_agent.py \# [FASE 2] Desambiguação
+│   ├── conversation_summary_agent.py \# [FASE 3] Sumarização
+│   └── handoff_preparation_agent.py  \# [FASE 3] Briefing handoff
+└── utils/                 \# Helpers de IA
+├── parsers.py         \# Parsers de output LLM (se necessário)
+└── prompt_utils.py    \# Helpers de formatação de prompts
 
-Paralelização: Os agentes 1, 2, 3 podem rodar em paralelo.
+```
 
-Threshold: O valor de confiança mínimo para aceitar a decisão é 0.7.
+**Regras:**
 
-Fallback: O texto a ser usado quando confidence < threshold é "Desculpe, não entendi. Pode reformular?".
+- Cada agente: 1 arquivo ≤ 200 linhas (§4 REGRAS_E_PADROES.md)
+- Structured outputs com Pydantic (§7)
+- Logs estruturados sem PII (§6)
+- Type hints completos (§5)
 
-1 LLM deverá escolher 1 entre os seguintes tipos de mensagem: text, interactive_button, interactive_list, template, ou reaction (Reaction servirá apenas quando nenhuma mensagem é necessária, apenas uma reação, por exemplo, usuário finalizou dizendo "blz, obg", aqui podemos apenas reagir a resposta do usuário)
-2 Estados FSM são fixos. Usar os 10 existentes.
-3 Path dos YAMLs de configuração é config/agents/{agent_name}.yaml
-4 3 candidatos de resposta, um formal, um casual e um empático.
-6 Baixa confiança → escalar após quantas vezes? 3 vezes consecutivas
+---
+
+### `src/api/` — Interface/Edge
+
+**Escopo:** Camada de borda, webhooks, adapters de canais.  
+**Responsabilidade:** Receber requests, validar assinatura, normalizar payload.  
+**Proibido:** Decisão de FSM, regras de sessão, orquestração de casos de uso.
+
+```tree
+
+api/
+├── connectors/
+│   └── whatsapp/          \# Conector WhatsApp Cloud API
+│       ├── webhook/       \# Receber/verificar webhook
+│       ├── inbound/       \# Normalização de eventos inbound
+│       ├── outbound/      \# Envio de mensagens outbound
+│       ├── http_client.py \# Cliente HTTP WhatsApp API
+│       ├── signature.py   \# Validação de assinatura
+│       └── message_builder.py  \# Construção de payloads
+├── normalizers/           \# Normalizadores por fornecedor
+│   └── graph_api/         \# Meta Graph API
+├── payload_builders/      \# Builders de payload por destino
+└── validators/            \# Validações por canal/protocolo
+
+```
+
+---
+
+### `src/app/` — Aplicação
+
+**Escopo:** Coração do sistema - coordena regras, FSM, IA e infraestrutura.  
+**Padrão mental:** `app` executa | `api` adapta | `ai` decide | `fsm` governa | `utils` apoia
+
+```tree
+
+app/
+├── bootstrap/             \# Composition root (DI, wiring)
+│   ├── __init__.py
+│   └── whatsapp_factory.py  \# Factory de componentes WhatsApp
+├── use_cases/             \# Casos de uso (inputs/outputs)
+│   └── whatsapp/
+│       ├── process_inbound_canonical.py  \# Use case principal
+│       └── _inbound_helpers.py           \# Helpers (merge_extracted_info)
+├── protocols/             \# Contratos/interfaces
+│   ├── models.py          \# LeadContact, Session, InboundEvent, OutboundCommand
+│   ├── repositories.py    \# Interfaces de repositórios
+│   └── services.py        \# Interfaces de serviços externos
+├── infra/                 \# Implementações concretas de IO
+│   ├── repositories/      \# Firestore, Redis
+│   ├── http/              \# Clients HTTP (WhatsApp API, OpenAI)
+│   └── secrets/           \# Secret Manager
+├── sessions/              \# Gerenciamento de sessões
+│   ├── manager.py         \# SessionManager
+│   └── models.py          \# Session, LeadContact
+├── policies/              \# Políticas (rate limit, abuse, retry)
+├── observability/         \# Logs, tracing, métricas
+└── constants/             \# Constantes da aplicação
+
+```
+
+**Modelo de Dados Principal:**
+
+#### `LeadContact` (Single Source of Truth do Lead)
+
+```python
+class ContactCard(BaseModel):
+    """Perfil do lead armazenado no Firestore."""
+
+    # DO WEBHOOK (sempre disponível)
+    wa_id: str              # WhatsApp ID único (= phone)
+    phone: str              # Número com código país (5544988887777)
+    whatsapp_name: str      # Nome salvo no WhatsApp do usuário (Não necessáriamente será o nome verdadeiro)
+
+    # EXTRAÍDOS (progressivamente pelo ExtractionAgent)
+    full_name: str | None              # Nome completo real
+    email: str | None                  # Email
+    company: str | None                # Empresa
+    role: str | None                   # Cargo
+    location: str | None               # Cidade/Estado
+
+    # INTERESSE (crítico para context injection)
+    primary_interest: Literal[
+        "saas", "sob_medida", "gestao_perfis",
+        "trafego_pago", "automacao_atendimento", "intermediacao"
+    ] | None
+    secondary_interests: list[str]
+
+    # QUALIFICAÇÃO
+    urgency: Literal["low", "medium", "high", "urgent"] | None
+    budget_indication: str | None
+    specific_need: str | None
+    company_size: Literal["mei", "micro", "pequena", "media", "grande"] | None
+
+    # SCORES (calculados automaticamente)
+    qualification_score: float = 0.0    # 0-100
+    is_qualified: bool = False          # True se >= 60
+
+    # METADADOS
+    first_contact_at: datetime
+    last_updated_at: datetime
+    total_messages: int
+
+    # FLAGS
+    requested_human: bool = False
+    showed_objection: bool = False
+    was_notified_to_team: bool = False
+```
+
+**Storage:** Firestore collection `contact_card`, Document ID = `wa_id`
+
+---
+
+### `src/config/` — Configuração
+
+**Escopo:** Settings tipados, carregamento de env, defaults, validação.
+
+```tree
+config/
+├── settings/              # Settings por componente
+│   ├── ai/
+│   │   ├── openai.py      # OpenAI API key, model, timeout
+│   │   └── validation.py  # Thresholds de validação
+│   ├── whatsapp/
+│   │   └── api.py         # WhatsApp token, phone_number_id
+│   └── database/
+│       ├── firestore.py   # Firestore project_id
+│       └── redis.py       # Redis URL
+└── logging/               # Configuração de logging
+    └── setup.py           # Logging estruturado (JSON)
+```
+
+---
+
+### `src/fsm/` — Máquina de Estados
+
+**Escopo:** Estados, transições e regras determinísticas (domínio puro).
+
+```tree
+fsm/
+├── states/
+│   └── session.py         # SessionState (enum)
+├── transitions/
+│   └── rules.py           # VALID_TRANSITIONS (dict)
+└── manager/
+    └── fsm_manager.py     # Validação e aplicação de transições
+```
+
+**Estados FSM (10 fixos):**
+
+```python
+class SessionState(Enum):
+    INITIAL = "INITIAL"                         # Primeira interação
+    TRIAGE = "TRIAGE"                           # Identificando necessidade
+    COLLECTING_INFO = "COLLECTING_INFO"         # Coletando dados do lead
+    GENERATING_RESPONSE = "GENERATING_RESPONSE" # Respondendo dúvida
+    HANDOFF_HUMAN = "HANDOFF_HUMAN"             # Escalou para humano
+    SELF_SERVE_INFO = "SELF_SERVE_INFO"         # Info self-service (FAQ)
+    SCHEDULED_FOLLOWUP = "SCHEDULED_FOLLOWUP"   # Agendou follow-up
+    ROUTE_EXTERNAL = "ROUTE_EXTERNAL"           # Roteou para sistema externo
+    TIMEOUT = "TIMEOUT"                         # Timeout de inatividade
+    ERROR = "ERROR"                             # Erro técnico
+```
+
+---
+
+### `src/utils/` — Utilitários
+
+**Escopo:** Helpers genéricos (cross-cutting, sem regra de negócio).
+
+```tree
+utils/
+├── errors/
+│   └── exceptions.py      # Exceções customizadas
+├── ids.py                 # Geração de IDs/fingerprints
+├── audit.py               # Helpers de auditoria (sem PII)
+└── timing.py              # Medições de latência
+```
+
+---
+
+## Pipeline de Processamento
+
+### Fluxo Completo (Detalhado)
+
+```python
+# src/app/use_cases/whatsapp/process_inbound_canonical.py
+
+async def execute(self, event: InboundEvent) -> OutboundCommand:
+    """Pipeline canônico de processamento."""
+
+    # 1. LOAD SESSION (Firestore com cache Redis)
+    session = await self.session_manager.resolve_or_create(event.sender_id)
+    # Latência: 10ms (cache hit) ou 150ms (Firestore)
+
+    # 2. FAST-PATH (70% dos casos)
+    fast_result = self._classify_fast_path(event.message_text)
+    if fast_result:
+        return OutboundCommand(text=fast_result.response, message_type="text")
+    # Latência total fast-path: ~200ms ✅
+
+    # 3. TRANSCRIÇÃO (se áudio)
+    if event.message_type == "audio":
+        transcription = await self.transcription_agent.transcribe(
+            audio_file_url=event.media_url,
+            language="pt"
+        )
+        if transcription.confidence < 0.6:
+            return OutboundCommand(text="Não consegui entender o áudio...")
+        event.message_text = transcription.text
+    # Latência: +500-1200ms (apenas 30% msgs)
+
+    # 4. PARALLEL: Otto + Extraction
+    decision, extracted = await asyncio.gather(
+        self.otto.process_message(
+            user_input=event.message_text,
+            session=session,
+            current_state=session.current_state
+        ),
+        self.extraction.extract(
+            user_message=event.message_text,
+            conversation_context=session.history[-3:]
+        )
+    )
+    # Latência: MAX(1800ms, 800ms) = 1800ms
+
+    # 5. MERGE: Extracted → LeadContact
+    session.lead_contact = merge_extracted_info(
+        lead=session.lead_contact,
+        extracted=extracted
+    )
+    session.lead_contact.calculate_qualification_score()
+    # Latência: +10ms
+
+    # 6. VALIDATION (3-gate)
+    validation = await self.validator.validate(
+        decision=decision,
+        session=session,
+        current_state=session.current_state
+    )
+    # Latência: 10ms (maioria) ou 500ms (zona cinza)
+
+    if not validation.approved:
+        if validation.validation_type == ValidationType.HUMAN_REQUIRED:
+            await self.notify_human_team(session, decision)
+            return OutboundCommand(
+                text="Vou conectar você com nossa equipe!",
+                next_state=SessionState.HANDOFF_HUMAN
+            )
+
+        # Aplica correções
+        if validation.corrections:
+            for field, value in validation.corrections.items():
+                setattr(decision, field, value)
+
+    # 7. UPDATE SESSION
+    session.current_state = decision.next_state
+    session.add_to_history(event.message_text, role="user")
+    session.add_to_history(decision.response_text, role="assistant")
+    await self.session_manager.save(session)
+    # Latência: +100ms
+
+    # 8. NOTIFICAR TIME (se qualificou)
+    if session.lead_contact.is_qualified and not session.metadata.get("notified"):
+        await self.notify_qualified_lead(session.lead_contact, session)
+        session.metadata["notified"] = True
+
+    # 9. RETURN
+    return OutboundCommand(
+        text=decision.response_text,
+        message_type=decision.message_type,
+        next_state=decision.next_state,
+        metadata={
+            "confidence": decision.confidence,
+            "qualification_score": session.lead_contact.qualification_score
+        }
+    )
+```
+
+---
+
+## Métricas e Performance
+
+### Latência por Cenário
+
+| Cenário                        | Frequência | P50   | P95   | Notas                 |
+| :----------------------------- | :--------- | :---- | :---- | :-------------------- |
+| **Fast-Path** (saudações, FAQ) | 70%        | 200ms | 350ms | Determinístico        |
+| **Texto Simples**              | 20%        | 2.0s  | 2.5s  | Otto + Extraction     |
+| **Texto + QA**                 | 8%         | 2.5s  | 3.2s  | +ResponseQualityAgent |
+| **Áudio**                      | 30%        | 3.0s  | 3.5s  | +Transcrição          |
+| **Áudio + QA**                 | 2%         | 3.5s  | 4.2s  | Pior caso             |
+
+**SLA:** P95 < 4s (95% das respostas em menos de 4 segundos)
+
+### Custo por Mensagem
+
+| Componente                | Modelo      | Custo     | Frequência | Custo Médio       |
+| :------------------------ | :---------- | :-------- | :--------- | :---------------- |
+| OttoAgent                 | gpt-4o      | \$0.0025  | 30%        | \$0.00075         |
+| ExtractionAgent           | gpt-4o-mini | \$0.00015 | 30%        | \$0.000045        |
+| TranscriptionAgent        | Whisper     | \$0.001   | 30%        | \$0.0003          |
+| ValidationPipeline Gate 3 | gpt-4o-mini | \$0.0001  | 15%        | \$0.000015        |
+| **TOTAL**                 |             |           |            | **~\$0.0003/msg** |
+
+**Economia vs pipeline 4 agentes:** -66% (\$0.0009 → \$0.0003)
+
+---
+
+## Configuração e Deploy
+
+### Variáveis de Ambiente
+
+```bash
+# OpenAI
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-2024-08-06
+OPENAI_MINI_MODEL=gpt-4o-mini-2024-07-18
+
+# WhatsApp
+WHATSAPP_VERIFY_TOKEN=pyloto_webhook_secret
+WHATSAPP_PHONE_NUMBER_ID=123456789012345
+WHATSAPP_ACCESS_TOKEN=EAAx...
+WHATSAPP_BUSINESS_ACCOUNT_ID=987654321
+
+# Firestore
+FIRESTORE_PROJECT_ID=pyloto-prod
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+
+# Redis (cache)
+REDIS_URL=redis://localhost:6379
+
+# Ambiente
+ENVIRONMENT=production  # ou staging
+LOG_LEVEL=INFO
+```
+
+### Deploy Google Cloud Run
+
+```bash
+# Build
+docker build -t gcr.io/pyloto-prod/atende-pyloto:otto-v1 .
+
+# Push
+docker push gcr.io/pyloto-prod/atende-pyloto:otto-v1
+
+# Deploy
+gcloud run deploy atende-pyloto \
+  --image gcr.io/pyloto-prod/atende-pyloto:otto-v1 \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --min-instances 1 \
+  --max-instances 10 \
+  --memory 512Mi \
+  --timeout 30s \
+  --set-env-vars ENVIRONMENT=production
+```
+
+---
+
+## Testes
+
+### Estrutura de Testes
+
+```tree
+tests/
+├── test_ai/                    # Testes dos agentes
+│   ├── test_otto_agent.py
+│   ├── test_extraction_agent.py
+│   ├── test_transcription_agent.py
+│   ├── test_context_injector.py
+│   └── test_decision_validator.py
+├── test_app/                   # Testes de use cases
+│   └── use_cases/
+│       └── whatsapp/
+│           └── test_process_inbound_canonical.py
+└── test_e2e/                   # Testes end-to-end (opcional)
+    └── test_otto_conversation_flow.py
+```
+
+### Executar Testes
+
+```bash
+# Todos os testes
+pytest tests/ -v
+
+# Apenas testes de IA
+pytest tests/test_ai/ -v
+
+# Com cobertura
+pytest tests/ --cov=src --cov-report=term --cov-report=html
+
+# E2E (staging apenas)
+pytest tests/test_e2e/ -v -m staging
+```
+
+**Meta de cobertura:** >= 80% nos arquivos novos (Otto architecture)
+
+---
+
+## Próximos Passos
+
+### ✅ FASE 1: Core (Implementar primeiro - Dias 1-7)
+
+- [ ] Remover pipeline de 4 agentes antigo
+- [ ] Implementar ExtractionAgent com structured outputs
+- [ ] Implementar TranscriptionAgent (Whisper API)
+- [ ] Criar contextos por vertente Pyloto (6 verticais)
+- [ ] Implementar ContextInjector
+- [ ] Implementar OttoAgent (agente único)
+- [ ] Implementar DecisionValidator (3-gate)
+- [ ] Expandir LeadContact model
+- [ ] Reescrever ProcessInboundCanonicalUseCase
+- [ ] Atualizar bootstrap/wiring
+- [ ] Testes unitários (>=80% cobertura)
+
+### 🎯 FASE 2: Qualidade (Dias 8-14)
+
+- [ ] Implementar ResponseQualityAgent (auto-QA)
+- [ ] Implementar IntentClarificationAgent (desambiguação)
+- [ ] Otimizar cache Redis para LeadContact
+- [ ] Adicionar typing indicator WhatsApp
+- [ ] Deploy staging + validação 48h
+
+### 🚀 FASE 3: Growth (Semanas 3-4)
+
+- [ ] Implementar ConversationSummaryAgent (conversas longas)
+- [ ] Implementar HandoffPreparationAgent (briefing humano)
+- [ ] Implementar FollowUpSchedulerAgent (proatividade)
+- [ ] Dashboard de métricas (BigQuery)
+- [ ] Deploy produção gradual (10% → 50% → 100%)
+
+---
+
+## Regras e Padrões
+
+Consulte [`REGRAS_E_PADROES.md`](./REGRAS_E_PADROES.md) para:
+
+- § 1-3: Princípios fundamentais (clareza, SRP, separação de concerns)
+- § 4: Tamanho de arquivos (≤200 linhas)
+- § 5: Convenções de código (PT-BR, snake_case, type hints)
+- § 6: Logging estruturado (sem PII)
+- § 7: Structured outputs (Pydantic)
+- § 9: Quality gates (ruff, pytest)
+
+---
+
+## Licença
+
+Proprietário - Pyloto Corp © 2026
+
+---
+
+## Contato
+
+- **Fundador:** Jamison Fortes
+- **Email:** contato@pyloto.com.br
+- **Repositório:** (privado)
+
+---
+
+**Última atualização:** 05 de fevereiro de 2026
+**Versão:** 2.0.0-alpha (Otto architecture)

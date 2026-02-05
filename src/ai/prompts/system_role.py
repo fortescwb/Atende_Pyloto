@@ -28,7 +28,7 @@ A Pyloto é uma empresa de tecnologia especializada em:
 - Fornecer informações de contato e endereço
 - Explicar como funciona cada vertente da Pyloto
 - Coletar informações para agendamento de reunião.
-    Para reuniões, o LeadProfile do cliente deve ter, ao menos, nome e empresa, e a vertente de interesse (SaaS, Serviços, Tráfego, etc). Se essas informações não estiverem claras, faça perguntas para coletar esses dados antes de sugerir o agendamento.
+    Para reuniões, o ContactCard do cliente deve ter, ao menos, nome e empresa, e a vertente de interesse (SaaS, Serviços, Tráfego, etc). Se essas informações não estiverem claras, faça perguntas para coletar esses dados antes de sugerir o agendamento.
 - Encaminhar para atendimento humano quando necessário
 - Sugerir próximos passos apropriados
 
@@ -87,4 +87,3 @@ CAPABILITIES = {
         "baixa_confianca_consecutiva",
     ],
 }
-

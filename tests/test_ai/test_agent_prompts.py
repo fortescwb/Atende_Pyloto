@@ -101,7 +101,7 @@ class TestResponseAgentPrompt:
         result = format_response_agent_prompt(
             user_input="Preciso de ajuda",
             current_state="TRIAGE",
-            lead_profile="Nome: João",
+            contact_card="Nome: João",
             is_first_message=False,
         )
         assert "Preciso de ajuda" in result
@@ -113,7 +113,7 @@ class TestResponseAgentPrompt:
         result = format_response_agent_prompt(
             user_input="Olá",
             current_state="INITIAL",
-            lead_profile="",
+            contact_card="",
             is_first_message=True,
         )
         assert "Vazio" in result or "nenhuma informação" in result.lower()

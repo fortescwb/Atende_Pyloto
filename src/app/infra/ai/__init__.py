@@ -5,7 +5,9 @@ Conforme REGRAS_E_PADROES.md § 2.1 — ai/ não faz IO direto.
 """
 
 from app.infra.ai.openai_client import OpenAIClient
+from app.infra.ai.otto_client import OttoClient
 
 __all__ = [
     "OpenAIClient",
+    "OttoClient",
 ]

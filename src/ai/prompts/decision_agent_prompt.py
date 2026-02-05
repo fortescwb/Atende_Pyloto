@@ -23,7 +23,7 @@ Receber as decisões dos agentes anteriores e tomar a decisão final:
 - Estado escolhido (Agente 1)
 - Mensagem gerada (Agente 2)
 - Tipo de mensagem (Agente 3)
-- LeadProfile atualizado (Agente 2-B)
+- ContactCard atualizado (Agente 2-B)
 
 ## Regras
 1. Você PODE confirmar as escolhas dos agentes
@@ -68,8 +68,8 @@ DECISION_AGENT_USER_TEMPLATE = """## Decisões dos Agentes
 ### Agente 2 (Resposta)
 {response_agent_output}
 
-### Agente 2-B (LeadProfile)
-{lead_profile_output}
+### Agente 2-B (ContactCardExtractor)
+{contact_card_output}
 
 ### Agente 3 (Tipo)
 {message_type_agent_output}
@@ -77,7 +77,7 @@ DECISION_AGENT_USER_TEMPLATE = """## Decisões dos Agentes
 ## Contexto Adicional
 Mensagem do usuário: {user_input}
 Mensagens do dia: {messages_today}
-LeadProfile atual: {lead_profile}
+ContactCard atual: {contact_card}
 Falhas consecutivas: {consecutive_low_confidence}
 
 Tome a decisão final. Confiança >= 0.7 para aceitar. JSON apenas."""
@@ -89,8 +89,8 @@ def format_decision_agent_prompt(
     message_type_agent_output: str,
     user_input: str,
     consecutive_low_confidence: int = 0,
-    lead_profile: str = "",
-    lead_profile_output: str = "",
+    contact_card: str = "",
+    contact_card_output: str = "",
     messages_today: int = 0,
 ) -> str:
     """Formata prompt para o DecisionAgent.
@@ -101,17 +101,17 @@ def format_decision_agent_prompt(
         message_type_agent_output: Output do MessageTypeAgent (Agente 3)
         user_input: Mensagem original do usuário
         consecutive_low_confidence: Contador de falhas consecutivas
-        lead_profile: LeadProfile atual completo
-        lead_profile_output: Output do LeadProfileAgent (Agente 2-B)
+        contact_card: ContactCard atual completo
+        contact_card_output: Output do ContactCardExtractor (Agente 2-B)
         messages_today: Quantidade de mensagens trocadas hoje
     """
     return DECISION_AGENT_USER_TEMPLATE.format(
         state_agent_output=state_agent_output,
         response_agent_output=response_agent_output,
         message_type_agent_output=message_type_agent_output,
-        lead_profile_output=lead_profile_output or "Nenhuma extração",
+        contact_card_output=contact_card_output or "Nenhuma extração",
         user_input=user_input,
         consecutive_low_confidence=consecutive_low_confidence,
-        lead_profile=lead_profile or "Vazio",
+        contact_card=contact_card or "Vazio",
         messages_today=messages_today,
     )

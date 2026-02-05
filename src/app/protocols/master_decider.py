@@ -14,8 +14,13 @@ class MasterDecision:
 
     final_state: str
     should_close_session: bool
+    final_text: str = ""
+    final_message_type: str = "text"
+    understood: bool = True
     close_reason: str | None = None
     audit_record: dict | None = None
+    requires_human_escalation: bool = False
+    confidence: float = 0.0
 
 
 class MasterDeciderProtocol(Protocol):

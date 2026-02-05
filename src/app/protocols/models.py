@@ -24,6 +24,7 @@ class NormalizedMessage(BaseModel):
 
     message_id: str
     from_number: str | None = None
+    whatsapp_name: str | None = None
     timestamp: str | None = None
     message_type: str  # text, image, video, audio, document, sticker, address, etc.
     text: str | None = None

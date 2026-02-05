@@ -1,0 +1,873 @@
+# src/ai/contexts/verticals/gestao_perfis_trafego.yaml
+
+vertical: gestao_perfis_trafego
+version: 2.0.0
+updated_at: "2026-02-05"
+
+# ============================================================
+# DESCRIÇÃO E POSICIONAMENTO
+# ============================================================
+
+description: |
+  Gestão profissional de presença digital: perfis sociais, website/landing pages
+  e tráfego pago integrados para gerar resultados mensuráveis.
+  
+  Diferencial: SEO estratégico + conteúdo direcionado = tráfego orgânico + pago.
+
+posicionamento_mercado: |
+  Para empresas que:
+  - Têm perfis nas redes mas "não sai nada"
+  - Postam sem estratégia (não atinge público certo)
+  - Site/perfis desorganizados (prejudica SEO)
+  - Querem resultados (leads/vendas), não só "curtidas"
+  
+  Diferencial vs Agência tradicional:
+  - Foco em RESULTADOS (leads, vendas), não vanity metrics
+  - SEO integrado (cliente aparece em buscas orgânicas)
+  - Muitos clientes não precisam de tráfego pago (orgânico resolve)
+  - Quando precisa pago: otimizado (ROI positivo, não joga dinheiro fora)
+  
+  Diferencial vs Freelancer social media:
+  - Estratégia completa (não só "postar foto bonita")
+  - Otimização técnica (SEO, Google My Business, structured data)
+  - Análise de resultados (relatórios mensais, ajustes)
+  - Time completo (designer + copywriter + analista)
+
+# ============================================================
+# PÚBLICO-ALVO E PERFIL IDEAL
+# ============================================================
+
+target_audience:
+  ideal_customer:
+    - "Empresas locais que dependem de ser encontrado (clínicas, restaurantes, serviços)"
+    - "Negócios B2C que vendem produto/serviço específico"
+    - "Já tem Instagram/Facebook mas 'não funciona'"
+    - "Quer investir em marketing mas não sabe por onde começar"
+    - "Orçamento R$ 2-8k/mês (serviço + eventual tráfego pago)"
+  
+  verticals_principais:
+    - "Clínicas/consultórios (pacientes locais via Google + Instagram)"
+    - "Restaurantes/bares (presença Google Maps + Instagram atrativo)"
+    - "Estéticas/salões (portfolio Instagram + agendamento fácil)"
+    - "Academias/studios (transformações antes/depois + proximidade)"
+    - "Prestadores de serviço local (encanador, eletricista, mecânica)"
+    - "E-commerce pequeno/médio (produto nichado, público definido)"
+    - "Profissionais liberais (advogados, arquitetos, contadores)"
+  
+  sinais_de_qualificacao:
+    strong_signals:  # Lead muito qualificado
+      - "Já investe em marketing mas resultado fraco"
+      - "Perfis desorganizados/desatualizados (oportunidade clara)"
+      - "Menciona 'não apareço no Google' (SEO resolve)"
+      - "Negócio local com concorrentes bem posicionados"
+      - "Orçamento mensal >R$ 3k (viável pra gestão + tráfego)"
+    
+    medium_signals:  # Pode qualificar
+      - "Nunca investiu em marketing digital (educação necessária)"
+      - "Tem perfis mas não posta regularmente"
+      - "Fez tráfego pago sozinho e 'não deu certo'"
+    
+    weak_signals:  # Difícil qualificar
+      - "Quer 'viralizar' ou 'ficar famoso' (foco errado)"
+      - "Orçamento <R$ 1.5k/mês (inviável)"
+      - "Não tem clareza de público-alvo ('é pra todo mundo')"
+  
+  red_flags:  # Não é fit
+    - "Quer resultado 'em 1 semana' (expectativa irreal)"
+    - "Não aceita investir em tráfego pago quando necessário"
+    - "Quer 'só postar foto' sem estratégia (não entende valor)"
+    - "Negócio genérico sem diferencial (difícil posicionar)"
+    - "Orçamento <R$ 1k/mês (não fecha conta)"
+
+# ============================================================
+# SERVIÇOS E MODALIDADES
+# ============================================================
+
+servicos:
+  - name: "Gestão de Perfis (Orgânico)"
+    descricao: "Otimização + conteúdo estratégico para crescimento sem tráfego pago"
+    
+    ideal_para:
+      - "Negócios locais (clínica, restaurante, salão)"
+      - "Orçamento limitado (quer começar devagar)"
+      - "Produto/serviço com apelo visual (fotos vendem)"
+      - "Público local e bem definido"
+    
+    o_que_fazemos:
+      padronizacao:
+        - "Auditoria completa de perfis (Instagram, Facebook, Google, site)"
+        - "Padronização visual (bio, foto perfil, capa, destaques)"
+        - "Otimização SEO de perfis (nome, descrição, palavras-chave)"
+        - "Google My Business completo (horário, fotos, categorias, posts)"
+        - "Link tree ou landing page (centraliza contatos)"
+      
+      conteudo_estrategico:
+        - "Calendário editorial mensal (12-16 posts/mês)"
+        - "Copy direcionado ao público-alvo (não genérico)"
+        - "Design profissional (carrossel, reels, stories)"
+        - "Hashtags estratégicas (reach + nicho)"
+        - "CTA claro em cada post (agendar, ligar, comprar)"
+      
+      seo_local:
+        - "Otimização Google Maps (aparecer em 'perto de mim')"
+        - "Structured data no site (Google entende o negócio)"
+        - "Backlinks locais (parcerias, diretórios)"
+        - "Review management (incentivar avaliações positivas)"
+      
+      resultado_esperado:
+        - "Cliente aparece em busca Google local (1-3 meses)"
+        - "Engajamento orgânico aumenta (followers qualificados)"
+        - "Tráfego site/perfil aumenta 40-80% (3 meses)"
+        - "Leads começam a chegar organicamente (sem pagar anúncio)"
+    
+    pricing:
+      setup: 1500  # Setup inicial (auditoria + padronização)
+      monthly: 2500  # Gestão + conteúdo mensal
+      
+      inclui:
+        - "12-16 posts/mês (3-4 por semana)"
+        - "Stories diários (5-7 por semana)"
+        - "Responder comentários/DMs (atendimento básico)"
+        - "Relatório mensal (métricas + insights)"
+        - "Reunião mensal de alinhamento (30min)"
+      
+      nao_inclui:
+        - "Tráfego pago (cliente decide se quer investir separado)"
+        - "Fotografia profissional (cliente fornece ou contratamos extra)"
+        - "Influencers/parcerias pagas"
+    
+    tempo_resultado: "1-3 meses (tráfego orgânico é gradual mas sustentável)"
+  
+  - name: "Gestão de Perfis + Tráfego Pago"
+    descricao: "Orgânico + anúncios otimizados para acelerar resultados"
+    
+    ideal_para:
+      - "Quer resultado mais rápido (orgânico demora)"
+      - "Lançamento de produto/serviço novo"
+      - "Concorrência forte (precisa 'furar bolha')"
+      - "Orçamento >R$ 4k/mês (gestão + verba de ads)"
+    
+    o_que_fazemos:
+      tudo_do_organico_mais:
+        - "Estratégia de tráfego (Meta Ads: Instagram/Facebook)"
+        - "Criação de campanhas (copy + criativos otimizados)"
+        - "Segmentação precisa (idade, localização, interesses, comportamento)"
+        - "Testes A/B (testa criativos/textos/públicos)"
+        - "Otimização diária (budget, lances, públicos)"
+        - "Remarketing (quem visitou site mas não comprou)"
+        - "Relatório semanal (ROI, custo por lead, conversões)"
+      
+      campanhas_tipicas:
+        - "Reconhecimento de marca (novos seguidores qualificados)"
+        - "Tráfego para site/landing page (leads)"
+        - "Conversão (vendas diretas, agendamentos)"
+        - "Engajamento (curtidas, comentários, compartilhamentos)"
+      
+      resultado_esperado:
+        - "Leads começam em 7-15 dias (rápido)"
+        - "Custo por lead: R$ 5-30 (varia por nicho)"
+        - "ROI positivo em 30-60 dias (se funil bem estruturado)"
+        - "Escala conforme resultado (aumenta verba se ROI bom)"
+    
+    pricing:
+      setup: 2000  # Setup + primeira campanha
+      monthly_gestao: 3500  # Gestão completa (orgânico + pago)
+      monthly_ads_budget: "cliente define"  # Verba separada (mínimo R$ 1k)
+      
+      fee_ads: "15% da verba ou R$ 800 (o que for maior)"  # Fee de gestão de ads
+      
+      exemplo_investimento_total:
+        - "Gestão: R$ 3.5k"
+        - "Verba ads: R$ 3k"
+        - "Fee ads (15%): R$ 450 (embutido nos R$ 3.5k)"
+        - "**Total: R$ 6.5k/mês**"
+      
+      inclui:
+        - "Tudo da gestão orgânica +"
+        - "Até 5 campanhas simultâneas"
+        - "Otimização diária de campanhas"
+        - "Relatório semanal (ads) + mensal (geral)"
+        - "Landing page básica (se necessário)"
+      
+      nao_inclui:
+        - "Verba de anúncios (cliente paga direto pra Meta/Google)"
+        - "Google Ads (focamos Meta Ads; Google é serviço adicional)"
+    
+    tempo_resultado: "7-30 dias (tráfego pago é imediato, otimização contínua)"
+  
+  - name: "Pacote Lançamento"
+    descricao: "Intensivo para lançar produto/serviço novo com impacto"
+    
+    ideal_para:
+      - "Produto novo no mercado"
+      - "Abertura de nova unidade/filial"
+      - "Evento/promoção importante"
+      - "Quer 'fazer barulho' rápido"
+    
+    o_que_fazemos:
+      pre_lancamento_15_dias:
+        - "Teaser content (gerar expectativa)"
+        - "Countdown (contagem regressiva)"
+        - "Early bird (incentivo pra primeiros)"
+      
+      lancamento_7_dias:
+        - "Conteúdo diário (stories + feed)"
+        - "Lives/webinars (se aplicável)"
+        - "Tráfego pago intensivo (budget concentrado)"
+        - "Promoção exclusiva (urgência)"
+      
+      pos_lancamento_15_dias:
+        - "Depoimentos clientes (social proof)"
+        - "Resultados (quantas vendas, impacto)"
+        - "Remarketing (quem viu mas não comprou)"
+    
+    pricing:
+      pacote_fechado: 8000  # 1 mês intensivo
+      ads_budget_minimo: 5000  # Verba mínima pra fazer impacto
+      
+      total_investimento: 13000  # R$ 13k no mês de lançamento
+    
+    tempo_duracao: "1 mês (antes + durante + depois)"
+
+# ============================================================
+# PROCESSO E METODOLOGIA
+# ============================================================
+
+processo:
+  fase1_diagnostico:
+    duracao: "1 semana"
+    atividades:
+      - "Auditoria completa de perfis existentes"
+      - "Análise de concorrentes (quem está bem posicionado)"
+      - "Definição de público-alvo (persona detalhada)"
+      - "Análise de palavras-chave (SEO local)"
+      - "Definição de objetivos (awareness, leads, vendas)"
+    
+    entregaveis:
+      - "Relatório de auditoria (PDF 10-15 páginas)"
+      - "Estratégia de conteúdo (temas, frequência)"
+      - "Plano de SEO local (o que otimizar)"
+      - "Proposta de calendário editorial (primeiro mês)"
+  
+  fase2_padronizacao:
+    duracao: "1 semana"
+    atividades:
+      - "Redesign de perfis (visual profissional)"
+      - "Otimização SEO (títulos, descrições, keywords)"
+      - "Google My Business completo (fotos, horários, categorias)"
+      - "Link tree ou landing page (centralização)"
+      - "Templates de conteúdo (identidade visual)"
+    
+    entregaveis:
+      - "Perfis padronizados e otimizados"
+      - "Guia de uso (como manter padrão)"
+      - "Templates editáveis (Canva Pro)"
+  
+  fase3_execucao:
+    duracao: "Recorrente (mensal)"
+    atividades:
+      - "Criação de conteúdo (design + copy)"
+      - "Agendamento de posts (Buffer/Later)"
+      - "Monitoramento de engajamento"
+      - "Resposta a comentários/DMs (básico)"
+      - "Ajustes baseados em métricas"
+    
+    entregaveis:
+      - "12-16 posts/mês publicados"
+      - "Stories diários"
+      - "Relatório mensal de performance"
+      - "Reunião de alinhamento (ajustes)"
+  
+  fase4_otimizacao:
+    duracao: "Contínua (a partir do mês 2)"
+    atividades:
+      - "Análise de posts com melhor performance"
+      - "Refinamento de público-alvo"
+      - "Testes A/B (se tráfego pago)"
+      - "Ajuste de estratégia SEO"
+      - "Expansão de canais (se fizer sentido)"
+
+# ============================================================
+# SEO LOCAL - DIFERENCIAIS TÉCNICOS
+# ============================================================
+
+seo_local_detalhado:
+  google_my_business:
+    otimizacoes:
+      - "Categoria principal correta (impacta ranking)"
+      - "Categorias secundárias (cobertura)"
+      - "Fotos de alta qualidade (mínimo 10, atualizar mensalmente)"
+      - "Posts semanais (Google favorece perfis ativos)"
+      - "Responder 100% avaliações (aumenta relevância)"
+      - "Perguntas e respostas (FAQ antecipado)"
+      - "Produtos/serviços listados (com preços se possível)"
+    
+    resultado: "Aparecer no 'Google Maps Pack' (3 primeiros resultados locais)"
+  
+  seo_on_page:
+    otimizacoes_site:
+      - "Title tags otimizados (cidade + serviço)"
+      - "Meta descriptions atrativas (CTR)"
+      - "Headers (H1, H2) com keywords locais"
+      - "Schema markup (LocalBusiness, Organization)"
+      - "NAP consistency (nome, endereço, telefone iguais em todos lugares)"
+      - "Mobile-friendly (Google prioriza)"
+      - "Velocidade de carregamento <3s"
+    
+    exemplo_title: "Clínica Odontológica em Maringá-PR | Implantes e Ortodontia | Dra. Maria"
+  
+  seo_off_page:
+    construcao_autoridade:
+      - "Diretórios locais (Guia Local, Páginas Amarelas)"
+      - "Backlinks de parceiros (troca de links relevantes)"
+      - "Menções em blogs locais (assessoria de imprensa)"
+      - "Perfis em redes (Pinterest, LinkedIn) linkando site"
+    
+    reviews_estrategicos:
+      - "Pedir avaliação pós-atendimento (email/WhatsApp)"
+      - "Facilitar processo (link direto pro Google)"
+      - "Responder todas avaliações (boas e ruins)"
+      - "Negativas: resolver offline, resposta pública diplomática"
+  
+  resultado_seo:
+    timeline:
+      - "Mês 1: Indexação e otimizações técnicas"
+      - "Mês 2-3: Começa aparecer em buscas locais (posição 5-10)"
+      - "Mês 4-6: Top 3 em buscas principais (cidade + serviço)"
+      - "Mês 6+: Dominância local (múltiplas keywords top 3)"
+    
+    metricas:
+      - "Aumento tráfego orgânico: 50-150% (6 meses)"
+      - "Leads orgânicos: 5-20/mês (varia por nicho)"
+      - "Custo por lead orgânico: R$ 0 (já pagou gestão)"
+
+# ============================================================
+# ESTRATÉGIA DE CONTEÚDO (EXEMPLOS)
+# ============================================================
+
+estrategia_conteudo:
+  pilares_principais:
+    - pilar: "Educacional"
+      descricao: "Ensinar algo útil (autoridade)"
+      exemplos:
+        - "Clínica: '5 sinais que você precisa ir ao dentista'"
+        - "Salão: 'Como escolher cor de cabelo pro seu tom de pele'"
+        - "Academia: 'Treino em casa: 3 exercícios eficazes'"
+      frequencia: "40% dos posts"
+    
+    - pilar: "Prova Social"
+      descricao: "Mostrar resultados (confiança)"
+      exemplos:
+        - "Antes e depois (transformações)"
+        - "Depoimento de cliente (vídeo ou texto)"
+        - "Bastidores (time, processo)"
+      frequencia: "30% dos posts"
+    
+    - pilar: "Promocional"
+      descricao: "Vender diretamente (conversão)"
+      exemplos:
+        - "Promoção do mês (20% off primeira consulta)"
+        - "Novo serviço/produto lançado"
+        - "Vagas limitadas (urgência)"
+      frequencia: "20% dos posts"
+    
+    - pilar: "Humanização"
+      descricao: "Conexão emocional (relacionamento)"
+      exemplos:
+        - "Dia do profissional (celebração)"
+        - "Por trás das câmeras (rotina)"
+        - "História do fundador (propósito)"
+      frequencia: "10% dos posts"
+  
+  formatos_conteudo:
+    instagram_feed:
+      - "Carrossel educacional (5-10 slides)"
+      - "Antes/depois (1 imagem dividida)"
+      - "Depoimento (quote + foto cliente)"
+      - "Dica rápida (1 slide impactante)"
+    
+    instagram_stories:
+      - "Bastidores diários (autenticidade)"
+      - "Enquetes (engajamento)"
+      - "Caixinha de perguntas (interação)"
+      - "Countdown promoção (urgência)"
+    
+    instagram_reels:
+      - "Tutorial rápido (15-30s)"
+      - "Transformação acelerada (before/after)"
+      - "Trending audio (alcance)"
+      - "FAQ respondida (valor)"
+  
+  cta_estrategicos:
+    tipos_cta:
+      - "Link na bio (tráfego site/WhatsApp)"
+      - "Comentar palavra-chave (engajamento + qualificação)"
+      - "Compartilhar story (alcance)"
+      - "Salvar post (sinal pro algoritmo)"
+      - "Marcar amigo (viralização)"
+    
+    exemplo_cta_efetivo: "Quer agendar? Manda 'OI' no direct que te passo o link!"
+
+# ============================================================
+# TRÁFEGO PAGO - ESTRATÉGIAS
+# ============================================================
+
+trafego_pago_detalhado:
+  meta_ads:
+    objetivos_campanha:
+      - objetivo: "Reconhecimento"
+        quando: "Negócio novo ou reposicionamento"
+        metrica: "CPM (custo por mil impressões)"
+        budget_minimo: 1000
+        resultado: "Alcance e awareness (não necessariamente conversão)"
+      
+      - objetivo: "Tráfego"
+        quando: "Levar pessoas pro site/WhatsApp"
+        metrica: "CPC (custo por clique)"
+        budget_minimo: 1500
+        resultado: "Visitas qualificadas (interesse demonstrado)"
+      
+      - objetivo: "Geração de Leads"
+        quando: "Capturar contatos (formulário)"
+        metrica: "CPL (custo por lead)"
+        budget_minimo: 2000
+        resultado: "Leads diretos (nome + telefone/email)"
+      
+      - objetivo: "Conversões"
+        quando: "Vender diretamente (e-commerce, agendamento)"
+        metrica: "CPA (custo por aquisição) e ROAS (retorno sobre investimento)"
+        budget_minimo: 3000
+        resultado: "Vendas/agendamentos mensuráveis"
+    
+    segmentacao_precisa:
+      demografica:
+        - "Idade (range específico por produto)"
+        - "Gênero (se relevante)"
+        - "Localização (raio de X km se local)"
+      
+      interesses:
+        - "Comportamento (ex: frequenta academia)"
+        - "Páginas curtidas (concorrentes)"
+        - "Eventos (casamento em breve = noiva potencial)"
+      
+      lookalike:
+        - "Público semelhante aos clientes atuais"
+        - "1% (mais similar) a 10% (mais abrangente)"
+        - "Precisa ter pixel instalado + dados suficientes"
+    
+    criativos_otimizados:
+      principios:
+        - "Hook nos primeiros 3 segundos (vídeo/carrossel)"
+        - "Benefício claro (não só features)"
+        - "CTA direto ('Agende agora', não 'Saiba mais')"
+        - "Social proof no criativo (depoimento, nota 5 estrelas)"
+        - "Teste 3-5 variações (copy + imagem)"
+      
+      formatos_performaticos:
+        - "Vídeo curto (15-30s) > imagem estática"
+        - "Carrossel (storytelling) > post único"
+        - "UGC (user generated content) > foto stock"
+    
+    otimizacao_continua:
+      - "Desligar anúncios com CTR <1% (3 dias teste)"
+      - "Aumentar budget dos vencedores (CTR >2%, CPL baixo)"
+      - "Testar novos públicos semanalmente"
+      - "Remarketing pra quem visitou mas não converteu"
+  
+  custo_por_lead_medio:
+    nichos:
+      - vertical: "Clínicas/estéticas"
+        cpl: "R$ 8-20"
+        observacao: "Lead qualificado (agendamento provável)"
+      
+      - vertical: "Restaurantes/bares"
+        cpl: "R$ 3-10"
+        observacao: "Awareness (não necessariamente conversão imediata)"
+      
+      - vertical: "Serviços profissionais (advogado, arquiteto)"
+        cpl: "R$ 15-40"
+        observacao: "Ticket alto justifica CPL maior"
+      
+      - vertical: "E-commerce"
+        cpa: "5-15% do valor do produto"
+        observacao: "Ex: produto R$ 200 = CPA R$ 10-30"
+
+# ============================================================
+# CASES DE SUCESSO
+# ============================================================
+
+use_cases:
+  - vertical: "Clínica de Estética (Maringá-PR)"
+    situacao_inicial: |
+      - Instagram com 800 seguidores (maioria não-local)
+      - Postava "de vez em quando" sem estratégia
+      - Não aparecia no Google Maps
+      - 90% dos clientes vinham por indicação (não escalável)
+    
+    o_que_fizemos:
+      organico:
+        - "Padronização completa de perfis (Instagram, Google My Business, Facebook)"
+        - "SEO local (keywords: 'estética Maringá', 'harmonização facial Maringá')"
+        - "Calendário editorial: 4 posts/semana + stories diários"
+        - "Conteúdo: antes/depois (70%), educacional (20%), promocional (10%)"
+      
+      trafego_pago:
+        - "Após 2 meses orgânico: iniciamos tráfego pago"
+        - "Budget: R$ 2.5k/mês"
+        - "Objetivo: leads (formulário Instagram + WhatsApp)"
+        - "Segmentação: mulheres 25-45 anos, raio 10km, interesse em beleza"
+    
+    resultado_3_meses:
+      - "Seguidores: 800 → 3.200 (300% crescimento, maioria local)"
+      - "Aparece em top 3 Google Maps ('estética Maringá')"
+      - "Leads orgânicos: 0 → 15/mês (Google + Instagram DM)"
+      - "Leads pagos: 35/mês (CPL R$ 12)"
+      - "Conversão lead → cliente: 40% (20 novos clientes/mês)"
+      - "Faturamento adicional: R$ 30k/mês (ticket médio R$ 1.5k)"
+    
+    roi:
+      investimento_mensal: 5000  # R$ 2.5k gestão + R$ 2.5k ads
+      retorno_mensal: 30000  # Faturamento adicional
+      roi_percentual: 500  # 500% ROI
+    
+    quote: "Antes eu PAGAVA por cliente (indicação custava caro). Agora eles me ACHAM. Valeu cada centavo."
+    cliente: "Dra. Ana Paula - Estética Facial"
+  
+  - vertical: "Restaurante Japonês (Londrina-PR)"
+    situacao_inicial: |
+      - Instagram "bonitinho" mas sem resultado
+      - 2.5k seguidores (alcance <5% dos posts)
+      - Google My Business desatualizado (horário errado, sem fotos)
+      - Delivery via iFood (comissão 27%)
+    
+    o_que_fizemos:
+      organico:
+        - "Google My Business: 30 fotos profissionais, cardápio, posts semanais"
+        - "SEO: 'comida japonesa Londrina', 'sushi delivery Londrina'"
+        - "Instagram: foco em COMIDA (close-ups apetitosos)"
+        - "Stories: bastidores (chef preparando, frescor dos ingredientes)"
+      
+      estrategia_delivery_proprio:
+        - "Landing page simples (cardápio + WhatsApp)"
+        - "Tráfego pago pra landing page (raio 5km)"
+        - "Budget: R$ 1.5k/mês"
+        - "CTA: 'Peça direto (sem taxa iFood)'"
+    
+    resultado_4_meses:
+      - "Google Maps: top 1 em 'comida japonesa Londrina'"
+      - "Pedidos diretos (WhatsApp): 0 → 120/mês"
+      - "Redução dependência iFood: 100% → 60%"
+      - "Economia comissão iFood: R$ 8k/mês"
+      - "Seguidores Instagram: 2.5k → 6.8k"
+    
+    roi:
+      investimento_mensal: 4000  # R$ 2.5k gestão + R$ 1.5k ads
+      economia_comissao: 8000  # Deixou de pagar iFood
+      roi_liquido: 4000  # R$ 4k/mês economizados
+    
+    quote: "Melhor investimento. Pago R$ 4k pra economizar R$ 8k. E ainda tenho meus dados de cliente (no iFood não tinha)."
+    cliente: "Thiago - Hiro Sushi"
+  
+  - vertical: "Escritório de Arquitetura (Curitiba-PR)"
+    situacao_inicial: |
+      - Site desatualizado (portfolio de 2019)
+      - Instagram sem identidade visual
+      - Projetos vinham 100% por indicação (lento)
+      - Não aparecia em busca Google
+    
+    o_que_fizemos:
+      organico:
+        - "Reforma completa site (portfolio atualizado, SEO on-page)"
+        - "Instagram: grid planejado (estética arquitetura)"
+        - "Conteúdo: projetos executados (antes/depois/durante)"
+        - "SEO: 'arquiteto Curitiba', 'projeto residencial Curitiba'"
+      
+      sem_trafego_pago:
+        - "Cliente não quis investir em ads (começou só orgânico)"
+        - "Foco total em SEO + conteúdo de qualidade"
+    
+    resultado_6_meses:
+      - "Site: tráfego 50 → 800 visitas/mês (1500% crescimento)"
+      - "Top 3 Google em 'arquiteto Curitiba' (alta concorrência)"
+      - "Leads orgânicos: 0 → 12/mês (formulário site + Instagram)"
+      - "Conversão: 25% (3 projetos fechados/mês)"
+      - "Ticket médio projeto: R$ 15k"
+      - "Faturamento adicional: R$ 45k/mês"
+    
+    roi:
+      investimento_mensal: 2500  # Só gestão, sem ads
+      retorno_mensal: 45000  # 3 projetos x R$ 15k
+      roi_percentual: 1700  # 1700% ROI
+    
+    observacao: "Exemplo de nicho que orgânico resolve (não precisou tráfego pago)"
+    
+    quote: "Achei que precisava gastar com anúncio. Na verdade, só precisava aparecer no Google. Hoje sobram clientes."
+    cliente: "Arq. Rafael Nunes - RN Arquitetura"
+
+# ============================================================
+# OBJEÇÕES COMUNS
+# ============================================================
+
+objections:
+  - objection: "Posso fazer isso sozinho, por que pagar?"
+    response_strategy: "Mostrar complexidade técnica + tempo investido"
+    response_template: |
+      Pode sim! Mas veja o que envolve:
+      
+      **Fazer sozinho:**
+      ❌ Aprender SEO técnico (structured data, backlinks, GMB)
+      ❌ Criar conteúdo toda semana (design + copy)
+      ❌ Estudar algoritmo Instagram/Facebook (muda sempre)
+      ❌ Gerenciar tráfego pago (perder dinheiro testando)
+      ❌ Analisar métricas e ajustar estratégia
+      
+      Tempo investido: 15-20h/semana (você como empreendedor)
+      
+      **Com Pyloto:**
+      ✅ Time especializado (já sabe o que funciona)
+      ✅ Ferramentas profissionais (Canva Pro, Buffer, SEMrush)
+      ✅ Você foca no negócio (atender cliente, fechar venda)
+      ✅ Resultado mais rápido (curva de aprendizado zero)
+      
+      Pergunta: quanto vale 20h/semana do seu tempo?
+      Se vale >R$ 2.5k/mês, compensa terceirizar.
+  
+  - objection: "Já contratei agência e não deu resultado"
+    response_strategy: "Diferenciar abordagem (resultado vs vanity metrics)"
+    response_template: |
+      Entendo a frustração. O que geralmente acontece:
+      
+      **Agência tradicional:**
+      ❌ Foco em seguidores/curtidas (não gera venda)
+      ❌ Conteúdo bonito mas genérico (não atinge seu público)
+      ❌ Não otimiza SEO (você não aparece em busca)
+      ❌ Relatório cheio de números que não importam
+      
+      **Pyloto - Diferenças:**
+      ✅ Foco em LEADS e VENDAS (não vaidade)
+      ✅ Conteúdo estratégico (público-alvo definido)
+      ✅ SEO integrado (você aparece orgânico)
+      ✅ Relatório: quantos leads, quanto faturou, ROI
+      
+      Nosso sucesso = seu sucesso. Se não gerar resultado, você cancela.
+      
+      Quer ver case de {vertical} parecido com o seu?
+  
+  - objection: "R$ 2.5k/mês é caro, fulano cobra R$ 800"
+    response_strategy: "Mostrar o que está incluso (qualidade vs preço)"
+    response_template: |
+      Vamos comparar maçã com maçã:
+      
+      **Freelancer R$ 800/mês:**
+      ❌ Só posta no Instagram (sem estratégia)
+      ❌ Não mexe em SEO/Google My Business
+      ❌ Design básico (Canva grátis)
+      ❌ Sem relatório ou análise
+      ❌ Se sumir, você fica sem serviço
+      
+      **Pyloto R$ 2.5k/mês:**
+      ✅ Instagram + Facebook + Google + Site (completo)
+      ✅ SEO local (você aparece em busca)
+      ✅ Design profissional (identidade visual)
+      ✅ Relatório mensal + reunião (ajustes)
+      ✅ Time completo (se alguém sai, outro assume)
+      
+      Resultado: Freelancer → curtidas. Pyloto → leads e vendas.
+      
+      Pergunta: você quer Instagram bonito ou clientes novos?
+  
+  - objection: "Não tenho verba pra tráfego pago"
+    response_strategy: "Tranquilizar que orgânico funciona (depois escala com pago)"
+    response_template: |
+      Sem problema! Maioria dos nossos clientes começa assim.
+      
+      **Estratégia:**
+      1. **Meses 1-3: Só orgânico** (R$ 2.5k/mês gestão)
+         - SEO + Google My Business
+         - Conteúdo estratégico
+         - Leads começam a chegar (10-20/mês típico)
+      
+      2. **Mês 4+: Se quiser acelerar, adiciona tráfego pago**
+         - Opcional (você decide)
+         - Budget mínimo R$ 1.5k/mês
+         - 2-3x mais leads
+      
+      Case: {vertical_exemplo} faturou R$ 30k/mês SEM tráfego pago.
+      Só com SEO + conteúdo orgânico.
+      
+      Começamos devagar e escala conforme resultado. Funciona?
+  
+  - objection: "Quanto tempo até ver resultado?"
+    response_strategy: "Ser realista (orgânico demora, pago é rápido)"
+    response_template: |
+      Depende da estratégia:
+      
+      **Orgânico (SEO + conteúdo):**
+      - Mês 1: Setup e otimizações (sem resultado ainda)
+      - Mês 2-3: Primeiros leads aparecem (5-10/mês)
+      - Mês 4-6: Tráfego cresce exponencial (20-40 leads/mês)
+      
+      **Tráfego Pago:**
+      - Dia 7-15: Primeiros leads (imediato)
+      - Mês 1: Otimização (testando o que funciona)
+      - Mês 2+: Consistente (30-50 leads/mês)
+      
+      Recomendação: Começa orgânico (sustentável) + pago (acelera).
+      
+      Expectativa realista: 60-90 dias pra ver resultado sólido.
+      Não é mágica, é trabalho estratégico.
+  
+  - objection: "Meu público não está no Instagram/Facebook"
+    response_strategy: "Questionar premissa (dados reais vs percepção)"
+    response_template: |
+      Entendo. Qual seu público? (idade, profissão, localização)
+      
+      **Dados reais Brasil 2026:**
+      - Instagram: 130M usuários (65% população)
+      - Facebook: 140M usuários (70% população)
+      - Faixa 25-54 anos: 75% usa diariamente
+      
+      Seu público provavelmente ESTÁ lá, mas:
+      ❌ Você não está aparecendo pra eles (SEO ruim)
+      ❌ Conteúdo não atrai eles (genérico demais)
+      
+      Além disso: Google (busca) funciona pra QUALQUER público.
+      Se alguém buscar seu serviço, você precisa aparecer.
+      
+      Faz sentido testar 3 meses? Se não funcionar, cancela.
+
+# ============================================================
+# PRÓXIMOS PASSOS
+# ============================================================
+
+next_steps:
+  - step: "Auditoria gratuita"
+    when: "Lead qualificado mas hesitante"
+    action: "Fazer auditoria rápida dos perfis atuais (15min)"
+    cta: "Vou fazer auditoria rápida dos seus perfis agora (grátis). Me passa @ do Instagram e link do Google My Business?"
+    entregavel: "Lista de 5-7 pontos críticos pra melhorar (voz ou texto)"
+  
+  - step: "Proposta comercial"
+    when: "Lead interessado mas quer ver investimento detalhado"
+    action: "Montar proposta customizada (PDF)"
+    cta: "Vou montar proposta sob medida. Me confirma: qual serviço te interessa mais? (Orgânico, Orgânico+Pago, ou Lançamento)"
+  
+  - step: "Case study do vertical"
+    when: "Lead do mesmo nicho de case de sucesso"
+    action: "Enviar case PDF + oferecer contato com cliente"
+    cta: "Temos case de {vertical} parecido. Quer ver PDF? Posso até conectar você com o cliente se quiser validar."
+  
+  - step: "Trial de 1 mês (desconto)"
+    when: "Lead hesitante mas qualificado"
+    action: "Oferecer primeiro mês com desconto (R$ 2.5k → R$ 1.5k)"
+    cta: "Tenho 1 vaga disponível este mês: teste por R$ 1.5k (40% off). Se não gostar, cancela. Topa?"
+    criteria: "Apenas se qualification_score >= 70"
+
+# ============================================================
+# FAQ
+# ============================================================
+
+faq:
+  - question: "Preciso fornecer fotos/vídeos ou vocês produzem?"
+    answer: |
+      Vocês fornecem (celular já serve, ensinamos como tirar).
+      
+      Se precisar produção profissional:
+      - Fotógrafo: R$ 500-1.5k (sessão)
+      - Videomaker: R$ 1-3k (dia)
+      
+      Conectamos com parceiros se necessário.
+  
+  - question: "Vocês respondem DMs e comentários?"
+    answer: |
+      Respondemos comentários (engajamento).
+      DMs complexos (vendas): você responde (conhece seu produto).
+      
+      Podemos criar respostas prontas (FAQ) pra você usar.
+  
+  - question: "Posso ver conteúdo antes de publicar?"
+    answer: |
+      SIM. Processo:
+      1. Criamos calendário mensal
+      2. Você aprova/ajusta
+      3. Publicamos conforme aprovado
+      
+      Se urgência: você aprova por WhatsApp (rápido).
+  
+  - question: "E se eu não gostar do resultado?"
+    answer: "Contrato mensal (sem fidelidade). Não gostou? Cancela com 30 dias de aviso. Simples assim."
+  
+  - question: "Vocês mexem no Google Ads também?"
+    answer: |
+      Focamos Meta Ads (Instagram/Facebook).
+      
+      Google Ads: oferecemos como serviço adicional (+R$ 1.5k/mês gestão).
+      Mas pra maioria, Meta Ads + SEO já resolve.
+  
+  - question: "Quantos clientes vocês pegam por mês?"
+    answer: "Máximo 8 clientes novos/mês (garantir qualidade). Se tiver fila, entramos em lista de espera."
+
+# ============================================================
+# CRITÉRIOS DE ESCALAÇÃO
+# ============================================================
+
+escalation_criteria:
+  - trigger: "Lead solicita proposta comercial"
+    action: "ESCALAR PARA COMERCIAL (coleta email + contexto)"
+  
+  - trigger: "Lead quer fazer auditoria de perfis"
+    action: "ESCALAR PARA ANALISTA (faz auditoria rápida)"
+  
+  - trigger: "Pergunta técnica sobre Google Ads"
+    action: "ESCALAR PARA ESPECIALISTA (não focamos nisso)"
+  
+  - trigger: "Lead muito qualificado (score >= 85)"
+    action: "ESCALAR IMEDIATAMENTE (comercial fecha)"
+  
+  - trigger: "Lead quer falar com cliente de referência"
+    action: "ESCALAR PARA COMERCIAL (arranja contato)"
+
+# ============================================================
+# PERGUNTAS DE QUALIFICAÇÃO
+# ============================================================
+
+qualification_questions:
+  discovery:
+    - "Qual seu negócio? O que você vende/oferece?"
+    - "Seu público é local (cidade) ou nacional?"
+    - "Você já investe em marketing? O quê exatamente?"
+  
+  perfis_atuais:
+    - "Tem Instagram/Facebook? Qual @ (pra eu ver)?"
+    - "Aparece no Google quando buscam seu serviço + cidade?"
+    - "Quantos seguidores tem? Qual engajamento médio?"
+  
+  budget:
+    - "Tem orçamento definido pra marketing?"
+    - "Já pensou em investir em tráfego pago? Quanto?"
+  
+  expectativa:
+    - "O que você espera de resultado? (leads, vendas, reconhecimento)"
+    - "Pra quando precisa começar a ver resultado?"
+
+# ============================================================
+# METADATA
+# ============================================================
+
+metadata:
+  injection_weight: "very_high"  # 4k+ tokens (completo)
+  priority_keywords:
+    - "gestão de perfis"
+    - "social media"
+    - "instagram"
+    - "tráfego pago"
+    - "anúncio"
+    - "facebook ads"
+    - "meta ads"
+    - "aparecer no google"
+    - "seo"
+    - "marketing digital"
+  
+  exclusion_keywords:
+    - "sistema"  # Sob Medida ou SaaS
+    - "chatbot"  # Automação

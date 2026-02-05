@@ -18,7 +18,13 @@ class Session:
 
 
 class SessionManagerProtocol(Protocol):
-    async def resolve_or_create(self, *, sender_id: str, tenant_id: str) -> Session:
+    async def resolve_or_create(
+        self,
+        *,
+        sender_id: str,
+        tenant_id: str,
+        whatsapp_name: str | None = None,
+    ) -> Session:
         ...
 
     async def save(self, session: Session) -> None:

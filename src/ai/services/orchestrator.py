@@ -1,14 +1,14 @@
 """Orquestrador de IA — coordena 5 pontos de LLM com fallbacks.
 
 Arquitetura de execução (validada):
-- Fase 1: StateAgent (nano), ResponseAgent (Chat), LeadProfileAgent (nano) em paralelo
+- Fase 1: StateAgent (nano), ResponseAgent (Chat), ContactCardExtractor (nano) em paralelo
 - Fase 2: MessageTypeAgent (nano) — recebe estado + resposta
 - Fase 3: DecisionAgent (GPT-5.1) — consolida tudo
 
 Regras:
 - StateAgent: reasoning baixo, consistência máxima
-- ResponseAgent: só verbaliza, NUNCA decide estado, recebe LeadProfile
-- LeadProfileAgent: extrai dados para persistência (nome, necessidades, etc)
+- ResponseAgent: só verbaliza, NUNCA decide estado, recebe ContactCard
+- ContactCardExtractor: extrai dados para persistência (nome, necessidades, etc)
 - MessageTypeAgent: classificação pura, prompt ultra-restritivo
 - DecisionAgent: mesmo modelo do StateAgent para calibração de confiança
 """
@@ -17,16 +17,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from ai.models.contact_card_extraction import (
+    ContactCardExtractionRequest,
+    ContactCardExtractionResult,
+)
 from ai.models.decision_agent import (
     DecisionAgentRequest,
     DecisionAgentResult,
-)
-from ai.models.lead_profile_extraction import (
-    LeadProfileExtractionRequest,
-    LeadProfileExtractionResult,
 )
 from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
@@ -55,7 +55,7 @@ class OrchestratorResult:
 
     state_suggestion: StateAgentResult
     response_generation: ResponseGenerationResult
-    lead_profile_extraction: LeadProfileExtractionResult
+    contact_card_extraction: ContactCardExtractionResult
     message_type_selection: MessageTypeSelectionResult
     final_decision: DecisionAgentResult
     overall_confidence: float
@@ -85,15 +85,14 @@ class AIOrchestrator:
         session_history: list[str] | None = None,
         valid_transitions: tuple[str, ...] | None = None,
         session_context: dict[str, str] | None = None,
-        lead_profile_context: str = "",
-        lead_profile_personal_info: str = "",
-        lead_profile_needs: str = "",
+        contact_card_summary: str = "",
         is_first_message: bool = False,
+        skip_contact_card_extraction: bool = False,
     ) -> OrchestratorResult:
         """Processa mensagem através dos 5 agentes LLM.
 
         Fluxo:
-        1. StateAgent + ResponseAgent + LeadProfileAgent em paralelo
+        1. StateAgent + ResponseAgent + ContactCardExtractor em paralelo
         2. MessageTypeAgent (recebe estado decidido + resposta gerada)
         3. DecisionAgent (consolida tudo e pode contradizer)
         """
@@ -102,9 +101,9 @@ class AIOrchestrator:
 
         logger.debug("Processing via 5-agent pipeline", extra={"state": current_state})
 
-        # Fase 1: StateAgent, ResponseAgent e LeadProfileAgent em paralelo
+        # Fase 1: StateAgent, ResponseAgent e ContactCardExtractor em paralelo
         # Todos os 3 usam modelos rápidos (nano/chat) para baixa latência
-        state_result, response_result, lead_profile_result = await asyncio.gather(
+        tasks = [
             self._suggest_state(sanitized_input, current_state, session_history, transitions),
             self._generate_response(
                 sanitized_input,
@@ -113,16 +112,19 @@ class AIOrchestrator:
                 detected_intent="general",  # Será refinado pelo DecisionAgent
                 session_history=session_history,
                 valid_transitions=transitions,
-                lead_profile_context=lead_profile_context,
+                contact_card_summary=contact_card_summary,
                 is_first_message=is_first_message,
             ),
-            self._extract_lead_profile(
-                sanitized_input,
-                lead_profile_context,
-                lead_profile_personal_info,
-                lead_profile_needs,
-            ),
-        )
+        ]
+        if not skip_contact_card_extraction:
+            tasks.append(self._extract_contact_card(sanitized_input, contact_card_summary))
+
+        results = await asyncio.gather(*tasks)
+        state_result, response_result = results[0], results[1]
+        if skip_contact_card_extraction:
+            contact_card_result = ContactCardExtractionResult.empty()
+        else:
+            contact_card_result = results[2]
 
         # Fase 2: MessageTypeAgent (nano) — classificação pura
         # Recebe: estado decidido + resposta gerada
@@ -149,7 +151,7 @@ class AIOrchestrator:
         return OrchestratorResult(
             state_suggestion=state_result,
             response_generation=response_result,
-            lead_profile_extraction=lead_profile_result,
+            contact_card_extraction=contact_card_result,
             message_type_selection=message_type_result,
             final_decision=decision_result,
             overall_confidence=overall,
@@ -182,13 +184,13 @@ class AIOrchestrator:
         detected_intent: str = "general",
         session_history: list[str] | None = None,
         valid_transitions: tuple[str, ...] | None = None,
-        lead_profile_context: str = "",
+        contact_card_summary: str = "",
         is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Executa agente 2: geração de resposta (gpt-5-chat-latest).
 
         REGRA: Chat SÓ verbaliza, NUNCA decide estado.
-        Recebe LeadProfile para personalização.
+        Recebe ContactCard para personalizacao.
 
         Args:
             user_input: Mensagem do usuário
@@ -197,7 +199,7 @@ class AIOrchestrator:
             detected_intent: Intenção (refinada pelo DecisionAgent)
             session_history: Histórico de mensagens (últimas N)
             valid_transitions: Estados possíveis (para contexto, não decisão)
-            lead_profile_context: Contexto do LeadProfile formatado
+            contact_card_summary: Contexto do ContactCard formatado
         """
         # Enriquece contexto com histórico, estados e lead profile
         enriched_context = dict(session_context or {})
@@ -205,8 +207,8 @@ class AIOrchestrator:
             enriched_context["conversation_history"] = "\n".join(session_history[-5:])
         if valid_transitions:
             enriched_context["possible_next_states"] = ", ".join(valid_transitions)
-        if lead_profile_context:
-            enriched_context["lead_profile"] = lead_profile_context
+        if contact_card_summary:
+            enriched_context["contact_card"] = contact_card_summary
 
         # Histórico sanitizado e truncado para prompt
         history_for_prompt = "\n".join(mask_history(session_history or [], max_messages=None))
@@ -224,35 +226,29 @@ class AIOrchestrator:
         return await self._client.generate_response(
             request,
             conversation_history=history_for_prompt,
-            lead_profile=lead_profile_context,
+            contact_card=contact_card_summary,
             is_first_message=is_first_message,
         )
 
-    async def _extract_lead_profile(
+    async def _extract_contact_card(
         self,
-        user_input: str,
-        current_profile_summary: str,
-        current_personal_info: str,
-        current_needs_summary: str,
-    ) -> LeadProfileExtractionResult:
-        """Executa agente 2-B: extração de dados do lead (gpt-5-nano).
+        user_message: str,
+        contact_card_summary: str,
+    ) -> ContactCardExtractionResult:
+        """Executa agente 2-B: extracao de dados do contato (gpt-5-nano).
 
-        Extrai informações do usuário para salvar no LeadProfile.
+        Extrai informacoes do usuario para salvar no ContactCard.
         Roda em paralelo com State e Response para não adicionar latência.
 
         Args:
-            user_input: Mensagem do usuário
-            current_profile_summary: Resumo do perfil atual
-            current_personal_info: Texto de informações pessoais atual
-            current_needs_summary: Resumo das necessidades ativas
+            user_message: Mensagem do usuário
+            contact_card_summary: Resumo do contato atual
         """
-        request = LeadProfileExtractionRequest(
-            user_input=user_input,
-            current_profile_summary=current_profile_summary,
-            current_personal_info=current_personal_info,
-            current_needs_summary=current_needs_summary,
+        request = ContactCardExtractionRequest(
+            user_message=user_message,
+            contact_card_summary=contact_card_summary,
         )
-        return await self._client.extract_lead_profile(request)
+        return await self._client.extract_contact_card(request)
 
     async def _select_message_type(
         self,

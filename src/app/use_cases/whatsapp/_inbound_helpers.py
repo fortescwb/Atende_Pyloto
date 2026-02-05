@@ -1,20 +1,30 @@
 """Helpers internos para o use case de inbound canônico.
 
-Extrai lógica auxiliar para reduzir o tamanho do processo_inbound_canonical.py.
+Extrai lógica auxiliar para reduzir o tamanho do process_inbound_canonical.py.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+import json
+from typing import TYPE_CHECKING, Any, Protocol
 
 from fsm.states import SessionState
+from fsm.transitions.rules import get_valid_targets
 
 if TYPE_CHECKING:
     from ai.models.state_agent import StateAgentResult
     from app.protocols import OutboundMessageRequest
     from app.protocols.models import NormalizedMessage
-    from app.services.master_decider import MasterDecision
+
+
+class OutboundDecisionProtocol(Protocol):
+    """Contrato mínimo para construção de payload outbound."""
+
+    response_text: str | None
+    message_type: str | None
+    final_text: str | None
+    final_message_type: str | None
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +56,7 @@ def map_state_suggestion_to_target(
 
 
 def build_outbound_payload(
-    decision: MasterDecision,
+    decision: OutboundDecisionProtocol,
     recipient: str,
     reply_to_message_id: str | None = None,
 ) -> dict[str, str | dict[str, str]]:
@@ -60,7 +70,8 @@ def build_outbound_payload(
     Returns:
         Payload formatado para API WhatsApp
     """
-    msg_type = decision.final_message_type
+    msg_type = _resolve_message_type(decision)
+    text = _resolve_text(decision)
 
     # Reaction requer formato especial
     if msg_type == "reaction":
@@ -72,7 +83,7 @@ def build_outbound_payload(
             # Fallback: enviar texto em vez de reaction
             msg_type = "text"
         else:
-            emoji = decision.final_text or "👍"
+            emoji = text or "👍"
             return {
                 "messaging_product": "whatsapp",
                 "recipient_type": "individual",
@@ -92,12 +103,12 @@ def build_outbound_payload(
     }
 
     if msg_type == "text":
-        payload["text"] = {"body": decision.final_text}
+        payload["text"] = {"body": text}
     elif msg_type in ("interactive_button", "interactive_list"):
         payload["type"] = "interactive"
         payload["interactive"] = {
             "type": "button" if "button" in msg_type else "list",
-            "body": {"text": decision.final_text},
+            "body": {"text": text},
         }
     else:
         # Fallback para tipos não suportados: enviar como texto
@@ -113,7 +124,7 @@ def build_outbound_payload(
 
 def build_outbound_request(
     msg: NormalizedMessage,
-    decision: MasterDecision,
+    decision: OutboundDecisionProtocol,
     correlation_id: str,
 ) -> OutboundMessageRequest:
     """Cria OutboundMessageRequest a partir da decisão.
@@ -134,7 +145,56 @@ def build_outbound_request(
 
     return OutboundMessageRequest(
         to=recipient or "",
-        message_type=decision.final_message_type,
-        text=decision.final_text,
+        message_type=_resolve_message_type(decision),
+        text=_resolve_text(decision),
         idempotency_key=f"{correlation_id}:{msg.message_id}:response",
     )
+
+
+def serialize_contact_card(contact_card: Any) -> str:
+    """Serializa ContactCard para JSON seguro no prompt."""
+    if contact_card is None:
+        return "{}"
+    try:
+        payload = contact_card.model_dump(exclude_none=True, mode="json")
+        return json.dumps(payload, ensure_ascii=False)
+    except Exception:
+        return "{}"
+
+
+def _resolve_message_type(decision: OutboundDecisionProtocol) -> str:
+    msg_type = getattr(decision, "message_type", None) or getattr(
+        decision, "final_message_type", None
+    )
+    return msg_type or "text"
+
+
+def _resolve_text(decision: OutboundDecisionProtocol) -> str:
+    return (
+        getattr(decision, "response_text", None)
+        or getattr(decision, "final_text", None)
+        or ""
+    )
+
+def history_as_strings(session: Any) -> list[str]:
+    history = getattr(session, "history_as_strings", None)
+    if history is not None:
+        return list(history)
+    raw_history = getattr(session, "history", []) or []
+    return [str(entry) for entry in raw_history]
+
+def build_tenant_context(session: Any) -> str:
+    context = getattr(session, "context", None)
+    if context is None:
+        return ""
+    tenant_id = getattr(context, "tenant_id", "") or ""
+    vertente = getattr(context, "vertente", "") or ""
+    if tenant_id and vertente:
+        return f"tenant_id={tenant_id} | vertente={vertente}"
+    return tenant_id or vertente
+
+def get_valid_transitions(current_state: SessionState) -> tuple[str, ...]:
+    return tuple(state.name for state in get_valid_targets(current_state))
+
+def is_terminal_session(session: Any) -> bool:
+    return bool(getattr(session, "is_terminal", False))

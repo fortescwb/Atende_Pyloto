@@ -18,7 +18,9 @@ import yaml
 logger = logging.getLogger(__name__)
 
 # Path do arquivo de contexto institucional
-_INSTITUTIONAL_CONTEXT_PATH = Path(__file__).parent / "institutional_context.yaml"
+_INSTITUTIONAL_CONTEXT_PATH = (
+    Path(__file__).resolve().parents[1] / "contexts" / "institutional_context.yaml"
+)
 
 
 class InstitutionalContextError(Exception):
@@ -47,6 +49,17 @@ def load_institutional_context() -> dict[str, Any]:
             context = yaml.safe_load(f)
             if not isinstance(context, dict):
                 raise InstitutionalContextError("YAML deve ser um dicionário")
+            # Compat: manter chaves legadas esperadas pelos testes/consumidores.
+            if "vertentes" not in context and "servicos" in context:
+                context["vertentes"] = context["servicos"]
+            if "vertentes" not in context and "servicos_resumo" in context:
+                context["vertentes"] = context["servicos_resumo"]
+            if "horario_atendimento_presencial" not in context:
+                presencial = context.get("endereco", {}).get("atendimento_presencial")
+                if presencial:
+                    context["horario_atendimento_presencial"] = presencial
+            if "horario_atendimento" not in context and "horario_atendimento_presencial" in context:
+                context["horario_atendimento"] = context["horario_atendimento_presencial"]
             logger.debug("Contexto institucional carregado com sucesso")
             return context
     except yaml.YAMLError as e:

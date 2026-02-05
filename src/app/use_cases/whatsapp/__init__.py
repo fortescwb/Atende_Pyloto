@@ -7,7 +7,7 @@ from .process_inbound_canonical import (
 from .send_outbound_message import SendOutboundMessageUseCase
 
 __all__ = [
-    # Use case canônico de inbound (pipeline 4 agentes)
+    # Use case canônico de inbound (pipeline Otto + utilitários)
     "InboundProcessingResult",
     "ProcessInboundCanonicalUseCase",
     # Outbound

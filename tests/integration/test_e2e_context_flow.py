@@ -113,12 +113,14 @@ class TestE2EFlowCompleto:
             sender_id="5511999998888",
             tenant_id="tenant-001",
             vertente="vendas",
+            whatsapp_name="Maria Silva",
         )
 
         # Deve ter recuperado perfil do lead
-        assert session.lead_profile.name == "Maria Silva"
-        assert session.lead_profile.email == "maria@exemplo.com"
-        assert session.lead_profile.primary_intent == "sob_medida"
+        assert session.contact_card is not None
+        assert session.contact_card.full_name == "Maria Silva"
+        assert session.contact_card.email == "maria@exemplo.com"
+        assert session.contact_card.primary_interest == "sob_medida"
 
         # Deve ter recuperado histórico
         assert len(session.history) == 2
@@ -209,7 +211,7 @@ class TestE2EFlowCompleto:
         prompt_user = format_response_agent_prompt(
             user_input="Quanto custa?",
             current_state="TRIAGE",
-            lead_profile="Nome: Carlos\nVertente: vendas",
+            contact_card="Nome: Carlos\nVertente: vendas",
             is_first_message=False,
         )
 
@@ -236,12 +238,12 @@ class TestE2EFlowCompleto:
         assert merged.phone == "11999998888"
 
     @pytest.mark.asyncio
-    async def test_atualizar_lead_profile(
+    async def test_atualizar_contact_card(
         self,
         mock_session_store: AsyncMock,
         mock_conversation_store: AsyncMock,
     ) -> None:
-        """Atualizar perfil do lead persiste no Firestore."""
+        """Atualizar contato persiste no Firestore."""
         manager = SessionManager(
             store=mock_session_store,
             conversation_store=mock_conversation_store,
@@ -250,24 +252,26 @@ class TestE2EFlowCompleto:
         session = await manager.resolve_or_create(
             sender_id="5511999998888",
             tenant_id="tenant-001",
+            whatsapp_name="Maria",
         )
         mock_conversation_store.upsert_lead.reset_mock()
 
         # Atualiza perfil
-        await manager.update_lead_profile(
+        await manager.update_contact_card(
             session,
-            name="Maria Atualizado",
-            primary_intent="parceria",
+            full_name="Maria Atualizado",
+            primary_interest="parceria",
         )
 
         # Aguarda tasks
         await asyncio.sleep(0.1)
 
         # Perfil local deve estar atualizado
-        assert session.lead_profile.name == "Maria Atualizado"
-        assert session.lead_profile.primary_intent == "parceria"
+        assert session.contact_card is not None
+        assert session.contact_card.full_name == "Maria Atualizado"
+        assert session.contact_card.primary_interest == "parceria"
         # Email deve manter (não foi passado para atualização)
-        assert session.lead_profile.email == "maria@exemplo.com"
+        assert session.contact_card.email == "maria@exemplo.com"
 
         # Firestore deve ter sido chamado
         assert mock_conversation_store.upsert_lead.called

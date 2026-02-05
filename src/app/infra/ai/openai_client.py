@@ -14,9 +14,10 @@ from typing import TYPE_CHECKING
 
 import httpx
 
-from ai.models.lead_profile_extraction import (
-    LeadProfileExtractionRequest,
-    LeadProfileExtractionResult,
+from ai.models.contact_card_extraction import (
+    ContactCardExtractionRequest,
+    ContactCardExtractionResult,
+    ContactCardPatch,
 )
 from ai.models.message_type_selection import (
     MessageTypeSelectionRequest,
@@ -27,13 +28,13 @@ from ai.models.response_generation import (
     ResponseGenerationResult,
 )
 from ai.prompts import (
+    CONTACT_CARD_EXTRACTOR_SYSTEM,
     DECISION_AGENT_SYSTEM,
-    LEAD_PROFILE_AGENT_SYSTEM,
     MESSAGE_TYPE_AGENT_SYSTEM,
     RESPONSE_AGENT_SYSTEM,
     STATE_AGENT_SYSTEM,
+    format_contact_card_extractor_prompt,
     format_decision_agent_prompt,
-    format_lead_profile_agent_prompt,
     format_message_type_agent_prompt,
     format_response_agent_prompt,
     format_state_agent_prompt,
@@ -52,7 +53,7 @@ from ai.utils.agent_parser import (
 from app.infra.ai._openai_http import call_openai_api
 
 if TYPE_CHECKING:
-    from ai.config.settings import AIModelSettings, AISettings
+    from ai.config.settings import AISettings
     from ai.models.decision_agent import DecisionAgentRequest, DecisionAgentResult
     from ai.models.state_agent import StateAgentRequest, StateAgentResult
 
@@ -61,7 +62,7 @@ logger = logging.getLogger(__name__)
 _AGENT_ROLE_MAP = {
     "state_agent": "STATE",
     "response_agent": "RESPONSE",
-    "lead_profile_agent": "LEAD_PROFILE",
+    "contact_card_extractor": "CONTACT_CARD_EXTRACTOR",
     "message_type_agent": "MESSAGE_TYPE",
     "decision_agent": "DECISION",
 }
@@ -76,7 +77,7 @@ class OpenAIClient:
     Agentes:
     1. StateAgent - sugere próximos estados
     2. ResponseAgent - gera candidatos de resposta
-    2-B. LeadProfileAgent - extrai dados para o perfil
+    2-B. ContactCardExtractor - extrai dados para o contato
     3. MessageTypeAgent - seleciona tipo de mensagem
     4. DecisionAgent - consolida e decide
     """
@@ -160,7 +161,7 @@ class OpenAIClient:
         self,
         request: ResponseGenerationRequest,
         conversation_history: str = "",
-        lead_profile: str = "",
+        contact_card: str = "",
         is_first_message: bool = False,
     ) -> ResponseGenerationResult:
         """Gera candidatos de resposta usando ResponseAgent (LLM #2)."""
@@ -179,7 +180,7 @@ class OpenAIClient:
             next_state=request.next_state or request.current_state,
             session_context=context_str,
             conversation_history=conversation_history,
-            lead_profile=lead_profile,
+            contact_card=contact_card,
             is_first_message=is_first_message,
         )
         raw_response = await self._call_openai(
@@ -280,41 +281,44 @@ class OpenAIClient:
             request.consecutive_low_confidence,
         )
 
-    async def extract_lead_profile(
+    async def extract_contact_card(
         self,
-        request: LeadProfileExtractionRequest,
-    ) -> LeadProfileExtractionResult:
-        """Extrai dados do perfil do lead usando LeadProfileAgent (Agente 2-B)."""
-        user_prompt = format_lead_profile_agent_prompt(
-            user_input=request.user_input,
-            current_profile=request.current_profile_summary,
-            current_personal_info=request.current_personal_info,
-            current_needs=request.current_needs_summary,
+        request: ContactCardExtractionRequest,
+    ) -> ContactCardExtractionResult:
+        """Extrai dados do contato usando ContactCardExtractor (Agente 2-B)."""
+        user_prompt = format_contact_card_extractor_prompt(
+            user_message=request.user_message,
+            contact_card=request.contact_card_summary,
+            conversation_context="\n".join(request.conversation_context or []),
         )
         raw_response = await self._call_openai(
-            system_prompt=LEAD_PROFILE_AGENT_SYSTEM,
+            system_prompt=CONTACT_CARD_EXTRACTOR_SYSTEM,
             user_prompt=user_prompt,
-            agent_name="lead_profile_agent",
+            agent_name="contact_card_extractor",
         )
         if raw_response is None:
-            return LeadProfileExtractionResult(confidence=0.0)
+            return ContactCardExtractionResult.empty()
 
         # Parser simples - retorna JSON direto
         from ai.utils._json_extractor import extract_json_from_response
 
         data = extract_json_from_response(raw_response)
         if data is None:
-            return LeadProfileExtractionResult(
-                confidence=0.0,
-                raw_response=raw_response or "",
-            )
+            return ContactCardExtractionResult.empty()
 
-        return LeadProfileExtractionResult(
-            personal_data=data.get("personal", {}),
-            personal_info_update=data.get("personal_info_update"),
-            need=data.get("need"),
-            confidence=float(data.get("confidence", 0.7)),
-            raw_response=raw_response or "",
+        updates = data.get("updates") if isinstance(data, dict) else {}
+        try:
+            patch = ContactCardPatch.model_validate(updates or {})
+        except Exception:
+            return ContactCardExtractionResult.empty()
+
+        confidence = float(data.get("confidence", 0.0)) if isinstance(data, dict) else 0.0
+        evidence = data.get("evidence") if isinstance(data.get("evidence"), list) else []
+
+        return ContactCardExtractionResult(
+            updates=patch,
+            confidence=max(0.0, min(1.0, confidence)),
+            evidence=evidence,
         )
 
     async def close(self) -> None:
