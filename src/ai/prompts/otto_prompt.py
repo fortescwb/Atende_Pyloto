@@ -8,6 +8,8 @@ Regras:
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 from ai.config.prompt_assets_loader import load_context_for_prompt, load_prompt_template
 from ai.prompts.context_builder import build_contexts
 from ai.prompts.dynamic_context_loader import resolve_dynamic_contexts
@@ -21,6 +23,12 @@ def build_otto_system_prompt() -> str:
 
 
 OTTO_SYSTEM_PROMPT = build_otto_system_prompt()
+
+
+class PromptComponents(NamedTuple):
+    system_prompt: str
+    user_prompt: str
+    loaded_contexts: list[str]
 
 
 def format_otto_prompt(
@@ -58,7 +66,7 @@ def build_full_prompt(
     extra_context_paths: list[str] | None = None,
     extra_context_chunks: list[str] | None = None,
     extra_loaded_contexts: list[str] | None = None,
-) -> tuple[str, str, list[str]]:
+) -> PromptComponents:
     """Monta (system_prompt, user_prompt, loaded_contexts) no padrão definitivo.
 
     Args:
@@ -108,7 +116,7 @@ def build_full_prompt(
     merged_loaded = sorted(
         set((dynamic_result.loaded_contexts or []) + (extra_loaded_contexts or []))
     )
-    return system_prompt, user_prompt, merged_loaded
+    return PromptComponents(system_prompt, user_prompt, merged_loaded)
 
 
 def _merge_context_chunks(*chunks: list[str]) -> str:

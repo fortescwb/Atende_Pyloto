@@ -87,19 +87,36 @@ def ready_to_schedule_meeting(contact_card: ContactCard) -> bool:
         return False
 
     if interest == "automacao_atendimento":
-        return (
-            contact_card.message_volume_per_day is not None
-            and contact_card.attendants_count is not None
+        score = _count_true(
+            contact_card.message_volume_per_day is not None,
+            contact_card.attendants_count is not None,
+            _has_crm_or_tools(contact_card),
+            bool(contact_card.specific_need),
         )
+        return score >= 3
     if interest == "sob_medida":
-        return bool(
-            contact_card.desired_features
-            or contact_card.integrations_needed
-            or contact_card.users_count is not None
-            or contact_card.needs_data_migration is not None
+        score = _count_true(
+            bool(contact_card.desired_features),
+            bool(contact_card.integrations_needed),
+            contact_card.users_count is not None or bool(contact_card.company_size),
         )
+        return score >= 2
     if interest == "saas":
-        return bool(contact_card.modules_needed or contact_card.users_count is not None)
+        return bool(contact_card.modules_needed) and contact_card.users_count is not None
+    if interest == "gestao_perfis_trafego":
+        score = _count_true(
+            bool(contact_card.specific_need),
+            bool(contact_card.budget_indication or contact_card.urgency),
+            bool(contact_card.company_size),
+        )
+        return score >= 2
+    if interest == "intermediacao_entregas":
+        score = _count_true(
+            bool(contact_card.specific_need),
+            bool(contact_card.location),
+            bool(contact_card.urgency or contact_card.budget_indication),
+        )
+        return score >= 2
     return bool(contact_card.specific_need)
 
 
@@ -121,3 +138,13 @@ _AUTOMATION_QUESTIONS = frozenset({
     "has_crm",
     "current_tools",
 })
+
+
+def _has_crm_or_tools(contact_card: ContactCard) -> bool:
+    if contact_card.has_crm is not None:
+        return True
+    return bool(contact_card.current_tools)
+
+
+def _count_true(*values: bool) -> int:
+    return sum(1 for value in values if value)

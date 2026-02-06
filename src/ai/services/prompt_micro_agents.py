@@ -94,6 +94,7 @@ async def run_prompt_micro_agents(
     user_message: str,
     contact_card_signals: dict[str, Any] | None = None,
     session_state: str | None = None,
+    correlation_id: str | None = None,
 ) -> MicroAgentResult:
     folder = normalize_tenant_intent(tenant_intent)
     if not folder or session_state == "HANDOFF_HUMAN":
@@ -111,6 +112,10 @@ async def run_prompt_micro_agents(
     logger.info(
         "micro_agents_gate",
         extra={
+            "component": "prompt_micro_agents",
+            "action": "gate",
+            "result": "evaluated",
+            "correlation_id": correlation_id,
             "vertical": folder,
             "run_objection": run_objection,
             "run_case": run_case,
@@ -121,11 +126,13 @@ async def run_prompt_micro_agents(
 
     tasks: list[asyncio.Future[MicroAgentResult]] = []
     if run_objection:
-        tasks.append(asyncio.create_task(_objection_agent(folder, objection_types)))
+        tasks.append(asyncio.create_task(_objection_agent(folder, objection_types, correlation_id)))
     if run_case:
-        tasks.append(asyncio.create_task(_case_agent(folder, msg, contact_card_signals)))
+        tasks.append(
+            asyncio.create_task(_case_agent(folder, msg, contact_card_signals, correlation_id))
+        )
     if run_roi:
-        tasks.append(asyncio.create_task(_roi_agent(msg, contact_card_signals)))
+        tasks.append(asyncio.create_task(_roi_agent(msg, contact_card_signals, correlation_id)))
 
     if not tasks:
         return MicroAgentResult.empty()
@@ -137,6 +144,10 @@ async def run_prompt_micro_agents(
         logger.info(
             "micro_agents_injected",
             extra={
+                "component": "prompt_micro_agents",
+                "action": "inject_context",
+                "result": "ok",
+                "correlation_id": correlation_id,
                 "vertical": folder,
                 "context_paths": merged.context_paths,
                 "loaded_contexts": merged.loaded_contexts,
@@ -202,13 +213,21 @@ def _should_run_roi(
     )
 
 
-async def _objection_agent(folder: str, objection_types: list[str]) -> MicroAgentResult:
+async def _objection_agent(
+    folder: str,
+    objection_types: list[str],
+    correlation_id: str | None,
+) -> MicroAgentResult:
     path = _context_path(folder, "objections.yaml")
     if not _context_exists(path):
         return MicroAgentResult.empty()
     logger.info(
         "micro_agent_objection",
         extra={
+            "component": "prompt_micro_agents",
+            "action": "select_objection_context",
+            "result": "ok",
+            "correlation_id": correlation_id,
             "vertical": folder,
             "objection_types": objection_types,
         },
@@ -224,6 +243,7 @@ async def _case_agent(
     folder: str,
     normalized_message: str,
     contact_card_signals: dict[str, Any] | None,
+    correlation_id: str | None,
 ) -> MicroAgentResult:
     selection = _select_case(folder, normalized_message, contact_card_signals or {})
     if not selection.case_id:
@@ -231,6 +251,10 @@ async def _case_agent(
     logger.info(
         "micro_agent_case_selected",
         extra={
+            "component": "prompt_micro_agents",
+            "action": "select_case",
+            "result": "ok",
+            "correlation_id": correlation_id,
             "vertical": folder,
             "case_id": selection.case_id,
             "confidence": selection.confidence,
@@ -249,6 +273,7 @@ async def _case_agent(
 async def _roi_agent(
     normalized_message: str,
     contact_card_signals: dict[str, Any] | None,
+    correlation_id: str | None,
 ) -> MicroAgentResult:
     signals = contact_card_signals or {}
     roi_inputs = _format_roi_inputs(normalized_message, signals)
@@ -257,6 +282,10 @@ async def _roi_agent(
     logger.info(
         "micro_agent_roi_hint",
         extra={
+            "component": "prompt_micro_agents",
+            "action": "build_roi_hint",
+            "result": "ok",
+            "correlation_id": correlation_id,
             "signal_keys": signal_keys,
             "has_numbers": has_numbers,
         },

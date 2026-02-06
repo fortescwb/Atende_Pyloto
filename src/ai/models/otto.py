@@ -29,6 +29,7 @@ class OttoRequest(BaseModel):
 
     user_message: str
     session_state: str
+    correlation_id: str | None = None
     history: list[str] = Field(default_factory=list)
     contact_card_summary: str = ""
     contact_card_signals: dict[str, str] = Field(default_factory=dict)

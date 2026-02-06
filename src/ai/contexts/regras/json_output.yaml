@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "1.0.1"
 updated_at: "2026-02-06"
 
 metadata:
@@ -12,7 +12,7 @@ prompt_injection: |
   SAÍDA OBRIGATÓRIA: responda SOMENTE JSON válido (sem markdown).
   Schema:
   {"next_state":"<ESTADO>","response_text":"<texto curto>","message_type":"text|interactive_button|interactive_list","confidence":0.0,"requires_human":false,"reasoning_debug":"opcional"}
-  Restrições: response_text <= 350 chars; se requires_human=true, prefira HANDOFF_HUMAN quando permitido.
+  Restrições: response_text <= 350 chars.
 
 # Formato JSON + limites (SYSTEM)
 output_contract:
@@ -29,4 +29,3 @@ constraints:
   - "Responder SOMENTE JSON válido."
   - "Não usar markdown; não envolver em ```."
   - "response_text <= 350 caracteres."
-  - "Se requires_human=true, prefira next_state=HANDOFF_HUMAN (se permitido)."

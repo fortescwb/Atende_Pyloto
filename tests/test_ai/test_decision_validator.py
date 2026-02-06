@@ -22,6 +22,7 @@ def _req(valid_transitions: list[str] | None = None) -> OttoRequest:
     return OttoRequest(
         user_message="texto",
         session_state="TRIAGE",
+        correlation_id="corr-123",
         history=["Usuario: oi"],
         contact_card_summary="{}",
         valid_transitions=valid_transitions or ["COLLECTING_INFO"],
@@ -113,3 +114,43 @@ async def test_review_missing_fallback_human() -> None:
 
     assert updated.requires_human is True
     assert result.validation_type == "human_required"
+
+
+@pytest.mark.asyncio
+async def test_normalizes_next_state_when_question() -> None:
+    validator = DecisionValidatorService()
+    decision = OttoDecision(
+        next_state="GENERATING_RESPONSE",
+        response_text="Qual seu email?",
+        message_type="text",
+        confidence=0.9,
+        requires_human=False,
+    )
+
+    updated, result = await validator.validate(
+        decision,
+        _req(["COLLECTING_INFO", "TRIAGE"]),
+    )
+
+    assert updated.next_state == "COLLECTING_INFO"
+    assert result.approved is True
+
+
+@pytest.mark.asyncio
+async def test_normalizes_next_state_when_no_question() -> None:
+    validator = DecisionValidatorService()
+    decision = OttoDecision(
+        next_state="COLLECTING_INFO",
+        response_text="Segue o resumo solicitado.",
+        message_type="text",
+        confidence=0.9,
+        requires_human=False,
+    )
+
+    updated, result = await validator.validate(
+        decision,
+        _req(["SELF_SERVE_INFO", "GENERATING_RESPONSE"]),
+    )
+
+    assert updated.next_state == "SELF_SERVE_INFO"
+    assert result.approved is True

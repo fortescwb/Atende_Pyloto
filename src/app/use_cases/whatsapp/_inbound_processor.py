@@ -27,7 +27,6 @@ from app.use_cases.whatsapp._inbound_helpers import (
     history_as_strings,
     is_terminal_session,
     last_assistant_message,
-    user_history_as_strings,
 )
 from fsm.manager import FSMStateMachine
 from fsm.states import SessionState
@@ -266,12 +265,13 @@ class InboundMessageProcessor:
         raw_user_text: str,
         correlation_id: str,
     ) -> tuple[OttoRequest, OttoDecision, Any]:
-        otto_history = user_history_as_strings(session, max_messages=5)
+        otto_history = history_as_strings(session)
         otto_request = self._build_otto_request(
             session=session,
             sanitized_input=sanitized_input,
             history=otto_history,
             card_summary=card_summary,
+            correlation_id=correlation_id,
         )
         assistant_last = last_assistant_message(session)
         extraction_task = self._build_extraction_task(
@@ -305,6 +305,7 @@ class InboundMessageProcessor:
         sanitized_input: str,
         history: list[str],
         card_summary: str,
+        correlation_id: str,
     ) -> OttoRequest:
         tenant_intent, intent_confidence = build_tenant_intent(session, sanitized_input)
         loaded_contexts = []
@@ -320,6 +321,7 @@ class InboundMessageProcessor:
         return OttoRequest(
             user_message=sanitized_input,
             session_state=session.current_state.name,
+            correlation_id=correlation_id,
             history=history,
             contact_card_summary=card_summary,
             contact_card_signals=contact_card_signals,

@@ -1,4 +1,4 @@
-version: "1.3.0"
+version: "1.4.0"
 updated_at: "2026-02-06"
 
 metadata:
@@ -17,10 +17,21 @@ system_prompt: |
   - Nunca inventar. Nunca inferir. Não completar campos ausentes.
   - Se não houver informação útil, retorne updates vazio.
 
-  REGRA PARA primary_interest:
+  REGRA PARA primary_interest e secondary_interests:
+  - primary_interest: UNICO interesse mais relevante (maior enfase/urgencia na mensagem).
+  - secondary_interests: ate 3 outros interesses mencionados com menor enfase.
   - Se o usuario mencionar bot/WhatsApp/chatbot/automacao de atendimento -> automacao_atendimento
   - Se o usuario mencionar sistema/app/plataforma sob medida -> sob_medida
   - Se nao tiver certeza, deixe primary_interest ausente (nao chute).
+
+  EXEMPLOS:
+  Usuario: "Preciso de um bot para WhatsApp. Depois quero trafego pago."
+  -> primary_interest: automacao_atendimento
+  -> secondary_interests: ["gestao_perfis_trafego"]
+
+  Usuario: "Quero um sistema sob medida e tambem automacao no WhatsApp."
+  -> primary_interest: sob_medida
+  -> secondary_interests: ["automacao_atendimento"]
 
   CAMPOS POSSÍVEIS:
   - full_name, email, company, role, location
@@ -43,6 +54,14 @@ system_prompt: |
   - meeting_preferred_datetime_text: str (texto com melhor dia/horario sugerido pelo usuario)
   - meeting_mode: online | presencial
   - requested_human, showed_objection
+
+  VALIDACAO DE HORARIO (agendamento):
+  - So preencha meeting_preferred_datetime_text se houver DIA claro e HORARIO claro.
+  - Dia claro: "segunda", "dia 10", "amanha", "10/02".
+  - Horario claro: "14h", "14:30", "de manha" -> "09h-11h", "de tarde" -> "14h-16h".
+  - Se faltar dia OU horario, NAO atualize meeting_preferred_datetime_text.
+  - Se horario estiver fora de 09h-17h (seg-sex), ainda extraia, mas reduza confidence (ex: 0.3)
+    e inclua evidence: "fora do horario comercial".
 
   OUTPUT (JSON válido):
   {
