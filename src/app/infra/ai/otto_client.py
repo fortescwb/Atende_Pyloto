@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class OttoClient:
     """Cliente LLM para decisao do OttoAgent."""
 
-    __slots__ = ("_client", "_model", "_timeout_seconds")
+    __slots__ = ("_client", "_model", "_timeout_seconds", "_use_json_schema")
 
     def __init__(
         self,
@@ -34,6 +34,7 @@ class OttoClient:
         self._model = model or cfg.model or "gpt-4o"
         base_timeout = float(timeout_seconds or cfg.timeout_seconds or 12.0)
         self._timeout_seconds = max(10.0, min(base_timeout, 15.0))
+        self._use_json_schema = True
         if client is not None:
             self._client = client
         else:
@@ -65,23 +66,29 @@ class OttoClient:
             return None
 
     async def _call_openai(self, system_prompt: str, user_prompt: str) -> Any | None:
-        response_format = _build_response_format()
-        try:
-            return await self._client.chat.completions.create(
-                model=self._model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                response_format=response_format,
-                temperature=0.2,
-                max_tokens=500,
-            )
-        except Exception as exc:
-            logger.warning(
-                "otto_client_openai_error",
-                extra={"error_type": type(exc).__name__},
-            )
+        if self._use_json_schema:
+            response_format = _build_response_format()
+            try:
+                return await self._client.chat.completions.create(
+                    model=self._model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    response_format=response_format,
+                    temperature=0.2,
+                    max_tokens=500,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "otto_client_openai_error",
+                    extra={
+                        "error_type": type(exc).__name__,
+                        "error": str(exc),
+                    },
+                )
+                if getattr(exc, "status_code", None) == 400:
+                    self._use_json_schema = False
 
         try:
             return await self._client.chat.completions.create(
@@ -97,7 +104,10 @@ class OttoClient:
         except Exception as exc:
             logger.warning(
                 "otto_client_openai_fallback_error",
-                extra={"error_type": type(exc).__name__},
+                extra={
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                },
             )
             return None
 

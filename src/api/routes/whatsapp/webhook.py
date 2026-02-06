@@ -203,27 +203,45 @@ async def receive_webhook(request: Request) -> Response | dict[str, Any]:
                 },
             )
 
-            # Processa o payload de forma assíncrona (fire-and-forget)
-            # Responde 200 OK imediatamente para o Meta
+            # Processa o payload em modo async (padrão) ou inline (staging/dev)
+            # Inline evita tasks pausadas por CPU throttling no Cloud Run
             use_case = _get_inbound_use_case()
             if use_case is not None:
-                task = asyncio.create_task(
-                    _process_inbound_payload_safe(
+                processing_mode = (settings.webhook_processing_mode or "async").lower()
+                if processing_mode == "inline":
+                    await _process_inbound_payload_safe(
                         payload=_payload,
                         correlation_id=get_correlation_id(),
                         use_case=use_case,
                         tenant_id="default",
                     )
-                )
-                _background_tasks.add(task)
-                task.add_done_callback(_background_tasks.discard)
-                logger.info(
-                    "webhook_processing_scheduled",
-                    extra={
-                        "channel": "whatsapp",
-                        "correlation_id": get_correlation_id(),
-                    },
-                )
+                    logger.info(
+                        "webhook_processing_completed",
+                        extra={
+                            "channel": "whatsapp",
+                            "correlation_id": get_correlation_id(),
+                            "mode": "inline",
+                        },
+                    )
+                else:
+                    task = asyncio.create_task(
+                        _process_inbound_payload_safe(
+                            payload=_payload,
+                            correlation_id=get_correlation_id(),
+                            use_case=use_case,
+                            tenant_id="default",
+                        )
+                    )
+                    _background_tasks.add(task)
+                    task.add_done_callback(_background_tasks.discard)
+                    logger.info(
+                        "webhook_processing_scheduled",
+                        extra={
+                            "channel": "whatsapp",
+                            "correlation_id": get_correlation_id(),
+                            "mode": "async",
+                        },
+                    )
             else:
                 logger.warning(
                     "webhook_use_case_unavailable",

@@ -31,6 +31,7 @@ class WhatsAppSettings:
         max_retries: Máximo de tentativas em caso de erro
         circuit_breaker_threshold: Limiar para abrir circuit breaker
         circuit_breaker_reset_seconds: Tempo para reset do circuit breaker
+        webhook_processing_mode: Modo de processamento do webhook (async|inline)
     """
 
     # Credenciais (carregadas de env ou Secret Manager)
@@ -51,6 +52,9 @@ class WhatsAppSettings:
     # Circuit breaker
     circuit_breaker_threshold: int = 5
     circuit_breaker_reset_seconds: int = 60
+
+    # Webhook processing
+    webhook_processing_mode: str = "async"
 
     # Media upload
     media_upload_timeout_seconds: float = 120.0
@@ -112,11 +116,20 @@ class WhatsAppSettings:
         if self.max_retries < 0:
             errors.append("WHATSAPP_MAX_RETRIES deve ser >= 0")
 
+        if self.webhook_processing_mode not in ("async", "inline"):
+            errors.append(
+                "WHATSAPP_WEBHOOK_PROCESSING_MODE deve ser 'async' ou 'inline'"
+            )
+
         return errors
 
 
 def _load_from_env() -> WhatsAppSettings:
     """Carrega WhatsAppSettings a partir de variáveis de ambiente."""
+    environment = os.getenv("ENVIRONMENT", "").lower()
+    default_processing_mode = (
+        "inline" if environment in ("staging", "development", "dev", "test") else "async"
+    )
     return WhatsAppSettings(
         verify_token=os.getenv("WHATSAPP_VERIFY_TOKEN", ""),
         webhook_secret=os.getenv("WHATSAPP_WEBHOOK_SECRET", ""),
@@ -141,6 +154,9 @@ def _load_from_env() -> WhatsAppSettings:
         media_max_size_bytes=int(
             os.getenv("WHATSAPP_MEDIA_MAX_SIZE_BYTES", str(16 * 1024 * 1024))
         ),
+        webhook_processing_mode=os.getenv(
+            "WHATSAPP_WEBHOOK_PROCESSING_MODE", default_processing_mode
+        ).lower(),
     )
 
 
