@@ -113,13 +113,31 @@ class OttoClient:
 
 
 def _build_response_format() -> dict[str, Any]:
-    schema = OttoDecision.model_json_schema()
+    schema: dict[str, Any] = {
+        "type": "object",
+        "properties": {
+            "next_state": {"type": "string"},
+            "response_text": {"type": "string"},
+            "message_type": {"type": "string"},
+            "confidence": {"type": "number"},
+            "requires_human": {"type": "boolean"},
+            "reasoning_debug": {"type": "string"},
+        },
+        "required": [
+            "next_state",
+            "response_text",
+            "message_type",
+            "confidence",
+            "requires_human",
+        ],
+        "additionalProperties": False,
+    }
     return {
         "type": "json_schema",
         "json_schema": {
             "name": "otto_decision",
-            "schema": schema,
             "strict": True,
+            "schema": schema,
         },
     }
 

@@ -19,8 +19,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _MAX_RESPONSE_CHARS = 500
+# Confidence aqui indica intenção comercial (não confiabilidade).
+# Não deve bloquear resposta; use apenas para acionar revisão opcional.
 _CONFIDENCE_APPROVE = 0.85
-_CONFIDENCE_ESCALATE = 0.7
 _HANDOFF_TEXT = (
     "Vou conectar voce com nossa equipe para continuar o atendimento. "
     "Aguarde um momento."
@@ -72,9 +73,6 @@ class DecisionValidatorService:
         decision: OttoDecision,
         request: OttoRequest,
     ) -> tuple[OttoDecision, ValidationResult]:
-        if decision.confidence < _CONFIDENCE_ESCALATE:
-            return _handoff("low_confidence")
-
         if decision.confidence < _CONFIDENCE_APPROVE:
             if self._review_client is None:
                 updated = decision.model_copy(update={"requires_human": True})
@@ -84,7 +82,7 @@ class DecisionValidatorService:
             if reviewed is None:
                 return _handoff("review_failed")
 
-            if reviewed.requires_human or reviewed.confidence < _CONFIDENCE_ESCALATE:
+            if reviewed.requires_human:
                 return _handoff("review_requires_human")
 
             return reviewed, _result("approved", reviewer_used=True)
