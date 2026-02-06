@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import tiktoken
+import pytest
 
 from ai.prompts.otto_prompt import build_full_prompt
+
+tiktoken = pytest.importorskip("tiktoken")
 
 
 def _count_tokens(text: str, *, model: str = "gpt-4o") -> int:

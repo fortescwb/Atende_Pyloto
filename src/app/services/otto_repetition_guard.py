@@ -1,12 +1,28 @@
-"""Guard deterministico para evitar perguntas repetidas do Otto."""
+"""Guards deterministicos para melhorar continuidade do Otto.
+
+- Evita repeticao/irrelevancia de perguntas via ContactCard.
+- Injeta continuidade quando o Otto "trava".
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import TYPE_CHECKING
 
-from ai.models.otto import OttoDecision
-from app.domain.contact_card import ContactCard
+from app.services.otto_guard_detection import detect_question_type, is_confirmation_message
+from app.services.otto_guard_funnel_copy import build_ack
+from app.services.otto_guard_funnel_questions import build_next_step_cta, pick_next_question
+from app.services.otto_guard_funnel_state import (
+    has_minimum_qualification,
+    is_already_known,
+    is_relevant_question,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from ai.models.otto import OttoDecision
+    from app.domain.contact_card import ContactCard
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,234 +31,170 @@ class GuardResult:
     applied: bool
     question_type: str | None = None
     next_question_key: str | None = None
+    guard_type: str | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class QuestionPick:
-    key: str
-    text: str
+def apply_business_hours_guard(
+    *,
+    decision: OttoDecision,
+    recent_fields: Iterable[str] | None = None,
+) -> GuardResult:
+    """Bloqueia horarios fora do expediente (09h-17h).
+
+    O sinal e passado via `recent_fields` para manter o guard deterministico
+    (sem parse complexo aqui).
+    """
+    recent = set(recent_fields or [])
+    if "meeting_time_out_of_hours" not in recent:
+        return GuardResult(decision=decision, applied=False)
+
+    replacement = (
+        "Nosso horario de atendimento e de 9h as 17h (seg-sex). "
+        "Qual dia e horario dentro desse periodo fica melhor pra voce?"
+    )
+    return GuardResult(
+        decision=decision.model_copy(update={"response_text": replacement}),
+        applied=True,
+        guard_type="business_hours",
+    )
 
 
 def apply_repetition_guard(
     *,
     decision: OttoDecision,
     contact_card: ContactCard | None,
+    recent_fields: Iterable[str] | None = None,
 ) -> GuardResult:
-    """Evita repetir pergunta quando o dado ja existe no ContactCard."""
+    """Evita repetir pergunta (ou qualificar errado) quando o ContactCard ja tem a resposta."""
     if contact_card is None:
         return GuardResult(decision=decision, applied=False)
+
     response_text = (decision.response_text or "").strip()
     if not response_text:
         return GuardResult(decision=decision, applied=False)
 
-    question_type = _detect_question_type(response_text)
+    question_type = detect_question_type(response_text)
     if question_type is None:
         return GuardResult(decision=decision, applied=False)
 
-    if not _is_already_known(contact_card, question_type):
+    already_known = is_already_known(contact_card, question_type)
+    relevant = is_relevant_question(contact_card, question_type)
+    if not already_known and relevant:
         return GuardResult(decision=decision, applied=False)
 
-    ack = _build_ack(contact_card, question_type)
-    next_pick = _pick_next_question(contact_card, skip_fields={question_type})
-    replacement = _combine_ack_and_question(ack, next_pick.text if next_pick else "")
-    updated = decision.model_copy(update={"response_text": replacement})
+    ack = build_ack(contact_card, question_type, recent_fields=recent_fields)
+    next_pick = pick_next_question(contact_card, skip_fields={question_type})
+    cta = build_next_step_cta(contact_card)
+
+    next_text = next_pick.text if next_pick else cta
+    if not next_text:
+        return GuardResult(decision=decision, applied=False)
+
+    updated = decision.model_copy(update={"response_text": _combine(ack, next_text)})
+    guard_type = "repetition" if already_known else "irrelevant_question"
     return GuardResult(
         decision=updated,
         applied=True,
         question_type=question_type,
         next_question_key=next_pick.key if next_pick else None,
+        guard_type=guard_type,
+    )
+
+
+def apply_continuation_guard(
+    *,
+    decision: OttoDecision,
+    contact_card: ContactCard | None,
+    user_message: str,
+    recent_fields: Iterable[str] | None = None,
+) -> GuardResult:
+    """Se o Otto nao propuser proximo passo, injeta uma continuacao deterministica."""
+    if contact_card is None:
+        return GuardResult(decision=decision, applied=False)
+
+    text = (decision.response_text or "").strip()
+    if not text:
+        return GuardResult(decision=decision, applied=False)
+    if "?" in text:
+        return GuardResult(decision=decision, applied=False)
+
+    trigger = is_confirmation_message(user_message) or bool(list(recent_fields or []))
+    if not trigger:
+        return GuardResult(decision=decision, applied=False)
+
+    next_pick = pick_next_question(contact_card, skip_fields=set())
+    cta = build_next_step_cta(contact_card)
+
+    next_text = ""
+    if has_minimum_qualification(contact_card) and cta:
+        next_text = cta
+    elif next_pick:
+        next_text = next_pick.text
+    elif cta:
+        next_text = cta
+
+    if not next_text:
+        return GuardResult(decision=decision, applied=False)
+
+    updated = decision.model_copy(update={"response_text": _combine(text, next_text)})
+    return GuardResult(
+        decision=updated,
+        applied=True,
+        next_question_key=next_pick.key if next_pick else None,
+        guard_type="continuation",
     )
 
 
 def collect_contact_card_fields(contact_card: ContactCard | None) -> list[str]:
-    """Retorna lista de campos nao sensiveis presentes no ContactCard."""
+    """Retorna lista de campos nao sensiveis presentes no ContactCard (apenas chaves)."""
     if contact_card is None:
         return []
+
     fields: list[str] = []
-    if contact_card.primary_interest:
-        fields.append("primary_interest")
-    if contact_card.secondary_interests:
-        fields.append("secondary_interests")
-    if contact_card.urgency:
-        fields.append("urgency")
-    if contact_card.budget_indication:
-        fields.append("budget_indication")
-    if contact_card.specific_need:
-        fields.append("specific_need")
-    if contact_card.company_size:
-        fields.append("company_size")
-    if contact_card.message_volume_per_day is not None:
-        fields.append("message_volume_per_day")
-    if contact_card.attendants_count is not None:
-        fields.append("attendants_count")
-    if contact_card.specialists_count is not None:
-        fields.append("specialists_count")
-    if contact_card.has_crm is not None:
-        fields.append("has_crm")
-    if contact_card.current_tools:
-        fields.append("current_tools")
+    for key in (
+        "primary_interest",
+        "secondary_interests",
+        "specific_need",
+        "urgency",
+        "budget_indication",
+        "company_size",
+        "message_volume_per_day",
+        "attendants_count",
+        "specialists_count",
+        "has_crm",
+        "current_tools",
+        "users_count",
+        "modules_needed",
+        "desired_features",
+        "integrations_needed",
+        "needs_data_migration",
+        "meeting_preferred_datetime_text",
+        "meeting_mode",
+    ):
+        value = getattr(contact_card, key, None)
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        if isinstance(value, list) and not value:
+            continue
+        fields.append(key)
+
+    if contact_card.full_name:
+        fields.append("full_name")
+    if contact_card.email:
+        fields.append("email")
+    if contact_card.company:
+        fields.append("company")
+    if contact_card.requested_human:
+        fields.append("requested_human")
+    if contact_card.showed_objection:
+        fields.append("showed_objection")
+
     return fields
 
 
-def _detect_question_type(text: str) -> str | None:
-    normalized = text.lower()
-    if not _looks_like_question(normalized):
-        return None
-
-    if _contains_any(normalized, _MESSAGE_VOLUME_KEYWORDS):
-        return "message_volume_per_day"
-    if _contains_any(normalized, _ATTENDANTS_KEYWORDS):
-        return "attendants_count"
-    if _contains_any(normalized, _SPECIALISTS_KEYWORDS):
-        return "specialists_count"
-    if _contains_any(normalized, _CRM_KEYWORDS):
-        return "has_crm"
-    if _contains_any(normalized, _TOOLS_KEYWORDS):
-        return "current_tools"
-    return None
-
-
-def _looks_like_question(text: str) -> bool:
-    if "?" in text:
-        return True
-    starts = ("qual ", "quais ", "quant", "voce ", "ja ", "tem ", "usa ")
-    return text.strip().startswith(starts)
-
-
-def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
-    return any(keyword in text for keyword in keywords)
-
-
-def _is_already_known(contact_card: ContactCard, question_type: str) -> bool:
-    if question_type == "message_volume_per_day":
-        return contact_card.message_volume_per_day is not None
-    if question_type == "attendants_count":
-        return contact_card.attendants_count is not None
-    if question_type == "specialists_count":
-        return contact_card.specialists_count is not None
-    if question_type == "has_crm":
-        return contact_card.has_crm is not None or "crm" in contact_card.current_tools
-    if question_type == "current_tools":
-        return len(contact_card.current_tools) > 0
-    return False
-
-
-def _build_ack(contact_card: ContactCard, question_type: str) -> str:
-    if question_type == "message_volume_per_day":
-        volume = contact_card.message_volume_per_day
-        return f"Entendi, voce recebe cerca de {volume} mensagens por dia."
-    if question_type == "attendants_count":
-        attendants = contact_card.attendants_count
-        return f"Entendi, sao {attendants} pessoas atendendo hoje."
-    if question_type == "specialists_count":
-        specialists = contact_card.specialists_count
-        return f"Entendi, {specialists} especialistas recebem os atendimentos."
-    if question_type == "has_crm":
-        has_crm = contact_card.has_crm
-        if has_crm is True or "crm" in contact_card.current_tools:
-            return "Entendi, voce ja usa CRM."
-        return "Entendi, voce ainda nao usa CRM."
-    if question_type == "current_tools":
-        tools = _format_tools(contact_card.current_tools)
-        return f"Entendi, hoje voces usam {tools}."
-    return "Entendi."
-
-
-def _pick_next_question(
-    contact_card: ContactCard,
-    *,
-    skip_fields: set[str],
-) -> QuestionPick | None:
-    candidates: list[tuple[str, Callable[[ContactCard], bool], str]] = [
-        (
-            "specific_need",
-            lambda card: not card.specific_need,
-            "Qual a principal necessidade que voce espera desse bot?",
-        ),
-        (
-            "has_crm",
-            lambda card: card.has_crm is None and "crm" not in card.current_tools,
-            "Voce ja usa algum CRM ou ferramenta para organizar os atendimentos?",
-        ),
-        (
-            "current_tools",
-            lambda card: not card.current_tools,
-            "Como voces organizam os atendimentos hoje? (ex: planilha/CRM)",
-        ),
-        (
-            "attendants_count",
-            lambda card: card.attendants_count is None,
-            "Quantas pessoas atendem o WhatsApp hoje?",
-        ),
-        (
-            "specialists_count",
-            lambda card: card.specialists_count is None,
-            "Quantos especialistas receberiam os atendimentos qualificados?",
-        ),
-    ]
-    for key, predicate, text in candidates:
-        if key in skip_fields:
-            continue
-        if predicate(contact_card):
-            return QuestionPick(key=key, text=text)
-    return None
-
-
-def _combine_ack_and_question(ack: str, question: str) -> str:
-    if not question:
-        return ack
-    return f"{ack} {question}"
-
-
-def _format_tools(tools: list[str]) -> str:
-    if not tools:
-        return "ferramentas basicas"
-    normalized = [tool.replace("_", " ") for tool in tools[:3]]
-    return ", ".join(normalized)
-
-
-_MESSAGE_VOLUME_KEYWORDS = (
-    "mensagens por dia",
-    "mensagens/dia",
-    "volume de mensagens",
-    "quantas mensagens",
-    "qtd mensagens",
-    "quantidade de mensagens",
-    "atendimentos por dia",
-    "volume diario",
-)
-
-_ATTENDANTS_KEYWORDS = (
-    "quantas pessoas atendem",
-    "quantas pessoas atendendo",
-    "pessoas atendendo",
-    "equipe de atendimento",
-    "quantos atendentes",
-    "time de atendimento",
-)
-
-_SPECIALISTS_KEYWORDS = (
-    "quantos advogados",
-    "quantos especialistas",
-    "quantos profissionais",
-    "quantos consultores",
-)
-
-_CRM_KEYWORDS = (
-    "crm",
-    "integra com crm",
-    "integracao com crm",
-    "ja usa crm",
-    "ja tem crm",
-    "usa crm",
-    "tem crm",
-)
-
-_TOOLS_KEYWORDS = (
-    "planilha",
-    "whatsapp web",
-    "ferramenta",
-    "ferramentas",
-    "como se organizam",
-    "como organizam",
-)
+def _combine(first: str, second: str) -> str:
+    if not second:
+        return first
+    return f"{first} {second}"

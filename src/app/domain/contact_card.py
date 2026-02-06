@@ -4,6 +4,7 @@ Modelo focado em dados de qualificacao e contexto para o atendimento.
 Evita PII em logs; PII fica apenas no modelo persistido.
 """
 from __future__ import annotations
+
 import re
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -11,8 +12,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator
 
 _PHONE_REGEX = re.compile(r"^\d{12,15}$")
+
+
 def _utcnow() -> datetime:
     return datetime.now(UTC)
+
+
 class ContactCard(BaseModel):
     """Perfil do lead armazenado no Firestore."""
 
@@ -44,6 +49,18 @@ class ContactCard(BaseModel):
     specialists_count: int | None = Field(None, ge=0)
     has_crm: bool | None = None
     current_tools: list[str] = Field(default_factory=list)
+    users_count: int | None = Field(None, ge=0)
+    modules_needed: list[str] = Field(default_factory=list)
+
+    # Sob medida (qualificacao)
+    desired_features: list[str] = Field(default_factory=list)
+    integrations_needed: list[str] = Field(default_factory=list)
+    legacy_systems: list[str] = Field(default_factory=list)
+    needs_data_migration: bool | None = None
+
+    # Agendamento (handoff)
+    meeting_preferred_datetime_text: str | None = Field(None, max_length=120)
+    meeting_mode: Literal["online", "presencial"] | None = None
 
     # Scores
     qualification_score: float = Field(default=0.0, ge=0.0, le=100.0)
@@ -89,7 +106,7 @@ class ContactCard(BaseModel):
     def to_prompt_summary(self) -> str:
         """Resumo curto para prompt (max ~200 tokens)."""
         parts: list[str] = []
-        parts.append(f"WhatsApp: {self.whatsapp_name} ({self.phone})")
+        parts.append(f"WhatsApp: {self.whatsapp_name}")
         if self.full_name and self.full_name.lower() != self.whatsapp_name.lower():
             parts.append(f"Nome completo: {self.full_name}")
         if self.company:
@@ -108,6 +125,18 @@ class ContactCard(BaseModel):
         if self.current_tools:
             tools_display = ", ".join(self.current_tools)
             parts.append(f"Ferramentas atuais: {tools_display}")
+        if self.users_count is not None:
+            parts.append(f"Usuarios: {self.users_count}")
+        if self.modules_needed:
+            parts.append(f"Modulos: {', '.join(self.modules_needed[:6])}")
+        if self.desired_features:
+            parts.append(f"Funcionalidades: {', '.join(self.desired_features[:6])}")
+        if self.integrations_needed:
+            parts.append(f"Integracoes: {', '.join(self.integrations_needed[:6])}")
+        if self.needs_data_migration is not None:
+            parts.append(f"Migracao de dados: {'Sim' if self.needs_data_migration else 'Nao'}")
+        if self.legacy_systems:
+            parts.append(f"Legado: {', '.join(self.legacy_systems[:4])}")
         if self.email:
             parts.append(f"Email: {self.email}")
         if self.primary_interest:
@@ -132,6 +161,9 @@ class ContactCard(BaseModel):
             parts.append(f"Urgencia: {urgency_map[self.urgency]}")
         if self.budget_indication:
             parts.append(f"Orcamento: {self.budget_indication}")
+        if self.meeting_preferred_datetime_text:
+            mode = f" ({self.meeting_mode})" if self.meeting_mode else ""
+            parts.append(f"Agendamento: {self.meeting_preferred_datetime_text}{mode}")
         status = "QUALIFICADO" if self.is_qualified else "Qualificando"
         parts.append(f"Score: {self.qualification_score:.0f}/100 {status}")
         alerts: list[str] = []
@@ -165,34 +197,3 @@ class ContactCard(BaseModel):
         if not _PHONE_REGEX.match(value):
             raise ValueError("Telefone deve ter 12-15 digitos")
         return value
-
-
-class ContactCardPatch(BaseModel):
-    """Patch parcial do ContactCard (apenas campos atualizados)."""
-
-    full_name: str | None = None
-    email: str | None = None
-    company: str | None = None
-    role: str | None = None
-    location: str | None = None
-    primary_interest: Literal[
-        "saas", "sob_medida", "gestao_perfis_trafego",
-        "automacao_atendimento", "intermediacao_entregas",
-        "gestao_perfis", "trafego_pago", "intermediacao",
-    ] | None = None
-    secondary_interests: list[str] | None = None
-    urgency: Literal["low", "medium", "high", "urgent"] | None = None
-    budget_indication: str | None = None
-    specific_need: str | None = None
-    company_size: Literal["mei", "micro", "pequena", "media", "grande"] | None = None
-    message_volume_per_day: int | None = Field(None, ge=0)
-    attendants_count: int | None = Field(None, ge=0)
-    specialists_count: int | None = Field(None, ge=0)
-    has_crm: bool | None = None
-    current_tools: list[str] | None = None
-    requested_human: bool | None = None
-    showed_objection: bool | None = None
-
-    def has_updates(self) -> bool:
-        """Retorna True se existir ao menos um campo preenchido."""
-        return any(value is not None for value in self.model_dump().values())

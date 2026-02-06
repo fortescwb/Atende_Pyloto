@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from app.domain.contact_card import ContactCard, ContactCardPatch
+from app.domain.contact_card import ContactCard
+from app.domain.contact_card_patch import ContactCardPatch
 
 # TODO: remover alias apos migracao completa para ContactCard.
 LeadProfile = ContactCard

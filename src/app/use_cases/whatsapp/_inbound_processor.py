@@ -12,6 +12,13 @@ from typing import TYPE_CHECKING, Any
 from ai.models.otto import OttoDecision, OttoRequest
 from ai.services.decision_validator import DecisionValidatorService
 from ai.utils.sanitizer import sanitize_pii
+from app.services.meeting_time_validator import extract_hour, is_within_business_hours
+from app.services.otto_repetition_guard import (
+    apply_business_hours_guard,
+    apply_continuation_guard,
+    apply_repetition_guard,
+    collect_contact_card_fields,
+)
 from app.use_cases.whatsapp._inbound_helpers import (
     build_outbound_payload,
     build_outbound_request,
@@ -21,10 +28,6 @@ from app.use_cases.whatsapp._inbound_helpers import (
     is_terminal_session,
     last_assistant_message,
     user_history_as_strings,
-)
-from app.services.otto_repetition_guard import (
-    apply_repetition_guard,
-    collect_contact_card_fields,
 )
 from fsm.manager import FSMStateMachine
 from fsm.states import SessionState
@@ -104,8 +107,37 @@ class InboundMessageProcessor:
             correlation_id=correlation_id,
         )
 
+        extracted_fields: list[str] = []
         if contact_card and extraction:
-            await self._apply_contact_card_patch(contact_card, extraction)
+            patch = extraction.updates
+            extracted_fields = list(patch.model_dump(exclude_none=True).keys())
+
+            meeting_text = getattr(patch, "meeting_preferred_datetime_text", None)
+            if isinstance(meeting_text, str) and meeting_text.strip():
+                within = is_within_business_hours(meeting_text)
+                if within is False:
+                    hour = extract_hour(meeting_text)
+                    logger.info(
+                        "meeting_time_out_of_business_hours",
+                        extra={
+                            "component": "meeting_policy",
+                            "action": "validate_time",
+                            "result": "rejected",
+                            "correlation_id": correlation_id,
+                            "message_id": msg.message_id,
+                            "hour": hour,
+                        },
+                    )
+                    patch = patch.model_copy(update={"meeting_preferred_datetime_text": None})
+                    extracted_fields = list({*extracted_fields, "meeting_time_out_of_hours"})
+
+            await self._apply_contact_card_patch(
+                contact_card=contact_card,
+                patch=patch,
+                confidence=float(getattr(extraction, "confidence", 0.0) or 0.0),
+                correlation_id=correlation_id,
+                message_id=msg.message_id,
+            )
 
         if contact_card:
             self._log_contact_card_snapshot(
@@ -113,25 +145,69 @@ class InboundMessageProcessor:
                 correlation_id=correlation_id,
                 message_id=msg.message_id,
             )
-            guard_result = apply_repetition_guard(
+            business_hours = apply_business_hours_guard(
                 decision=decision,
-                contact_card=contact_card,
+                recent_fields=extracted_fields,
             )
-            if guard_result.applied:
+            if business_hours.applied:
                 logger.info(
-                    "otto_repetition_guard_applied",
+                    "otto_business_hours_guard_applied",
                     extra={
                         "component": "otto_guard",
                         "action": "guard_applied",
                         "result": "response_updated",
                         "correlation_id": correlation_id,
                         "message_id": msg.message_id,
-                        "question_type": guard_result.question_type,
-                        "next_question_key": guard_result.next_question_key,
+                        "guard_type": business_hours.guard_type,
                     },
                 )
-                decision = guard_result.decision
+                decision = business_hours.decision
+            else:
+                guard_result = apply_repetition_guard(
+                    decision=decision,
+                    contact_card=contact_card,
+                    recent_fields=extracted_fields,
+                )
+                if guard_result.applied:
+                    logger.info(
+                        "otto_repetition_guard_applied",
+                        extra={
+                            "component": "otto_guard",
+                            "action": "guard_applied",
+                            "result": "response_updated",
+                            "correlation_id": correlation_id,
+                            "message_id": msg.message_id,
+                            "question_type": guard_result.question_type,
+                            "next_question_key": guard_result.next_question_key,
+                            "guard_type": guard_result.guard_type,
+                        },
+                    )
+                    decision = guard_result.decision
+                else:
+                    continuation = apply_continuation_guard(
+                        decision=decision,
+                        contact_card=contact_card,
+                        user_message=sanitized_input,
+                        recent_fields=extracted_fields,
+                    )
+                    if continuation.applied:
+                        logger.info(
+                            "otto_continuation_guard_applied",
+                            extra={
+                                "component": "otto_guard",
+                                "action": "guard_applied",
+                                "result": "response_updated",
+                                "correlation_id": correlation_id,
+                                "message_id": msg.message_id,
+                                "guard_type": continuation.guard_type,
+                                "next_question_key": continuation.next_question_key,
+                            },
+                        )
+                        decision = continuation.decision
 
+        decision = self._maybe_adjust_next_state(
+            decision, otto_request, contact_card, correlation_id, msg.message_id
+        )
         decision = await self._validate_decision(decision, otto_request)
 
         sent = await self._send_response(msg, decision, correlation_id)
@@ -283,20 +359,35 @@ class InboundMessageProcessor:
         session.contact_card = contact_card
         return contact_card
 
-    async def _apply_contact_card_patch(self, contact_card: Any, extraction: Any) -> None:
-        if not extraction.has_updates:
+    async def _apply_contact_card_patch(
+        self,
+        *,
+        contact_card: Any,
+        patch: Any,
+        confidence: float,
+        correlation_id: str,
+        message_id: str | None,
+    ) -> None:
+        data = patch.model_dump(exclude_none=True) if patch is not None else {}
+        if not data:
             return
         from app.services.contact_card_merge import apply_contact_card_patch
 
-        updated = apply_contact_card_patch(contact_card, extraction.updates)
+        updated = apply_contact_card_patch(contact_card, patch)
         if updated and self._contact_card_store:
             await self._contact_card_store.upsert(contact_card)
-            fields_count = len(extraction.updates.model_dump(exclude_none=True))
+            extracted_fields = list(data.keys())
             logger.info(
                 "contact_card_updated",
                 extra={
-                    "fields_count": fields_count,
-                    "confidence": extraction.confidence,
+                    "component": "inbound_processor",
+                    "action": "contact_card_update",
+                    "result": "updated",
+                    "correlation_id": correlation_id,
+                    "message_id": message_id,
+                    "fields_count": len(extracted_fields),
+                    "extracted_fields": extracted_fields,
+                    "confidence": confidence,
                 },
             )
 
@@ -420,6 +511,67 @@ class InboundMessageProcessor:
                 max_history=None,
             )
         await self._session_manager.save(session)
+
+    def _maybe_adjust_next_state(
+        self,
+        decision: OttoDecision,
+        request: OttoRequest,
+        contact_card: Any,
+        correlation_id: str,
+        message_id: str | None,
+    ) -> OttoDecision:
+        valid = set(request.valid_transitions or [])
+        text = (decision.response_text or "").lower()
+
+        asks_meeting_time = (
+            ("agendar" in text and "?" in text)
+            or "qual melhor dia" in text
+            or "dia e horario" in text
+            or "dia/hor" in text
+        )
+        if (
+            asks_meeting_time
+            and "COLLECTING_INFO" in valid
+            and decision.next_state != "COLLECTING_INFO"
+        ):
+            logger.info(
+                "otto_next_state_adjusted",
+                extra={
+                    "component": "otto_guard",
+                    "action": "adjust_next_state",
+                    "result": "updated",
+                    "correlation_id": correlation_id,
+                    "message_id": message_id,
+                    "from_state": decision.next_state,
+                    "to_state": "COLLECTING_INFO",
+                    "reason": "asking_meeting_time",
+                },
+            )
+            return decision.model_copy(update={"next_state": "COLLECTING_INFO"})
+
+        meeting_text = getattr(contact_card, "meeting_preferred_datetime_text", None)
+        email = getattr(contact_card, "email", None)
+        should_close = bool(meeting_text) and bool(email) and "?" not in text
+        if not should_close:
+            return decision
+
+        if "SCHEDULED_FOLLOWUP" not in valid or decision.next_state == "SCHEDULED_FOLLOWUP":
+            return decision
+
+        logger.info(
+            "otto_next_state_adjusted",
+            extra={
+                "component": "otto_guard",
+                "action": "adjust_next_state",
+                "result": "updated",
+                "correlation_id": correlation_id,
+                "message_id": message_id,
+                "from_state": decision.next_state,
+                "to_state": "SCHEDULED_FOLLOWUP",
+                "reason": "meeting_collected",
+            },
+        )
+        return decision.model_copy(update={"next_state": "SCHEDULED_FOLLOWUP"})
 
     def _apply_decision_to_session(
         self,

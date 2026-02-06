@@ -10,10 +10,16 @@ PRIMARY_INTEREST_ALIASES = {
     "trafego_pago": "gestao_perfis_trafego",
     "intermediacao": "intermediacao_entregas",
     "automacao": "automacao_atendimento",
+    "automacao_whatsapp": "automacao_atendimento",
+    "bot": "automacao_atendimento",
+    "chatbot": "automacao_atendimento",
+    "bot_whatsapp": "automacao_atendimento",
+    "whatsapp_bot": "automacao_atendimento",
+    "sistema_sob_medida": "sob_medida",
 }
 
-INT_FIELDS = {"message_volume_per_day", "attendants_count", "specialists_count"}
-BOOL_FIELDS_ALLOW_FALSE = {"has_crm"}
+INT_FIELDS = {"message_volume_per_day", "attendants_count", "specialists_count", "users_count"}
+BOOL_FIELDS_ALLOW_FALSE = {"has_crm", "needs_data_migration"}
 TOOL_ALIASES = {
     "whatsapp": "whatsapp",
     "whatsapp_web": "whatsapp_web",
@@ -27,6 +33,13 @@ TOOL_ALIASES = {
     "erp": "erp",
     "agenda": "agenda",
     "api": "api",
+}
+
+STRING_LIST_FIELDS = {
+    "modules_needed",
+    "desired_features",
+    "integrations_needed",
+    "legacy_systems",
 }
 
 
@@ -109,3 +122,43 @@ def normalize_tools(value: Any) -> list[str]:
             seen.add(key)
             normalized.append(key)
     return normalized
+
+
+def normalize_meeting_mode(value: str) -> str:
+    text = (value or "").strip().lower()
+    if not text:
+        return "online"
+    if any(word in text for word in ("online", "remoto", "remote", "meet", "zoom", "teams")):
+        return "online"
+    if any(word in text for word in ("presencial", "pessoalmente", "local")):
+        return "presencial"
+    # Fallback seguro para evitar erro de validação.
+    return "online"
+
+
+def normalize_list_items(field: str, items: list[str]) -> list[str]:
+    if not items:
+        return []
+    if field in {"modules_needed", "integrations_needed", "legacy_systems"}:
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for item in items:
+            key = item.strip().lower().replace(" ", "_").replace("-", "_")
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            normalized.append(key)
+        return normalized
+    # desired_features: preserva texto, apenas trim/dedupe
+    normalized_features: list[str] = []
+    seen_features: set[str] = set()
+    for item in items:
+        text = item.strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen_features:
+            continue
+        seen_features.add(key)
+        normalized_features.append(text)
+    return normalized_features

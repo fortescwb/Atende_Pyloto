@@ -45,6 +45,14 @@ class ContactCardPatch(BaseModel):
     specialists_count: int | None = Field(None, ge=0)
     has_crm: bool | None = None
     current_tools: list[str] | None = None
+    users_count: int | None = Field(None, ge=0)
+    modules_needed: list[str] | None = None
+    desired_features: list[str] | None = None
+    integrations_needed: list[str] | None = None
+    legacy_systems: list[str] | None = None
+    needs_data_migration: bool | None = None
+    meeting_preferred_datetime_text: str | None = None
+    meeting_mode: Literal["online", "presencial"] | None = None
     requested_human: bool | None = None
     showed_objection: bool | None = None
 

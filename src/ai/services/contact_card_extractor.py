@@ -23,6 +23,9 @@ from ai.utils.contact_card_extraction import (
     BOOL_FIELDS_ALLOW_FALSE,
     INT_FIELDS,
     PRIMARY_INTEREST_ALIASES,
+    STRING_LIST_FIELDS,
+    normalize_list_items,
+    normalize_meeting_mode,
     normalize_string_list,
     normalize_tools,
     parse_bool_value,
@@ -63,10 +66,16 @@ class ContactCardExtractorService:
         try:
             patch = ContactCardPatch.model_validate(updates_raw)
         except ValidationError:
-            logger.warning("contact_card_patch_invalid")
+            logger.warning(
+                "contact_card_patch_invalid",
+                extra={
+                    "component": "contact_card_extractor",
+                    "action": "validate_patch",
+                    "result": "invalid",
+                    "correlation_id": request.correlation_id,
+                },
+            )
             return ContactCardExtractionResult.empty()
-
-        patch = self._normalize_patch(patch)
         confidence = _clamp_confidence(
             raw.get("confidence", 0.0) if isinstance(raw, dict) else 0.0
         )
@@ -80,6 +89,9 @@ class ContactCardExtractorService:
         logger.info(
             "contact_card_extracted",
             extra={
+                "component": "contact_card_extractor",
+                "action": "extract",
+                "result": "ok",
                 "fields_count": len(extracted_fields),
                 "extracted_fields": extracted_fields,
                 "confidence": confidence,
@@ -107,7 +119,7 @@ class ContactCardExtractorService:
                 if parsed is not None:
                     normalized[field] = parsed
                 continue
-            if field == "has_crm":
+            if field in BOOL_FIELDS_ALLOW_FALSE:
                 parsed_bool = parse_bool_value(value)
                 if parsed_bool is not None:
                     normalized[field] = parsed_bool
@@ -122,6 +134,12 @@ class ContactCardExtractorService:
                 if tools:
                     normalized[field] = tools
                 continue
+            if field in STRING_LIST_FIELDS:
+                items = normalize_string_list(value)
+                items = normalize_list_items(field, items)
+                if items:
+                    normalized[field] = items
+                continue
             if isinstance(value, bool):
                 if field in BOOL_FIELDS_ALLOW_FALSE:
                     normalized[field] = value
@@ -132,10 +150,12 @@ class ContactCardExtractorService:
                 cleaned = value.strip()
                 if not cleaned:
                     continue
-                if field in {"primary_interest", "urgency", "company_size"}:
+                if field in {"primary_interest", "urgency", "company_size", "meeting_mode"}:
                     cleaned = cleaned.lower().replace(" ", "_").replace("-", "_")
                     if field == "primary_interest":
                         cleaned = PRIMARY_INTEREST_ALIASES.get(cleaned, cleaned)
+                    if field == "meeting_mode":
+                        cleaned = normalize_meeting_mode(cleaned)
                 if field == "email":
                     cleaned = cleaned.lower()
                 normalized[field] = cleaned
@@ -143,39 +163,6 @@ class ContactCardExtractorService:
             normalized[field] = value
 
         return normalized
-
-    @staticmethod
-    def _normalize_patch(patch: ContactCardPatch) -> ContactCardPatch:
-        data = patch.model_dump()
-        cleaned: dict[str, Any] = {}
-        for field, value in data.items():
-            if value is None:
-                continue
-            if isinstance(value, bool):
-                if field in BOOL_FIELDS_ALLOW_FALSE:
-                    cleaned[field] = value
-                elif value:
-                    cleaned[field] = True
-                continue
-            if isinstance(value, str):
-                text = value.strip()
-                if not text:
-                    continue
-                cleaned[field] = text
-                continue
-            if field == "secondary_interests":
-                items = normalize_string_list(value)
-                if items:
-                    cleaned[field] = items
-                continue
-            if field == "current_tools":
-                tools = normalize_tools(value)
-                if tools:
-                    cleaned[field] = tools
-                continue
-            cleaned[field] = value
-
-        return ContactCardPatch.model_validate(cleaned)
 
 
 def _clamp_confidence(value: Any) -> float:
