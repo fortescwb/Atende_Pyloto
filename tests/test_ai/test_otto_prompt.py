@@ -10,7 +10,8 @@ def test_system_prompt_requires_json() -> None:
 
 
 def test_system_prompt_mentions_pt_br() -> None:
-    assert "PT-BR" in OTTO_SYSTEM_PROMPT or "portugues" in OTTO_SYSTEM_PROMPT.lower()
+    lowered = OTTO_SYSTEM_PROMPT.lower()
+    assert "pt-br" in lowered or "portugues" in lowered
 
 
 def test_format_otto_prompt_injects_context() -> None:

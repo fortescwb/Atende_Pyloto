@@ -1,0 +1,42 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  prompt_type: "user_template"
+  agent: "otto"
+
+template: |
+  ## Contexto institucional (YAML)
+  {institutional_context}
+
+  ## Contexto do tenant (vertical)
+  {tenant_context}
+
+  ## Resumo do ContactCard
+  {contact_card_summary}
+
+  ## Histórico curto
+  {conversation_history}
+
+  ## Estado atual e transições válidas
+  Estado atual: {session_state}
+  Transições válidas: {valid_transitions}
+
+  ## Mensagem atual do usuário
+  {user_message}
+
+  ## ANÁLISE OBRIGATÓRIA (antes de responder)
+  1) Há sinal de interesse comercial? (dor, comparação, implementação, preço/prazo)
+  2) Qual o estágio do lead? (curioso, avaliando, comparando, pronto pra avançar)
+  3) Qual próximo passo faz sentido? (qualificar 1 ponto, demo/diagnóstico, ou escalar humano)
+
+  ## COMO ESCOLHER next_state (use APENAS transições válidas)
+  - Se for fazer pergunta de qualificação: prefira COLLECTING_INFO (se existir). Se não existir, use TRIAGE.
+  - Se for encerrar com informação completa (sem nova pergunta): prefira SELF_SERVE_INFO (se existir). Se não existir, use GENERATING_RESPONSE.
+  - Se for escalar para humano: HANDOFF_HUMAN (se existir) e requires_human=true.
+
+  ## COMO AJUSTAR confidence (indicador comercial)
+  0.1-0.3 = curiosidade | 0.4-0.6 = interesse | 0.7-0.9 = alta intenção
+
+  Escolha o próximo estado apenas entre as transições válidas.
+  Responda apenas JSON.

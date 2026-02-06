@@ -1,8 +1,15 @@
-# src/ai/contexts/verticals/gestao_perfis_trafego.yaml
+# src/ai/contexts/vertentes/trafego.yaml
 
 vertical: gestao_perfis_trafego
 version: 2.0.0
 updated_at: "2026-02-05"
+
+prompt_summary: |
+  Vertical: gestao_perfis_trafego (Gestão de Perfis + Tráfego)
+  Oferta: presença digital (perfil/site/landing) + SEO + tráfego pago com foco em leads/vendas.
+  Ideal para: negócios que precisam aparecer no Google e converter (local ou nicho).
+  Diferenciais: estratégia orientada a resultados, SEO integrado e otimização de campanhas.
+  Próximo passo: entender segmento, região (local/nacional), ticket médio e orçamento mensal.
 
 # ============================================================
 # DESCRIÇÃO E POSICIONAMENTO

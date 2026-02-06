@@ -1,6 +1,6 @@
-"""Loader para contexto de verticais (contextos dinamicos).
+"""Loader para contexto de verticais (contextos dinâmicos).
 
-Carrega YAMLs em src/ai/contexts/verticals/ com cache,
+Carrega YAMLs em `src/ai/contexts/vertentes/` com cache,
 sem uso de rede, conforme REGRAS_E_PADROES.md.
 """
 
@@ -17,7 +17,7 @@ from ai.config.institutional_loader import load_institutional_context
 
 logger = logging.getLogger(__name__)
 
-_VERTICAL_CONTEXT_DIR = Path(__file__).resolve().parents[1] / "contexts" / "verticals"
+_VERTICAL_CONTEXT_DIR = Path(__file__).resolve().parents[1] / "contexts" / "vertentes"
 
 
 class VerticalContextError(Exception):

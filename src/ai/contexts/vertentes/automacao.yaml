@@ -1,8 +1,15 @@
-# src/ai/contexts/verticals/automacao_atendimento.yaml
+# src/ai/contexts/vertentes/automacao.yaml
 
 vertical: automacao_atendimento
 version: 2.0.0
 updated_at: "2026-02-05"
+
+prompt_summary: |
+  Vertical: automacao_atendimento (Automação de Atendimento)
+  Oferta: automação via WhatsApp/DMs (opção padrão por regras ou avançada com IA).
+  Ideal para: empresas com alto volume de mensagens e perguntas repetitivas.
+  Diferenciais: NLP real (entende intenção), integrações (CRM/agenda/APIs) e fallback para humano.
+  Próximo passo: entender canal principal, volume de mensagens e urgência.
 
 # ============================================================
 # DESCRIÇÃO E POSICIONAMENTO
@@ -35,7 +42,7 @@ target_audience:
     - "Imobiliárias (agendamento visitas + qualificação)"
     - "Prestadores de serviço (orçamentos + follow-up)"
     - "Barbearias/salões (agendamento + promoções)"
-    - "Educação (informações cursos + matrículas)""
+    - "Educação (informações cursos + matrículas)"
   
   red_flags:  # Não é fit
     - "MEI sem funcionários (não tem volume)"

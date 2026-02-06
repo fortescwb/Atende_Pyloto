@@ -9,7 +9,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any, Protocol
 
-from ai.services.context_injector import ContextInjector
+from ai.rules.intent_detection import detect_intent
 from fsm.states import SessionState
 from fsm.transitions.rules import get_valid_targets
 
@@ -27,7 +27,6 @@ class OutboundDecisionProtocol(Protocol):
     final_message_type: str | None
 
 logger = logging.getLogger(__name__)
-_CONTEXT_INJECTOR = ContextInjector()
 
 
 def map_state_suggestion_to_target(
@@ -184,9 +183,35 @@ def history_as_strings(session: Any) -> list[str]:
     raw_history = getattr(session, "history", []) or []
     return [str(entry) for entry in raw_history]
 
-def build_tenant_context(session: Any) -> str:
+def user_history_as_strings(session: Any, *, max_messages: int = 5) -> list[str]:
+    """Retorna somente as últimas N mensagens do usuário (sem mensagens do bot)."""
+    raw_history = getattr(session, "history", []) or []
+    user_messages: list[str] = []
+    for entry in raw_history:
+        if isinstance(entry, str):
+            user_messages.append(entry)
+            continue
+        if isinstance(entry, dict):
+            if entry.get("role") == "user" and entry.get("content"):
+                user_messages.append(f"Usuario: {entry['content']}")
+            continue
+        role = getattr(entry, "role", None)
+        content = getattr(entry, "content", None)
+        role_value = getattr(role, "value", role)
+        if role_value == "user" and content:
+            user_messages.append(f"Usuario: {content}")
+
+    if max_messages <= 0:
+        return user_messages
+    return user_messages[-max_messages:]
+
+def build_tenant_intent(session: Any, user_message: str) -> str | None:
+    """Detecta vertente a partir de ContactCard (preferência) ou heurística."""
     contact_card = getattr(session, "contact_card", None)
-    return _CONTEXT_INJECTOR.build(contact_card=contact_card)
+    primary = getattr(contact_card, "primary_interest", None) if contact_card is not None else None
+    if isinstance(primary, str) and primary.strip():
+        return primary.strip()
+    return detect_intent(user_message)
 
 def get_valid_transitions(current_state: SessionState) -> tuple[str, ...]:
     return tuple(state.name for state in get_valid_targets(current_state))

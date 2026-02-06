@@ -17,9 +17,9 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-# Path do arquivo de contexto institucional
+# Path do arquivo de contexto institucional (padronizado em YAML)
 _INSTITUTIONAL_CONTEXT_PATH = (
-    Path(__file__).resolve().parents[1] / "contexts" / "institutional_context.yaml"
+    Path(__file__).resolve().parents[1] / "contexts" / "core" / "sobre_pyloto.yaml"
 )
 
 

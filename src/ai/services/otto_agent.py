@@ -5,9 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from ai.config.institutional_loader import get_institutional_prompt_section
 from ai.models.otto import OttoDecision, OttoRequest
-from ai.prompts.otto_prompt import OTTO_SYSTEM_PROMPT, format_otto_prompt
+from ai.prompts.otto_prompt import build_full_prompt
 from ai.utils.sanitizer import mask_history
 
 if TYPE_CHECKING:
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_MAX_HISTORY_MESSAGES = 6
+_MAX_HISTORY_MESSAGES = 5
 
 _HANDOFF_TEXT = (
     "Vou conectar voce com nossa equipe para continuar o atendimento. "
@@ -31,23 +30,21 @@ class OttoAgentService:
 
     async def decide(self, request: OttoRequest) -> OttoDecision:
         """Executa OttoAgent e retorna decisão bruta (gates externos)."""
-        institutional_context = get_institutional_prompt_section()
         history = mask_history(request.history, max_messages=_MAX_HISTORY_MESSAGES)
         conversation_history = "\n".join(history) if history else "(sem historico)"
 
-        user_prompt = format_otto_prompt(
-            user_message=request.user_message,
-            session_state=request.session_state,
-            valid_transitions=list(request.valid_transitions),
-            institutional_context=institutional_context,
-            tenant_context=request.tenant_context,
+        system_prompt, user_prompt = build_full_prompt(
             contact_card_summary=request.contact_card_summary,
             conversation_history=conversation_history,
+            session_state=request.session_state,
+            valid_transitions=list(request.valid_transitions),
+            user_message=request.user_message,
+            tenant_intent=request.tenant_intent,
         )
 
         try:
             decision = await self._client.decide(
-                system_prompt=OTTO_SYSTEM_PROMPT,
+                system_prompt=system_prompt,
                 user_prompt=user_prompt,
             )
         except Exception as exc:

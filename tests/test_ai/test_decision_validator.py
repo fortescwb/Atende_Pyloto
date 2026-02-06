@@ -24,7 +24,6 @@ def _req(valid_transitions: list[str] | None = None) -> OttoRequest:
         session_state="TRIAGE",
         history=["Usuario: oi"],
         contact_card_summary="{}",
-        tenant_context="saas",
         valid_transitions=valid_transitions or ["COLLECTING_INFO"],
     )
 

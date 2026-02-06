@@ -1,8 +1,15 @@
-# src/ai/contexts/verticals/sistema_sob_medida.yaml
+# src/ai/contexts/vertentes/sob_medida.yaml
 
 vertical: sistema_sob_medida
 version: 2.0.0
 updated_at: "2026-02-05"
+
+prompt_summary: |
+  Vertical: sob_medida (Sistemas Sob Medida)
+  Oferta: software customizado para processos específicos e integrações complexas.
+  Ideal para: empresas onde SaaS não atende ou há regras/processos únicos.
+  Diferenciais: time completo, entregas incrementais, código mantido e suporte pós-entrega.
+  Próximo passo: entender processo atual, integrações necessárias, urgência e faixa de investimento.
 
 # ============================================================
 # DESCRIÇÃO E POSICIONAMENTO

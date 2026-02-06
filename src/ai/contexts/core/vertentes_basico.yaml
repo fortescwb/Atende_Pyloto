@@ -1,0 +1,23 @@
+# src/ai/contexts/core/vertentes_basico.yaml
+
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertentes_basico"
+  always_load: true
+  token_budget: 120
+  priority: "critical"
+
+# ============================================================
+# SERVIÇOS (RESUMO PARA TRIAGEM)
+# ============================================================
+
+vertentes:
+  - Automação de atendimento: WhatsApp, Instagram, Facebook, etc.
+  - Sistemas sob medida: Desenhados exclusivamente para cada empresa.
+  - Integrações: API, Zapier, etc.
+  - Chatbots avançados: IA, fluxos complexos.
+  - Gestão de perfis e tráfego pago: Facebook, Google, Instagram.
+  - SaaS adaptável: Plataforma pronta para customização.
+  - Entregas rápidas: Prestadores de serviço (fluxo específico via WhatsApp dedicado).

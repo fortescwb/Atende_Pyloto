@@ -1,0 +1,18 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  prompt_type: "user_template"
+  agent: "contact_card_extractor"
+
+template: |
+  ## ContactCard atual (JSON)
+  {contact_card}
+
+  ## Contexto recente (opcional)
+  {conversation_context}
+
+  ## Mensagem atual do usuário
+  {user_message}
+
+  Extraia apenas informações novas. JSON apenas.

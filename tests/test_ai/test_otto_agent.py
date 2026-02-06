@@ -24,7 +24,7 @@ def _base_request() -> OttoRequest:
         session_state="TRIAGE",
         history=["Usuario: Oi", "Otto: Olá"],
         contact_card_summary="Nome: Joao",
-        tenant_context="Vertical: saas",
+        tenant_intent="saas",
         valid_transitions=["COLLECTING_INFO", "GENERATING_RESPONSE"],
     )
 
@@ -47,13 +47,6 @@ async def test_valid_decision_passes() -> None:
 
 @pytest.mark.asyncio
 async def test_client_error_returns_handoff() -> None:
-    decision = OttoDecision(
-        next_state="GENERATING_RESPONSE",
-        response_text="Entendi sua necessidade.",
-        message_type="text",
-        confidence=0.75,
-        requires_human=False,
-    )
     service = OttoAgentService(FakeClient(None))
 
     result = await service.decide(_base_request())

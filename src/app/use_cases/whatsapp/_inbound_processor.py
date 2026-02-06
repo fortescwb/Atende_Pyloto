@@ -15,11 +15,12 @@ from ai.utils.sanitizer import sanitize_pii
 from app.use_cases.whatsapp._inbound_helpers import (
     build_outbound_payload,
     build_outbound_request,
-    build_tenant_context,
+    build_tenant_intent,
     get_valid_transitions,
     history_as_strings,
     is_terminal_session,
     serialize_contact_card,
+    user_history_as_strings,
 )
 from fsm.manager import FSMStateMachine
 from fsm.states import SessionState
@@ -163,10 +164,11 @@ class InboundMessageProcessor:
         card_serialized: str,
         raw_user_text: str,
     ) -> tuple[OttoRequest, OttoDecision, Any]:
+        otto_history = user_history_as_strings(session, max_messages=5)
         otto_request = self._build_otto_request(
             session=session,
             sanitized_input=sanitized_input,
-            history=history,
+            history=otto_history,
             card_summary=card_summary,
         )
         extraction_task = self._build_extraction_task(
@@ -206,7 +208,7 @@ class InboundMessageProcessor:
             session_state=session.current_state.name,
             history=history,
             contact_card_summary=card_summary,
-            tenant_context=build_tenant_context(session),
+            tenant_intent=build_tenant_intent(session, sanitized_input),
             valid_transitions=list(get_valid_transitions(session.current_state)),
         )
 

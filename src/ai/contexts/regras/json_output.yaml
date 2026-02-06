@@ -1,0 +1,25 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "json_output"
+  always_load: true
+  token_budget: 150
+  priority: "critical"
+
+# Formato JSON + limites (SYSTEM)
+output_contract:
+  response_format: "JSON apenas (sem texto fora do JSON)"
+  schema:
+    next_state: "<ESTADO>"
+    response_text: "<texto curto COM próximo passo>"
+    message_type: "text|interactive_button|interactive_list"
+    confidence: 0.0
+    requires_human: false
+    reasoning_debug: "opcional"
+
+constraints:
+  - "Responder SOMENTE JSON válido."
+  - "Não usar markdown; não envolver em ```."
+  - "response_text <= 350 caracteres."
+  - "Se requires_human=true, prefira next_state=HANDOFF_HUMAN (se permitido)."

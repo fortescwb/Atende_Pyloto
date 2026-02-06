@@ -1,0 +1,64 @@
+version: "3.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "sobre_pyloto"
+  always_load: true
+  token_budget: 120
+  priority: "high"
+
+# Informações públicas (USER)
+empresa:
+  nome: "Pyloto"
+  descricao: "Tecnologia e serviços digitais (B2B)."
+
+contato:
+  email: "contato@pyloto.com.br"
+  site: "https://pyloto.com.br"
+
+endereco:
+  avenida: "Dr. Vicente Machado"
+  numero: "1472"
+  bairro: "Centro"
+  cidade: "Ponta Grossa"
+  estado: "Paraná"
+
+horario_atendimento:
+  dias_uteis:
+    inicio: "09:00"
+    fim: "17:00"
+    fuso: "America/Sao_Paulo"
+  observacao: "Otto responde 24/7; equipe humana atende em dias úteis."
+
+# Resumo de serviços (IDs canônicos + arquivo de contexto da vertical)
+vertentes:
+  - id: "saas"
+    nome: "SaaS Pyloto"
+    descricao: "Sistema de gestão completo e adaptável."
+    keywords: ["sistema", "gestão", "crm", "erp", "agenda", "estoque", "software"]
+    context_file: "saas.yaml"
+
+  - id: "sob_medida"
+    nome: "Sistemas Sob Medida"
+    descricao: "Software personalizado para processos específicos."
+    keywords: ["customizado", "personalizado", "sob medida", "integração", "legado"]
+    context_file: "sob_medida.yaml"
+
+  - id: "gestao_perfis_trafego"
+    nome: "Gestão de Perfis + Tráfego"
+    descricao: "Presença digital + tráfego pago com foco em leads e vendas."
+    keywords: ["instagram", "facebook", "google", "seo", "anúncio", "marketing", "tráfego"]
+    context_file: "trafego.yaml"
+
+  - id: "automacao_atendimento"
+    nome: "Automação de Atendimento"
+    descricao: "Assistente virtual (IA) para WhatsApp/DMs e atendimento 24/7."
+    keywords: ["chatbot", "automação", "atendimento", "whatsapp", "ia", "bot"]
+    context_file: "automacao.yaml"
+
+  - id: "intermediacao_entregas"
+    nome: "Entregas/Serviços"
+    descricao: "Intermediação com prestadores para entregas e serviços pontuais."
+    keywords: ["entrega", "frete", "motoboy", "prestador", "delivery", "serviço"]
+    context_file: "entregas.yaml"
+    whatsapp_especifico: "5542991619261"

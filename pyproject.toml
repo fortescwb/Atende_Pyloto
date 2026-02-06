@@ -57,6 +57,9 @@ dev = [
     # Stubs para type checking
     "types-redis>=4.6.0",
     "types-PyYAML>=6.0.0",
+
+    # Tokens (contagem em testes)
+    "tiktoken>=0.6.0",
 ]
 
 [build-system]
