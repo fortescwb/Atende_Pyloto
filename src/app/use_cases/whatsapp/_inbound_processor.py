@@ -22,6 +22,10 @@ from app.use_cases.whatsapp._inbound_helpers import (
     last_assistant_message,
     user_history_as_strings,
 )
+from app.services.otto_repetition_guard import (
+    apply_repetition_guard,
+    collect_contact_card_fields,
+)
 from fsm.manager import FSMStateMachine
 from fsm.states import SessionState
 
@@ -100,10 +104,35 @@ class InboundMessageProcessor:
             correlation_id=correlation_id,
         )
 
-        decision = await self._validate_decision(decision, otto_request)
-
-        if self._contact_card_store and contact_card and extraction:
+        if contact_card and extraction:
             await self._apply_contact_card_patch(contact_card, extraction)
+
+        if contact_card:
+            self._log_contact_card_snapshot(
+                contact_card=contact_card,
+                correlation_id=correlation_id,
+                message_id=msg.message_id,
+            )
+            guard_result = apply_repetition_guard(
+                decision=decision,
+                contact_card=contact_card,
+            )
+            if guard_result.applied:
+                logger.info(
+                    "otto_repetition_guard_applied",
+                    extra={
+                        "component": "otto_guard",
+                        "action": "guard_applied",
+                        "result": "response_updated",
+                        "correlation_id": correlation_id,
+                        "message_id": msg.message_id,
+                        "question_type": guard_result.question_type,
+                        "next_question_key": guard_result.next_question_key,
+                    },
+                )
+                decision = guard_result.decision
+
+        decision = await self._validate_decision(decision, otto_request)
 
         sent = await self._send_response(msg, decision, correlation_id)
         await self._update_session(session, sanitized_input, decision, correlation_id, otto_request)
@@ -270,6 +299,26 @@ class InboundMessageProcessor:
                     "confidence": extraction.confidence,
                 },
             )
+
+    def _log_contact_card_snapshot(
+        self,
+        *,
+        contact_card: Any,
+        correlation_id: str,
+        message_id: str | None,
+    ) -> None:
+        fields_present = collect_contact_card_fields(contact_card)
+        logger.info(
+            "contact_card_snapshot",
+            extra={
+                "component": "inbound_processor",
+                "action": "contact_card_snapshot",
+                "result": "ok",
+                "correlation_id": correlation_id,
+                "message_id": message_id,
+                "fields_present": fields_present,
+            },
+        )
 
     async def _handle_audio_transcription(
         self,
