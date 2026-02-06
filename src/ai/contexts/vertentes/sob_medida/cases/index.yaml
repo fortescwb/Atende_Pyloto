@@ -1,0 +1,16 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "cases_index"
+  vertical_id: "sob_medida"
+  manual_injection: true
+
+cases:
+  - id: "logistica"
+    keywords: ["logistica", "transporte", "roteirizacao", "entrega"]
+  - id: "saude"
+    keywords: ["saude", "clinica", "hospital", "prontuario"]
+  - id: "varejo"
+    keywords: ["varejo", "loja", "pdv", "estoque", "ecommerce"]
+    default: true

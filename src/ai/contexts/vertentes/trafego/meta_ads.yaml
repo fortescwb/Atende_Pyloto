@@ -1,0 +1,18 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_ads"
+  vertical_id: "gestao_perfis_trafego"
+  token_budget: 2500
+  priority: "low"
+  persist: false
+  injection_trigger:
+    any_keywords: ["ads", "anúncio", "anuncio", "facebook ads", "google ads", "meta ads", "instagram ads"]
+
+prompt_injection: |
+  Mídia paga (quando perguntado):
+  - Estrutura por funil: awareness → consideração → conversão.
+  - Criativos testados continuamente (imagem/vídeo/copy).
+  - Otimização por CPA/ROAS com relatórios mensais.
+  - Verba de mídia é separada da gestão.

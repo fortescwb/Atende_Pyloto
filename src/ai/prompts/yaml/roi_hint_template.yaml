@@ -1,0 +1,11 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  prompt_type: "template"
+  agent: "roi_estimator"
+
+template: |
+  ROI (use com cautela):
+  - Baseie-se nos dados do cliente: {roi_inputs}.
+  - Compare custo atual vs automação somente se houver números informados.

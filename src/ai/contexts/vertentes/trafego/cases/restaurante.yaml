@@ -1,0 +1,14 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_case"
+  vertical_id: "gestao_perfis_trafego"
+  token_budget: 600
+  priority: "medium"
+  persist: true
+
+prompt_injection: |
+  Case (Tráfego) — Restaurante:
+  - Presença no Google Maps reforçada.
+  - +40% em reservas com anúncios locais.

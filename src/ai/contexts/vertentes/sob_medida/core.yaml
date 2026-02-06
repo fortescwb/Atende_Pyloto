@@ -1,0 +1,29 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_core"
+  vertical_id: "sob_medida"
+  token_budget: 1000
+  priority: "high"
+
+prompt_summary: |
+  Vertical: sob_medida
+  Oferta: software customizado para processos específicos e integrações complexas.
+  Ideal: empresas onde SaaS não atende ou há regras únicas.
+  Diferenciais: time completo, entregas incrementais e suporte pós-entrega.
+  Próximo passo: entender processo, integrações e faixa de investimento.
+
+prompt_injection: |
+  Vertical: sob_medida (Sistemas Sob Medida)
+  Oferta: desenvolvimento customizado para processos específicos e integrações complexas.
+  Diferenciais: time completo (dev/QA/DevOps), entregas incrementais e suporte contínuo.
+  Pricing (faixa): projetos a partir de R$ 30k (varia por escopo).
+  Qualificação: processo atual, integrações legadas, urgência e orçamento.
+  Próximo passo: diagnóstico e levantamento de requisitos.
+
+qualificacao:
+  perguntas_chave:
+    - "Qual processo atual não é atendido por SaaS?"
+    - "Precisa integrar com sistemas legados/ERP?"
+    - "Existe orçamento ou prazo desejado?"

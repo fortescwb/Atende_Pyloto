@@ -85,6 +85,8 @@ class SessionContext:
     vertente: str = "geral"
     rules: dict[str, Any] = field(default_factory=dict)
     limits: dict[str, int] = field(default_factory=dict)
+    prompt_vertical: str = ""
+    prompt_contexts: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -186,6 +188,8 @@ class Session:
                 "vertente": self.context.vertente,
                 "rules": self.context.rules,
                 "limits": self.context.limits,
+                "prompt_vertical": self.context.prompt_vertical,
+                "prompt_contexts": list(self.context.prompt_contexts),
             },
             "history": [entry.to_dict() for entry in self.history],
             "contact_card": (
@@ -246,6 +250,8 @@ class Session:
                 vertente=context_data.get("vertente", "geral"),
                 rules=context_data.get("rules", {}),
                 limits=context_data.get("limits", {}),
+                prompt_vertical=context_data.get("prompt_vertical", ""),
+                prompt_contexts=context_data.get("prompt_contexts", []) or [],
             ),
             history=history,
             contact_card=contact_card,

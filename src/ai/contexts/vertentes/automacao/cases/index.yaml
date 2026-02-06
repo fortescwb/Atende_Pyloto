@@ -1,0 +1,16 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "cases_index"
+  vertical_id: "automacao_atendimento"
+  manual_injection: true
+
+cases:
+  - id: "clinica"
+    keywords: ["clinica", "estetica", "saude", "agendamento"]
+  - id: "ecommerce"
+    keywords: ["ecommerce", "e-commerce", "loja", "pedido", "status", "compra"]
+    default: true
+  - id: "imobiliaria"
+    keywords: ["imobiliaria", "imovel", "corretor", "locacao", "aluguel"]

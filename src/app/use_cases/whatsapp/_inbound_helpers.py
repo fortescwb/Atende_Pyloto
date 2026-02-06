@@ -205,13 +205,25 @@ def user_history_as_strings(session: Any, *, max_messages: int = 5) -> list[str]
         return user_messages
     return user_messages[-max_messages:]
 
-def build_tenant_intent(session: Any, user_message: str) -> str | None:
-    """Detecta vertente a partir de ContactCard (preferência) ou heurística."""
+def build_tenant_intent(session: Any, user_message: str) -> tuple[str | None, float]:
+    """Detecta vertente e retorna (intent, confidence).
+
+    Prioridade:
+      1) ContactCard.primary_interest (alta confiança)
+      2) Contexto da sessão (última vertente)
+      3) Heurística por keywords
+    """
     contact_card = getattr(session, "contact_card", None)
     primary = getattr(contact_card, "primary_interest", None) if contact_card is not None else None
     if isinstance(primary, str) and primary.strip():
-        return primary.strip()
-    return detect_intent(user_message)
+        return primary.strip(), 0.9
+
+    prior_intent = getattr(getattr(session, "context", None), "prompt_vertical", "") or ""
+    if isinstance(prior_intent, str) and prior_intent.strip():
+        return prior_intent.strip(), 0.7
+
+    detected = detect_intent(user_message)
+    return detected, 0.6 if detected else 0.0
 
 def get_valid_transitions(current_state: SessionState) -> tuple[str, ...]:
     return tuple(state.name for state in get_valid_targets(current_state))

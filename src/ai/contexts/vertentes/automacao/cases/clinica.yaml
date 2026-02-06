@@ -1,0 +1,14 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_case"
+  vertical_id: "automacao_atendimento"
+  token_budget: 600
+  priority: "medium"
+  persist: true
+
+prompt_injection: |
+  Case (Automação) — Clínica:
+  - Reduziu ~70% das perguntas repetitivas.
+  - Agendamentos fora de horário aumentaram ~30%.

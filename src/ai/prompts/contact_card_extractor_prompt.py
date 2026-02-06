@@ -16,12 +16,8 @@ _CONTACT_CARD_EXTRACTOR_USER_TEMPLATE = load_prompt_template(
 def format_contact_card_extractor_prompt(
     *,
     user_message: str,
-    contact_card: str,
-    conversation_context: str = "",
 ) -> str:
-    """Formata prompt do ContactCardExtractor."""
+    """Formata prompt do ContactCardExtractor (somente mensagem atual)."""
     return _CONTACT_CARD_EXTRACTOR_USER_TEMPLATE.format(
         user_message=(user_message or "")[:600],
-        contact_card=(contact_card or "{}")[:2000],
-        conversation_context=conversation_context[:600] if conversation_context else "(vazio)",
     )

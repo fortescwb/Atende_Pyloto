@@ -8,8 +8,9 @@ Regras:
 
 from __future__ import annotations
 
-from ai.config.prompt_assets_loader import load_prompt_template
+from ai.config.prompt_assets_loader import load_context_for_prompt, load_prompt_template
 from ai.prompts.context_builder import build_contexts
+from ai.prompts.dynamic_context_loader import resolve_dynamic_contexts
 
 _OTTO_USER_TEMPLATE = load_prompt_template("otto_user_template.yaml")
 
@@ -52,8 +53,13 @@ def build_full_prompt(
     valid_transitions: list[str],
     user_message: str,
     tenant_intent: str | None = None,
-) -> tuple[str, str]:
-    """Monta (system_prompt, user_prompt) no padrão definitivo.
+    intent_confidence: float = 0.0,
+    loaded_contexts: list[str] | None = None,
+    extra_context_paths: list[str] | None = None,
+    extra_context_chunks: list[str] | None = None,
+    extra_loaded_contexts: list[str] | None = None,
+) -> tuple[str, str, list[str]]:
+    """Monta (system_prompt, user_prompt, loaded_contexts) no padrão definitivo.
 
     Args:
         contact_card_summary: Resumo do ContactCard (string sanitizada).
@@ -62,18 +68,57 @@ def build_full_prompt(
         valid_transitions: Lista de transições válidas.
         user_message: Mensagem atual do usuário.
         tenant_intent: Vertente detectada (opcional).
+        intent_confidence: Confiança na vertente detectada (0.0-1.0).
+        loaded_contexts: Contextos persistidos de turnos anteriores.
+        extra_context_paths: Caminhos adicionais de contexto para injeção.
+        extra_context_chunks: Strings adicionais de contexto para injeção.
+        extra_loaded_contexts: Caminhos adicionais a persistir na sessão.
     """
     contexts = build_contexts(tenant_intent)
     system_prompt = contexts["system_context"]
+
+    dynamic_result = resolve_dynamic_contexts(
+        tenant_intent=tenant_intent,
+        user_message=user_message,
+        intent_confidence=intent_confidence,
+        loaded_contexts=loaded_contexts,
+        session_state=session_state,
+    )
+    tenant_context = contexts["tenant_context"]
+    extra_chunks: list[str] = []
+    for path in extra_context_paths or []:
+        extra_chunks.append(load_context_for_prompt(path))
+    extra_chunks.extend(extra_context_chunks or [])
+    tenant_context = _merge_context_chunks(
+        [tenant_context] if tenant_context else [],
+        dynamic_result.contexts_for_prompt,
+        extra_chunks,
+    )
 
     user_prompt = format_otto_prompt(
         user_message=user_message,
         session_state=session_state,
         valid_transitions=valid_transitions,
         institutional_context=contexts["institutional_context"],
-        tenant_context=contexts["tenant_context"],
+        tenant_context=tenant_context,
         contact_card_summary=contact_card_summary,
         conversation_history=conversation_history,
     )
 
-    return system_prompt, user_prompt
+    merged_loaded = sorted(
+        set((dynamic_result.loaded_contexts or []) + (extra_loaded_contexts or []))
+    )
+    return system_prompt, user_prompt, merged_loaded
+
+
+def _merge_context_chunks(*chunks: list[str]) -> str:
+    merged: list[str] = []
+    seen: set[str] = set()
+    for chunk in chunks:
+        for item in chunk or []:
+            text = (item or "").strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            merged.append(text)
+    return "\n\n".join(merged).strip()

@@ -1,0 +1,18 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_seo"
+  vertical_id: "gestao_perfis_trafego"
+  token_budget: 2000
+  priority: "low"
+  persist: false
+  injection_trigger:
+    any_keywords: ["seo", "busca orgânica", "busca organica", "google", "ranquear", "ranking", "orgânico", "organico"]
+
+prompt_injection: |
+  SEO (quando perguntado):
+  - Otimização técnica (site rápido, estrutura, metadata).
+  - Conteúdo por intenção de busca (serviço + localidade/nicho).
+  - Google Business Profile atualizado (horário, fotos, avaliações).
+  - Resultado esperado: médio prazo (3-6 meses) com consistência.

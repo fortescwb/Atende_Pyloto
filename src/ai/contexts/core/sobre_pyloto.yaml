@@ -7,6 +7,12 @@ metadata:
   token_budget: 120
   priority: "high"
 
+# Texto conciso para injeção no USER
+prompt_injection: |
+  Empresa: Pyloto (B2B).
+  Contato: contato@pyloto.com.br | https://pyloto.com.br
+  Atendimento humano: Seg-Sex 09h-17h (America/Sao_Paulo); Otto 24/7.
+
 # Informações públicas (USER)
 empresa:
   nome: "Pyloto"
@@ -36,29 +42,29 @@ vertentes:
     nome: "SaaS Pyloto"
     descricao: "Sistema de gestão completo e adaptável."
     keywords: ["sistema", "gestão", "crm", "erp", "agenda", "estoque", "software"]
-    context_file: "saas.yaml"
+    context_file: "saas/core.yaml"
 
   - id: "sob_medida"
     nome: "Sistemas Sob Medida"
     descricao: "Software personalizado para processos específicos."
     keywords: ["customizado", "personalizado", "sob medida", "integração", "legado"]
-    context_file: "sob_medida.yaml"
+    context_file: "sob_medida/core.yaml"
 
   - id: "gestao_perfis_trafego"
     nome: "Gestão de Perfis + Tráfego"
     descricao: "Presença digital + tráfego pago com foco em leads e vendas."
     keywords: ["instagram", "facebook", "google", "seo", "anúncio", "marketing", "tráfego"]
-    context_file: "trafego.yaml"
+    context_file: "trafego/core.yaml"
 
   - id: "automacao_atendimento"
     nome: "Automação de Atendimento"
     descricao: "Assistente virtual (IA) para WhatsApp/DMs e atendimento 24/7."
     keywords: ["chatbot", "automação", "atendimento", "whatsapp", "ia", "bot"]
-    context_file: "automacao.yaml"
+    context_file: "automacao/core.yaml"
 
   - id: "intermediacao_entregas"
     nome: "Entregas/Serviços"
     descricao: "Intermediação com prestadores para entregas e serviços pontuais."
     keywords: ["entrega", "frete", "motoboy", "prestador", "delivery", "serviço"]
-    context_file: "entregas.yaml"
+    context_file: "entregas/core.yaml"
     whatsapp_especifico: "5542991619261"

@@ -16,8 +16,6 @@ class ContactCardExtractionRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     user_message: str
-    contact_card_summary: str = ""
-    conversation_context: list[str] | None = None
 
 
 class ContactCardPatch(BaseModel):

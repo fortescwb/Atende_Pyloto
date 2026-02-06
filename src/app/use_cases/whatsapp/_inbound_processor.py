@@ -19,7 +19,6 @@ from app.use_cases.whatsapp._inbound_helpers import (
     get_valid_transitions,
     history_as_strings,
     is_terminal_session,
-    serialize_contact_card,
     user_history_as_strings,
 )
 from fsm.manager import FSMStateMachine
@@ -88,9 +87,7 @@ class InboundMessageProcessor:
             return self._build_result(session, bool(early_sent))
 
         sanitized_input = sanitize_pii(raw_user_text)
-        contact_card, history, card_summary, card_serialized = await self._prepare_context(
-            msg, session
-        )
+        contact_card, history, card_summary = await self._prepare_context(msg, session)
 
         otto_request, decision, extraction = await self._run_agents(
             session=session,
@@ -98,7 +95,6 @@ class InboundMessageProcessor:
             history=history,
             contact_card=contact_card,
             card_summary=card_summary,
-            card_serialized=card_serialized,
             raw_user_text=raw_user_text,
         )
 
@@ -108,7 +104,7 @@ class InboundMessageProcessor:
             await self._apply_contact_card_patch(contact_card, extraction)
 
         sent = await self._send_response(msg, decision, correlation_id)
-        await self._update_session(session, sanitized_input, decision, correlation_id)
+        await self._update_session(session, sanitized_input, decision, correlation_id, otto_request)
         return self._build_result(session, sent)
 
     @staticmethod
@@ -146,12 +142,11 @@ class InboundMessageProcessor:
         self,
         msg: NormalizedMessage,
         session: Any,
-    ) -> tuple[Any, list[str], str, str]:
+    ) -> tuple[Any, list[str], str]:
         contact_card = await self._resolve_contact_card(msg, session)
         history = history_as_strings(session)
         summary = contact_card.to_prompt_summary() if contact_card else ""
-        serialized = serialize_contact_card(contact_card)
-        return contact_card, history, summary, serialized
+        return contact_card, history, summary
 
     async def _run_agents(
         self,
@@ -161,7 +156,6 @@ class InboundMessageProcessor:
         history: list[str],
         contact_card: Any,
         card_summary: str,
-        card_serialized: str,
         raw_user_text: str,
     ) -> tuple[OttoRequest, OttoDecision, Any]:
         otto_history = user_history_as_strings(session, max_messages=5)
@@ -174,8 +168,6 @@ class InboundMessageProcessor:
         extraction_task = self._build_extraction_task(
             contact_card=contact_card,
             raw_user_text=raw_user_text,
-            card_serialized=card_serialized,
-            history=history,
         )
         otto_task = self._otto_agent.decide(otto_request)
         if extraction_task:
@@ -203,12 +195,26 @@ class InboundMessageProcessor:
         history: list[str],
         card_summary: str,
     ) -> OttoRequest:
+        tenant_intent, intent_confidence = build_tenant_intent(session, sanitized_input)
+        loaded_contexts = []
+        if getattr(session, "context", None) is not None:
+            loaded_contexts = list(getattr(session.context, "prompt_contexts", []) or [])
+        contact_card = getattr(session, "contact_card", None)
+        contact_card_signals: dict[str, str] = {}
+        if contact_card is not None:
+            for key in ("company_size", "budget_indication", "specific_need", "company", "role"):
+                value = getattr(contact_card, key, None)
+                if isinstance(value, str) and value.strip():
+                    contact_card_signals[key] = value.strip()
         return OttoRequest(
             user_message=sanitized_input,
             session_state=session.current_state.name,
             history=history,
             contact_card_summary=card_summary,
-            tenant_intent=build_tenant_intent(session, sanitized_input),
+            contact_card_signals=contact_card_signals,
+            tenant_intent=tenant_intent,
+            intent_confidence=intent_confidence,
+            loaded_contexts=loaded_contexts,
             valid_transitions=list(get_valid_transitions(session.current_state)),
         )
 
@@ -217,8 +223,6 @@ class InboundMessageProcessor:
         *,
         contact_card: Any,
         raw_user_text: str,
-        card_serialized: str,
-        history: list[str],
     ) -> Any | None:
         if not self._contact_card_extractor or not contact_card:
             return None
@@ -227,8 +231,6 @@ class InboundMessageProcessor:
         return self._contact_card_extractor.extract(
             ContactCardExtractionRequest(
                 user_message=raw_user_text,
-                contact_card_summary=card_serialized,
-                conversation_context=history[-3:] if history else None,
             )
         )
 
@@ -331,10 +333,26 @@ class InboundMessageProcessor:
         sanitized_input: str,
         decision: OttoDecision,
         correlation_id: str,
+        otto_request: OttoRequest,
     ) -> None:
         from app.sessions.models import HistoryRole
 
         self._apply_decision_to_session(session, decision, correlation_id)
+        if getattr(session, "context", None) is not None:
+            from app.sessions.models import SessionContext
+
+            current = session.context
+            prompt_vertical = current.prompt_vertical
+            if otto_request.tenant_intent:
+                prompt_vertical = str(otto_request.tenant_intent)
+            session.context = SessionContext(
+                tenant_id=current.tenant_id,
+                vertente=current.vertente,
+                rules=current.rules,
+                limits=current.limits,
+                prompt_vertical=prompt_vertical,
+                prompt_contexts=list(otto_request.loaded_contexts or []),
+            )
         session.add_to_history(sanitized_input, max_history=None)
         if decision.response_text:
             session.add_to_history(

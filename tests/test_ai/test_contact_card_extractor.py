@@ -24,7 +24,6 @@ async def test_no_updates_returns_empty_patch() -> None:
     result = await service.extract(
         ContactCardExtractionRequest(
             user_message="Oi",
-            contact_card_summary="{}",
         )
     )
     assert result.has_updates is False
@@ -39,7 +38,6 @@ async def test_email_is_normalized_to_lowercase() -> None:
     result = await service.extract(
         ContactCardExtractionRequest(
             user_message="Meu email e User@Example.com",
-            contact_card_summary="{}",
         )
     )
     assert result.updates.email == "user@example.com"
@@ -53,7 +51,6 @@ async def test_full_name_is_kept() -> None:
     result = await service.extract(
         ContactCardExtractionRequest(
             user_message="Sou Joao Silva",
-            contact_card_summary="{}",
         )
     )
     assert result.updates.full_name == "Joao Silva"
@@ -67,7 +64,6 @@ async def test_primary_interest() -> None:
     result = await service.extract(
         ContactCardExtractionRequest(
             user_message="Quero um SaaS",
-            contact_card_summary="{}",
         )
     )
     assert result.updates.primary_interest == "saas"
@@ -86,7 +82,6 @@ async def test_multiple_secondary_interests() -> None:
     result = await service.extract(
         ContactCardExtractionRequest(
             user_message="Preciso de sob medida e automacao",
-            contact_card_summary="{}",
         )
     )
     assert result.updates.secondary_interests == ["sob_medida", "automacao_atendimento"]

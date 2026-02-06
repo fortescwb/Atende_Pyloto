@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from ai.models.otto import OttoDecision, OttoRequest
 from ai.prompts.otto_prompt import build_full_prompt
+from ai.services.prompt_micro_agents import MicroAgentResult, run_prompt_micro_agents
 from ai.utils.sanitizer import mask_history
 
 if TYPE_CHECKING:
@@ -33,14 +34,35 @@ class OttoAgentService:
         history = mask_history(request.history, max_messages=_MAX_HISTORY_MESSAGES)
         conversation_history = "\n".join(history) if history else "(sem historico)"
 
-        system_prompt, user_prompt = build_full_prompt(
+        micro_result = MicroAgentResult.empty()
+        try:
+            micro_result = await run_prompt_micro_agents(
+                tenant_intent=request.tenant_intent,
+                intent_confidence=request.intent_confidence,
+                user_message=request.user_message,
+                contact_card_signals=request.contact_card_signals,
+                session_state=request.session_state,
+            )
+        except Exception as exc:
+            logger.warning(
+                "micro_agents_error",
+                extra={"error_type": type(exc).__name__},
+            )
+
+        system_prompt, user_prompt, loaded_contexts = build_full_prompt(
             contact_card_summary=request.contact_card_summary,
             conversation_history=conversation_history,
             session_state=request.session_state,
             valid_transitions=list(request.valid_transitions),
             user_message=request.user_message,
             tenant_intent=request.tenant_intent,
+            intent_confidence=request.intent_confidence,
+            loaded_contexts=request.loaded_contexts,
+            extra_context_paths=micro_result.context_paths,
+            extra_context_chunks=micro_result.context_chunks,
+            extra_loaded_contexts=micro_result.loaded_contexts,
         )
+        request.loaded_contexts = loaded_contexts
 
         try:
             decision = await self._client.decide(

@@ -1,0 +1,18 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_tech_stack"
+  vertical_id: "sob_medida"
+  token_budget: 2000
+  priority: "low"
+  persist: false
+  injection_trigger:
+    any_keywords: ["stack", "tecnologia", "linguagem", "framework", "python", "react", "node", "infra"]
+
+prompt_injection: |
+  Stack (quando perguntado):
+  - Backend: APIs REST/GraphQL, integrações via webhooks.
+  - Frontend: web responsivo e dashboards.
+  - Infra: CI/CD, monitoramento e ambientes isolados.
+  - Stack exata depende do contexto e integrações do cliente.

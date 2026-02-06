@@ -381,8 +381,7 @@ async def execute(self, event: InboundEvent) -> OutboundCommand:
             current_state=session.current_state
         ),
         self.extraction.extract(
-            user_message=event.message_text,
-            conversation_context=session.history[-3:]
+            user_message=event.message_text
         )
     )
     # Latência: MAX(1800ms, 800ms) = 1800ms

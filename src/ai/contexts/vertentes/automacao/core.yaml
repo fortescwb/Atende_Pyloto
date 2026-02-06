@@ -1,0 +1,33 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_core"
+  vertical_id: "automacao_atendimento"
+  token_budget: 800
+  priority: "high"
+
+prompt_summary: |
+  Vertical: automacao_atendimento
+  Oferta: automação de atendimento via WhatsApp/DMs (regras ou IA).
+  Ideal: empresas com alto volume de mensagens repetitivas.
+  Diferenciais: NLP real, integrações (CRM/agenda/API), 24/7 e fallback humano.
+  Próximo passo: canal principal, volume/dia e urgência.
+
+prompt_injection: |
+  Vertical: automacao_atendimento (Automação de Atendimento)
+  Oferta: atendimento 24/7 via WhatsApp/DMs com bot por regras ou IA.
+  Diferenciais: NLP real, integrações (CRM/agenda/API), analytics e fallback para humano.
+  Modalidades: Padrão (regras) | Avançada com IA (entende intenção e contexto).
+  Pricing (faixas): setup a partir de R$ 1k (padrão) ou R$ 5k (IA); mensal a partir de R$ 200 (padrão) ou R$ 500 (IA).
+  Qualificação: canal principal, volume de mensagens/dia, urgência e integrações desejadas.
+  Próximo passo: qualificar 1 ponto e sugerir diagnóstico/demo.
+
+qualificacao:
+  perguntas_chave:
+    - "Qual canal principal e volume médio de mensagens/dia?"
+    - "Hoje quantas pessoas atendem e quais dúvidas se repetem?"
+    - "Precisa integrar com CRM/agenda/ERP?"
+  sinais_positivos:
+    - "Volume alto (>500/dia) ou equipe 2+ pessoas"
+    - "Tempo de resposta lento e perda de leads"

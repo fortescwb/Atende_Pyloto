@@ -1,0 +1,22 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_core"
+  vertical_id: "saas"
+  token_budget: 800
+  priority: "high"
+
+prompt_summary: |
+  Vertical: saas
+  Oferta: sistema de gestão modular (CRM, financeiro, agenda, estoque).
+  Ideal: PMEs que precisam organizar operação e ter visibilidade.
+  Diferenciais: implantação rápida, suporte e integrações essenciais.
+  Próximo passo: módulos necessários e número de usuários.
+
+prompt_injection: |
+  Vertical: saas (SaaS Pyloto)
+  Oferta: sistema de gestão modular (CRM, financeiro, agenda, estoque).
+  Diferenciais: implantação rápida, suporte humanizado e integrações básicas.
+  Pricing (faixa): a partir de R$ 29/usuário/mês (setup pode variar).
+  Qualificação: módulos essenciais, número de usuários e dores atuais.

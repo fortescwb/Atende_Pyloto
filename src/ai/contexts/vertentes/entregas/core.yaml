@@ -1,0 +1,20 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_core"
+  vertical_id: "intermediacao_entregas"
+  token_budget: 600
+  priority: "high"
+
+prompt_summary: |
+  Vertical: intermediacao_entregas
+  O que é: conexão com prestadores para entregas/serviços pontuais.
+  Importante: atendimento dedicado no WhatsApp (42) 99161-9261.
+  Próximo passo: informar que esse serviço esta em desenvolvimento e perguntar se usuário tem interesse em outro serviço da Pyloto.
+
+prompt_injection: |
+  Vertical: intermediacao_entregas (Entregas/Serviços)
+  O que é: intermediação com prestadores para entregas rápidas e serviços pontuais.
+  Ação: informar que esse serviço esta em desenvolvimento.
+  Direcionar para WhatsApp dedicado: (42) 99161-9261.

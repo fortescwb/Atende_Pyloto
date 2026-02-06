@@ -16,7 +16,7 @@ def _count_tokens(text: str, *, model: str = "gpt-4o") -> int:
 
 
 def test_prompt_no_intent_has_reasonable_token_budget() -> None:
-    system_prompt, user_prompt = build_full_prompt(
+    system_prompt, user_prompt, _ = build_full_prompt(
         contact_card_summary="(vazio)",
         conversation_history="Usuario: Oi",
         session_state="TRIAGE",
@@ -29,13 +29,13 @@ def test_prompt_no_intent_has_reasonable_token_budget() -> None:
     user_tokens = _count_tokens(user_prompt)
 
     assert "contato@pyloto.com.br" in user_prompt
-    assert system_tokens < 1500
-    assert user_tokens < 2200
-    assert system_tokens + user_tokens < 3200
+    assert system_tokens < 1200
+    assert user_tokens < 2000
+    assert system_tokens + user_tokens < 3000
 
 
 def test_prompt_with_automacao_intent_injects_vertical_context() -> None:
-    system_prompt, user_prompt = build_full_prompt(
+    system_prompt, user_prompt, _ = build_full_prompt(
         contact_card_summary="Nome: Joao",
         conversation_history="Usuario: Quero um bot no WhatsApp",
         session_state="TRIAGE",
@@ -45,12 +45,12 @@ def test_prompt_with_automacao_intent_injects_vertical_context() -> None:
     )
 
     assert "automacao_atendimento" in user_prompt.lower()
-    assert _count_tokens(system_prompt) < 1500
-    assert _count_tokens(user_prompt) < 2500
+    assert _count_tokens(system_prompt) < 1200
+    assert _count_tokens(user_prompt) < 2000
 
 
 def test_prompt_with_entregas_intent_injects_vertical_context() -> None:
-    system_prompt, user_prompt = build_full_prompt(
+    system_prompt, user_prompt, _ = build_full_prompt(
         contact_card_summary="(vazio)",
         conversation_history="Usuario: Preciso de motoboy",
         session_state="TRIAGE",
@@ -60,5 +60,5 @@ def test_prompt_with_entregas_intent_injects_vertical_context() -> None:
     )
 
     assert "99161-9261" in user_prompt
-    assert _count_tokens(system_prompt) < 1500
-    assert _count_tokens(user_prompt) < 2500
+    assert _count_tokens(system_prompt) < 1200
+    assert _count_tokens(user_prompt) < 2000

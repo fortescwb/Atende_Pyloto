@@ -60,8 +60,11 @@ def load_vertical_context(vertical_id: str) -> dict[str, Any] | None:
     path = index.get(vertical_id)
     if path is None:
         candidate = _VERTICAL_CONTEXT_DIR / f"{vertical_id}.yaml"
+        candidate_core = _VERTICAL_CONTEXT_DIR / vertical_id / "core.yaml"
         if candidate.exists():
             path = candidate
+        elif candidate_core.exists():
+            path = candidate_core
         else:
             logger.info(
                 "vertical_context_not_found",

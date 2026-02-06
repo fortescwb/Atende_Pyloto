@@ -6,7 +6,7 @@ metadata:
   agent: "otto"
 
 template: |
-  ## Contexto institucional (YAML)
+  ## Contexto institucional
   {institutional_context}
 
   ## Contexto do tenant (vertical)

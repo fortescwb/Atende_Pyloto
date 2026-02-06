@@ -31,7 +31,10 @@ class OttoRequest(BaseModel):
     session_state: str
     history: list[str] = Field(default_factory=list)
     contact_card_summary: str = ""
+    contact_card_signals: dict[str, str] = Field(default_factory=dict)
     tenant_intent: str | None = None
+    intent_confidence: float = 0.0
+    loaded_contexts: list[str] = Field(default_factory=list)
     valid_transitions: list[str] = Field(default_factory=list)
 
 

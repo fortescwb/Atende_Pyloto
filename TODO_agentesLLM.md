@@ -157,7 +157,7 @@ Retornar um **patch** (não o card inteiro), para facilitar merge e auditoria:
 ### Tarefas (P0)
 
 - [x] Definir contrato em `src/ai/models/contact_card_extraction.py`:
-  - [x] `ContactCardExtractionRequest(contact_card_summary, user_message, conversation_context?)`
+  - [x] `ContactCardExtractionRequest(user_message)`
   - [x] `ContactCardPatch` (Pydantic) com campos opcionais: `full_name`, `email`, `company`, `primary_interest`, `others_interests`, etc.
 - [x] Criar prompt versionado em `src/ai/prompts/contact_card_extractor_prompt.py`:
   - [x] Regra: **não sobrescrever** campos já preenchidos
@@ -168,7 +168,7 @@ Retornar um **patch** (não o card inteiro), para facilitar merge e auditoria:
   - [x] Modelo barato/rápido (ex.: `gpt-4o-mini`)
   - [x] Timeout curto (5–8s)
 - [x] Criar serviço em `src/ai/services/contact_card_extractor.py` que:
-  - [x] Monta prompt com ContactCard + user_message
+  - [x] Monta prompt só com user_message
   - [x] Chama o client via protocolo
   - [x] Valida patch (Pydantic) e normaliza (email lowercase, etc.)
 - [x] Merge strategy (determinístico) em `src/app/services/contact_card_merge.py`:
@@ -196,7 +196,7 @@ Retornar um **patch** (não o card inteiro), para facilitar merge e auditoria:
 
 - [ ] Definir contrato em `src/ai/models/otto.py`:
 - [x] Definir contrato em `src/ai/models/otto.py`:
-  - [x] `OttoRequest(user_message, session_state, history, contact_card_summary, tenant_context, valid_transitions)`
+  - [x] `OttoRequest(user_message, session_state, history, contact_card_summary, tenant_intent, intent_confidence, loaded_contexts, valid_transitions)`
   - [x] `OttoDecision(next_state, response_text, message_type, confidence, requires_human, reasoning_debug?)`
 - [x] Criar prompt versionado em `src/ai/prompts/otto_prompt.py`:
   - [x] Injetar: contexto institucional + resumo do ContactCard + histórico curto

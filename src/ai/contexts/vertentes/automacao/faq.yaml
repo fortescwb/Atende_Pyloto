@@ -1,0 +1,18 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_faq"
+  vertical_id: "automacao_atendimento"
+  token_budget: 1000
+  priority: "low"
+  persist: false
+  injection_trigger:
+    any_keywords: ["faq", "dúvida", "duvida", "pergunta", "como funciona", "explica"]
+
+prompt_injection: |
+  FAQ rápido (Automação):
+  - "Funciona no WhatsApp?" Sim, via API oficial.
+  - "Precisa treinar IA?" Depende do volume; começamos com base inicial e ajustamos.
+  - "Integra com CRM?" Sim, principais CRMs via API/webhook.
+  - "E se o bot não souber?" Fallback para humano.

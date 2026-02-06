@@ -1,0 +1,16 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "cases_index"
+  vertical_id: "gestao_perfis_trafego"
+  manual_injection: true
+
+cases:
+  - id: "clinica_local"
+    keywords: ["clinica", "estetica", "saude", "local", "agendamento"]
+  - id: "restaurante"
+    keywords: ["restaurante", "bar", "delivery", "food"]
+  - id: "b2b_servicos"
+    keywords: ["b2b", "servico", "consultoria", "industrial", "empresa"]
+    default: true

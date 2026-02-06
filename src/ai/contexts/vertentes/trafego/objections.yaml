@@ -1,0 +1,24 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_objections"
+  vertical_id: "gestao_perfis_trafego"
+  token_budget: 3000
+  priority: "medium"
+  manual_injection: true
+  persist: true
+  min_confidence: 0.4
+  injection_trigger:
+    any_keywords: ["caro", "preço", "valor", "orçamento", "roi", "resultado", "não funcionou", "agência", "agencia"]
+
+prompt_injection: |
+  Objeções comuns (Tráfego/Perfis):
+  1) "Já tentei anúncio e não funcionou."
+     Resposta: Diagnóstico de funil/landing; otimização de segmentação e criativos.
+  2) "É caro."
+     Resposta: Alinhar ROI esperado vs ticket médio e conversão; planos por meta.
+  3) "Só quero postar."
+     Resposta: Explicar diferença entre presença e performance; foco em leads/vendas.
+  4) "Tenho medo de gastar sem retorno."
+     Resposta: Testes controlados e métricas claras (CPA, ROI) com ajuste semanal.

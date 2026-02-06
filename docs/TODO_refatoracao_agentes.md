@@ -166,8 +166,7 @@ class ExtractionAgent:
     
     async def extract(
         self,
-        user_message: str,
-        conversation_context: list[str] | None = None
+        user_message: str
     ) -> ExtractedLeadInfo:
         """
         Extrai informações estruturadas da mensagem.
@@ -1063,8 +1062,7 @@ class ProcessInboundCanonicalUseCase:
                 current_state=session.current_state
             ),
             self.extraction.extract(
-                user_message=event.message_text,
-                conversation_context=session.history[-3:]
+                user_message=event.message_text
             )
         )
         

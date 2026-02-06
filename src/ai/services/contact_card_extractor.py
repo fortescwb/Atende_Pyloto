@@ -46,8 +46,6 @@ class ContactCardExtractorService:
         """Executa extração e retorna patch validado."""
         user_prompt = format_contact_card_extractor_prompt(
             user_message=request.user_message,
-            contact_card=request.contact_card_summary,
-            conversation_context="\n".join(request.conversation_context or []),
         )
 
         raw = await self._client.extract(

@@ -20,6 +20,8 @@ class TestSessionContext:
         assert ctx.vertente == "geral"
         assert ctx.rules == {}
         assert ctx.limits == {}
+        assert ctx.prompt_vertical == ""
+        assert ctx.prompt_contexts == []
 
     def test_custom_values(self) -> None:
         """Verifica valores customizados."""
@@ -28,6 +30,8 @@ class TestSessionContext:
             vertente="vendas",
             rules={"max_options": 3},
             limits={"timeout": 3600},
+            prompt_vertical="automacao",
+            prompt_contexts=["vertentes/automacao/objections.yaml"],
         )
         assert ctx.tenant_id == "tenant-123"
         assert ctx.vertente == "vendas"

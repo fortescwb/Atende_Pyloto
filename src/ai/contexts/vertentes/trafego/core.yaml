@@ -1,0 +1,29 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_core"
+  vertical_id: "gestao_perfis_trafego"
+  token_budget: 1000
+  priority: "high"
+
+prompt_summary: |
+  Vertical: gestao_perfis_trafego
+  Oferta: presença digital + tráfego pago com foco em leads e vendas.
+  Ideal: negócios locais ou nichados que precisam aparecer e converter.
+  Diferenciais: SEO integrado, estratégia orientada a resultado, otimização contínua.
+  Próximo passo: segmento, região (local/nacional) e orçamento mensal.
+
+prompt_injection: |
+  Vertical: gestao_perfis_trafego (Perfis + Tráfego)
+  Oferta: gestão de presença digital (perfil/site/landing) + SEO + mídia paga.
+  Diferenciais: estratégia orientada a resultado, SEO integrado e otimização contínua.
+  Pricing (faixa): gestão a partir de R$ 2-8k/mês (mídia paga separada).
+  Qualificação: segmento, região (local/nacional), ticket médio e orçamento.
+  Próximo passo: entender metas (leads/vendas) e canais atuais.
+
+qualificacao:
+  perguntas_chave:
+    - "Seu público é local ou nacional?"
+    - "Qual o ticket médio e meta de leads?"
+    - "Já investe em anúncios? Quanto por mês?"

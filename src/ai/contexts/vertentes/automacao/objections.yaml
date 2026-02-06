@@ -1,0 +1,26 @@
+version: "1.0.0"
+updated_at: "2026-02-06"
+
+metadata:
+  context_type: "vertente_objections"
+  vertical_id: "automacao_atendimento"
+  token_budget: 2500
+  priority: "medium"
+  manual_injection: true
+  persist: true
+  min_confidence: 0.4
+  injection_trigger:
+    any_keywords: ["caro", "preço", "valor", "orçamento", "budget", "muito caro", "manychat", "chatfuel", "já uso", "concorrente"]
+
+prompt_injection: |
+  Objeções comuns (Automação):
+  1) "Está caro."
+     Resposta: Mostrar ROI. Compare custo de 1 atendente vs automação (24/7) e queda de tempo de resposta.
+  2) "Já uso ManyChat/Chatfuel."
+     Resposta: Diferenciar NLP real vs fluxos rígidos; entende variações, contexto e reduz manutenção.
+  3) "Tenho medo da IA errar."
+     Resposta: Safety rails + revisão humana + fallback quando confiança baixa.
+  4) "Minha equipe não é técnica."
+     Resposta: Onboarding guiado, zero código e suporte contínuo.
+  5) "Preciso rápido."
+     Resposta: Padrão em 1-2 semanas; IA em 3-5 semanas com homologação.
