@@ -39,6 +39,12 @@ def apply_contact_card_patch(contact_card: ContactCard, patch: ContactCardPatch)
                 updated = True
             continue
 
+        if field == "current_tools":
+            if value and not contact_card.current_tools:
+                contact_card.current_tools = list(value)
+                updated = True
+            continue
+
         current = getattr(contact_card, field, None)
         if _is_empty_value(current):
             setattr(contact_card, field, value)

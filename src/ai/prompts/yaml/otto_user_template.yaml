@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "1.1.0"
 updated_at: "2026-02-06"
 
 metadata:
@@ -29,6 +29,16 @@ template: |
   1) Há sinal de interesse comercial? (dor, comparação, implementação, preço/prazo)
   2) Qual o estágio do lead? (curioso, avaliando, comparando, pronto pra avançar)
   3) Qual próximo passo faz sentido? (qualificar 1 ponto, demo/diagnóstico, ou escalar humano)
+
+  ## REGRA DE PROGRESSAO
+  Antes de fazer nova pergunta de qualificacao:
+  1) Verifique se o contact_card_summary ja contem o dado.
+  2) Se voce ja perguntou e nao apareceu no resumo, reformule com mais contexto.
+  3) NUNCA repita a mesma pergunta com palavras diferentes.
+
+  Se voce perguntou sobre "volume" e nao apareceu no ContactCard:
+  - Seja explicito ("Quantas mensagens/atendimentos por dia?")
+  - OU confirme com um chute seguro ("Pelo que entendi, mais de 100 por dia, correto?")
 
   ## COMO ESCOLHER next_state (use APENAS transições válidas)
   - Se for fazer pergunta de qualificação: prefira COLLECTING_INFO (se existir). Se não existir, use TRIAGE.

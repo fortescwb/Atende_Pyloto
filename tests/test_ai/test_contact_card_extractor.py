@@ -85,3 +85,44 @@ async def test_multiple_secondary_interests() -> None:
         )
     )
     assert result.updates.secondary_interests == ["sob_medida", "automacao_atendimento"]
+
+
+@pytest.mark.asyncio
+async def test_message_volume_parses_int_from_text() -> None:
+    service = ContactCardExtractorService(
+        FakeClient({"updates": {"message_volume_per_day": "200 por dia"}, "confidence": 0.8})
+    )
+    result = await service.extract(
+        ContactCardExtractionRequest(
+            user_message="Recebo umas 200 por dia",
+        )
+    )
+    assert result.updates.message_volume_per_day == 200
+
+
+@pytest.mark.asyncio
+async def test_has_crm_false_is_preserved() -> None:
+    service = ContactCardExtractorService(
+        FakeClient({"updates": {"has_crm": False}, "confidence": 0.6})
+    )
+    result = await service.extract(
+        ContactCardExtractionRequest(
+            user_message="Nao tenho CRM",
+        )
+    )
+    assert result.updates.has_crm is False
+
+
+@pytest.mark.asyncio
+async def test_current_tools_are_normalized() -> None:
+    service = ContactCardExtractorService(
+        FakeClient(
+            {"updates": {"current_tools": "WhatsApp Web, planilha"}, "confidence": 0.7}
+        )
+    )
+    result = await service.extract(
+        ContactCardExtractionRequest(
+            user_message="Usamos WhatsApp Web e planilha",
+        )
+    )
+    assert result.updates.current_tools == ["whatsapp_web", "spreadsheet"]

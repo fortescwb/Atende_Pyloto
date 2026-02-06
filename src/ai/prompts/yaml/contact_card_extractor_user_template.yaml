@@ -1,4 +1,4 @@
-version: "1.1.0"
+version: "1.2.0"
 updated_at: "2026-02-06"
 
 metadata:
@@ -6,7 +6,13 @@ metadata:
   agent: "contact_card_extractor"
 
 template: |
-  ## Mensagem atual do usuário
+  ## Ultima mensagem do assistente (contexto)
+  {assistant_last_message}
+
+  ## Mensagem atual do usuario
   {user_message}
 
-  Extraia apenas informações novas presentes na mensagem. JSON apenas.
+  Extraia apenas informacoes novas presentes na mensagem.
+  Se a mensagem do usuario responder diretamente a pergunta do assistente,
+  mapeie para o campo correto do ContactCard.
+  JSON apenas.

@@ -205,6 +205,26 @@ def user_history_as_strings(session: Any, *, max_messages: int = 5) -> list[str]
         return user_messages
     return user_messages[-max_messages:]
 
+def last_assistant_message(session: Any) -> str:
+    """Retorna a ultima mensagem do assistente, se existir."""
+    raw_history = getattr(session, "history", []) or []
+    for entry in reversed(raw_history):
+        if isinstance(entry, str):
+            lowered = entry.lower()
+            if lowered.startswith("otto:") or lowered.startswith("assistente:"):
+                return entry.split(":", 1)[-1].strip()
+            continue
+        if isinstance(entry, dict):
+            if entry.get("role") == "assistant" and entry.get("content"):
+                return str(entry["content"]).strip()
+            continue
+        role = getattr(entry, "role", None)
+        content = getattr(entry, "content", None)
+        role_value = getattr(role, "value", role)
+        if role_value == "assistant" and content:
+            return str(content).strip()
+    return ""
+
 def build_tenant_intent(session: Any, user_message: str) -> tuple[str | None, float]:
     """Detecta vertente e retorna (intent, confidence).
 

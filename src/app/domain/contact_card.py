@@ -3,9 +3,7 @@
 Modelo focado em dados de qualificacao e contexto para o atendimento.
 Evita PII em logs; PII fica apenas no modelo persistido.
 """
-
 from __future__ import annotations
-
 import re
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -13,12 +11,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator
 
 _PHONE_REGEX = re.compile(r"^\d{12,15}$")
-
-
 def _utcnow() -> datetime:
     return datetime.now(UTC)
-
-
 class ContactCard(BaseModel):
     """Perfil do lead armazenado no Firestore."""
 
@@ -45,6 +39,11 @@ class ContactCard(BaseModel):
     budget_indication: str | None = Field(None, max_length=100)
     specific_need: str | None = Field(None, max_length=200)
     company_size: Literal["mei", "micro", "pequena", "media", "grande"] | None = None
+    message_volume_per_day: int | None = Field(None, ge=0)
+    attendants_count: int | None = Field(None, ge=0)
+    specialists_count: int | None = Field(None, ge=0)
+    has_crm: bool | None = None
+    current_tools: list[str] = Field(default_factory=list)
 
     # Scores
     qualification_score: float = Field(default=0.0, ge=0.0, le=100.0)
@@ -91,20 +90,26 @@ class ContactCard(BaseModel):
         """Resumo curto para prompt (max ~200 tokens)."""
         parts: list[str] = []
         parts.append(f"WhatsApp: {self.whatsapp_name} ({self.phone})")
-
         if self.full_name and self.full_name.lower() != self.whatsapp_name.lower():
             parts.append(f"Nome completo: {self.full_name}")
-
         if self.company:
             size_str = f" ({self.company_size})" if self.company_size else ""
             parts.append(f"Empresa: {self.company}{size_str}")
-
         if self.role:
             parts.append(f"Cargo: {self.role}")
-
+        if self.message_volume_per_day is not None:
+            parts.append(f"Volume/dia: {self.message_volume_per_day}")
+        if self.attendants_count is not None:
+            parts.append(f"Equipe atendimento: {self.attendants_count}")
+        if self.specialists_count is not None:
+            parts.append(f"Especialistas: {self.specialists_count}")
+        if self.has_crm is not None:
+            parts.append(f"CRM: {'Sim' if self.has_crm else 'Nao'}")
+        if self.current_tools:
+            tools_display = ", ".join(self.current_tools)
+            parts.append(f"Ferramentas atuais: {tools_display}")
         if self.email:
             parts.append(f"Email: {self.email}")
-
         if self.primary_interest:
             interest_display = self.primary_interest.replace("_", " ").title()
             parts.append(f"Interesse principal: {interest_display}")
@@ -115,10 +120,8 @@ class ContactCard(BaseModel):
                 parts.append(f"Outros interesses: {secondary}")
         else:
             parts.append("Interesse: ainda nao identificado")
-
         if self.specific_need:
             parts.append(f"Necessidade: {self.specific_need}")
-
         if self.urgency:
             urgency_map = {
                 "low": "Baixa",
@@ -127,13 +130,10 @@ class ContactCard(BaseModel):
                 "urgent": "Urgente",
             }
             parts.append(f"Urgencia: {urgency_map[self.urgency]}")
-
         if self.budget_indication:
             parts.append(f"Orcamento: {self.budget_indication}")
-
         status = "QUALIFICADO" if self.is_qualified else "Qualificando"
         parts.append(f"Score: {self.qualification_score:.0f}/100 {status}")
-
         alerts: list[str] = []
         if self.requested_human:
             alerts.append("Solicitou atendimento humano")
@@ -143,7 +143,6 @@ class ContactCard(BaseModel):
             alerts.append("Lead qualificado nao notificado")
         if alerts:
             parts.append(f"Atencao: {' | '.join(alerts)}")
-
         return "\n".join(parts)
 
     def to_firestore_dict(self) -> dict[str, Any]:
@@ -186,6 +185,11 @@ class ContactCardPatch(BaseModel):
     budget_indication: str | None = None
     specific_need: str | None = None
     company_size: Literal["mei", "micro", "pequena", "media", "grande"] | None = None
+    message_volume_per_day: int | None = Field(None, ge=0)
+    attendants_count: int | None = Field(None, ge=0)
+    specialists_count: int | None = Field(None, ge=0)
+    has_crm: bool | None = None
+    current_tools: list[str] | None = None
     requested_human: bool | None = None
     showed_objection: bool | None = None
 

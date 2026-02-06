@@ -16,6 +16,8 @@ class ContactCardExtractionRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     user_message: str
+    assistant_last_message: str | None = None
+    correlation_id: str | None = None
 
 
 class ContactCardPatch(BaseModel):
@@ -38,6 +40,11 @@ class ContactCardPatch(BaseModel):
     budget_indication: str | None = None
     specific_need: str | None = None
     company_size: Literal["mei", "micro", "pequena", "media", "grande"] | None = None
+    message_volume_per_day: int | None = Field(None, ge=0)
+    attendants_count: int | None = Field(None, ge=0)
+    specialists_count: int | None = Field(None, ge=0)
+    has_crm: bool | None = None
+    current_tools: list[str] | None = None
     requested_human: bool | None = None
     showed_objection: bool | None = None
 

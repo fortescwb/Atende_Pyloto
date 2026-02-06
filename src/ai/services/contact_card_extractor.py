@@ -19,15 +19,17 @@ from ai.prompts.contact_card_extractor_prompt import (
     CONTACT_CARD_EXTRACTOR_SYSTEM,
     format_contact_card_extractor_prompt,
 )
+from ai.utils.contact_card_extraction import (
+    BOOL_FIELDS_ALLOW_FALSE,
+    INT_FIELDS,
+    PRIMARY_INTEREST_ALIASES,
+    normalize_string_list,
+    normalize_tools,
+    parse_bool_value,
+    parse_int_value,
+)
 
 logger = logging.getLogger(__name__)
-
-_PRIMARY_INTEREST_ALIASES = {
-    "gestao_perfis": "gestao_perfis_trafego",
-    "trafego_pago": "gestao_perfis_trafego",
-    "intermediacao": "intermediacao_entregas",
-    "automacao": "automacao_atendimento",
-}
 
 if TYPE_CHECKING:
     from ai.core.contact_card_extractor_client import ContactCardExtractorClientProtocol
@@ -46,6 +48,7 @@ class ContactCardExtractorService:
         """Executa extração e retorna patch validado."""
         user_prompt = format_contact_card_extractor_prompt(
             user_message=request.user_message,
+            assistant_last_message=request.assistant_last_message,
         )
 
         raw = await self._client.extract(
@@ -73,6 +76,17 @@ class ContactCardExtractorService:
             else []
         )
 
+        extracted_fields = list(patch.model_dump(exclude_none=True).keys())
+        logger.info(
+            "contact_card_extracted",
+            extra={
+                "fields_count": len(extracted_fields),
+                "extracted_fields": extracted_fields,
+                "confidence": confidence,
+                "correlation_id": request.correlation_id,
+            },
+        )
+
         return ContactCardExtractionResult(
             updates=patch,
             confidence=confidence,
@@ -88,8 +102,30 @@ class ContactCardExtractorService:
         for field, value in raw_updates.items():
             if value is None:
                 continue
+            if field in INT_FIELDS:
+                parsed = parse_int_value(value)
+                if parsed is not None:
+                    normalized[field] = parsed
+                continue
+            if field == "has_crm":
+                parsed_bool = parse_bool_value(value)
+                if parsed_bool is not None:
+                    normalized[field] = parsed_bool
+                continue
+            if field == "secondary_interests":
+                items = normalize_string_list(value)
+                if items:
+                    normalized[field] = items
+                continue
+            if field == "current_tools":
+                tools = normalize_tools(value)
+                if tools:
+                    normalized[field] = tools
+                continue
             if isinstance(value, bool):
-                if value:
+                if field in BOOL_FIELDS_ALLOW_FALSE:
+                    normalized[field] = value
+                elif value:
                     normalized[field] = True
                 continue
             if isinstance(value, str):
@@ -99,18 +135,10 @@ class ContactCardExtractorService:
                 if field in {"primary_interest", "urgency", "company_size"}:
                     cleaned = cleaned.lower().replace(" ", "_").replace("-", "_")
                     if field == "primary_interest":
-                        cleaned = _PRIMARY_INTEREST_ALIASES.get(cleaned, cleaned)
+                        cleaned = PRIMARY_INTEREST_ALIASES.get(cleaned, cleaned)
                 if field == "email":
                     cleaned = cleaned.lower()
                 normalized[field] = cleaned
-                continue
-            if field == "secondary_interests":
-                if isinstance(value, list):
-                    items = [str(item).strip() for item in value if str(item).strip()]
-                    normalized[field] = items
-                elif isinstance(value, str):
-                    items = [part.strip() for part in value.split(",") if part.strip()]
-                    normalized[field] = items
                 continue
             normalized[field] = value
 
@@ -124,7 +152,9 @@ class ContactCardExtractorService:
             if value is None:
                 continue
             if isinstance(value, bool):
-                if value:
+                if field in BOOL_FIELDS_ALLOW_FALSE:
+                    cleaned[field] = value
+                elif value:
                     cleaned[field] = True
                 continue
             if isinstance(value, str):
@@ -133,10 +163,15 @@ class ContactCardExtractorService:
                     continue
                 cleaned[field] = text
                 continue
-            if field == "secondary_interests" and isinstance(value, list):
-                items = [item.strip() for item in value if item and item.strip()]
+            if field == "secondary_interests":
+                items = normalize_string_list(value)
                 if items:
                     cleaned[field] = items
+                continue
+            if field == "current_tools":
+                tools = normalize_tools(value)
+                if tools:
+                    cleaned[field] = tools
                 continue
             cleaned[field] = value
 

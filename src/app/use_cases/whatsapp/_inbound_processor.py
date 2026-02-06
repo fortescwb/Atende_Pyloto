@@ -19,6 +19,7 @@ from app.use_cases.whatsapp._inbound_helpers import (
     get_valid_transitions,
     history_as_strings,
     is_terminal_session,
+    last_assistant_message,
     user_history_as_strings,
 )
 from fsm.manager import FSMStateMachine
@@ -96,6 +97,7 @@ class InboundMessageProcessor:
             contact_card=contact_card,
             card_summary=card_summary,
             raw_user_text=raw_user_text,
+            correlation_id=correlation_id,
         )
 
         decision = await self._validate_decision(decision, otto_request)
@@ -157,6 +159,7 @@ class InboundMessageProcessor:
         contact_card: Any,
         card_summary: str,
         raw_user_text: str,
+        correlation_id: str,
     ) -> tuple[OttoRequest, OttoDecision, Any]:
         otto_history = user_history_as_strings(session, max_messages=5)
         otto_request = self._build_otto_request(
@@ -165,9 +168,12 @@ class InboundMessageProcessor:
             history=otto_history,
             card_summary=card_summary,
         )
+        assistant_last = last_assistant_message(session)
         extraction_task = self._build_extraction_task(
             contact_card=contact_card,
             raw_user_text=raw_user_text,
+            assistant_last_message=assistant_last,
+            correlation_id=correlation_id,
         )
         otto_task = self._otto_agent.decide(otto_request)
         if extraction_task:
@@ -223,6 +229,8 @@ class InboundMessageProcessor:
         *,
         contact_card: Any,
         raw_user_text: str,
+        assistant_last_message: str,
+        correlation_id: str,
     ) -> Any | None:
         if not self._contact_card_extractor or not contact_card:
             return None
@@ -231,6 +239,8 @@ class InboundMessageProcessor:
         return self._contact_card_extractor.extract(
             ContactCardExtractionRequest(
                 user_message=raw_user_text,
+                assistant_last_message=assistant_last_message,
+                correlation_id=correlation_id,
             )
         )
 

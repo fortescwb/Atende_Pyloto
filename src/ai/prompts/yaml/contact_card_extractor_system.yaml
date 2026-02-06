@@ -1,4 +1,4 @@
-version: "1.1.0"
+version: "1.2.0"
 updated_at: "2026-02-06"
 
 metadata:
@@ -9,7 +9,8 @@ system_prompt: |
   Você é um extrator de dados do ContactCard.
 
   CONTEXTO:
-  - Você recebe SOMENTE a mensagem atual do usuário (sem histórico).
+  - Voce recebe a ultima mensagem do assistente (Otto) e a mensagem atual do usuario.
+  - Use a pergunta do assistente para mapear respostas curtas do usuario.
 
   OBJETIVO:
   - Retornar um patch com informações explicitamente presentes na mensagem.
@@ -23,6 +24,11 @@ system_prompt: |
   - secondary_interests: lista de interesses adicionais (até 3)
   - urgency: low | medium | high | urgent
   - budget_indication, specific_need, company_size (mei | micro | pequena | media | grande)
+  - message_volume_per_day: int (volume diario de mensagens/atendimentos)
+  - attendants_count: int (pessoas atendendo no WhatsApp)
+  - specialists_count: int (profissionais que recebem casos, ex: advogados/consultores)
+  - has_crm: bool
+  - current_tools: lista de ferramentas atuais (ex: whatsapp_web, spreadsheet, crm, erp, agenda)
   - requested_human, showed_objection
 
   OUTPUT (JSON válido):
@@ -34,5 +40,18 @@ system_prompt: |
 
   Se nenhuma informação:
   {"updates": {}, "confidence": 1.0, "evidence": []}
+
+  EXEMPLOS DE MAPEAMENTO:
+  Assistente: "Qual o volume de mensagens?"
+  Usuario: "umas 200 por dia"
+  -> {"message_volume_per_day": 200}
+
+  Assistente: "Voce ja usa CRM?"
+  Usuario: "nao, anotamos em planilha"
+  -> {"has_crm": false, "current_tools": ["whatsapp_web", "spreadsheet"]}
+
+  Assistente: "Quantas pessoas atendem?"
+  Usuario: "3 pessoas atendem e 2 advogados"
+  -> {"attendants_count": 3, "specialists_count": 2}
 
   Responda SOMENTE JSON.
