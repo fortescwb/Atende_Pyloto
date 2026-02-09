@@ -5,7 +5,6 @@ Extrai lógica auxiliar para reduzir o tamanho do process_inbound_canonical.py.
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -27,32 +26,6 @@ class OutboundDecisionProtocol(Protocol):
     final_message_type: str | None
 
 logger = logging.getLogger(__name__)
-
-
-def map_state_suggestion_to_target(
-    state_result: Any,
-    current_state: SessionState,
-) -> SessionState:
-    """Mapeia sugestão do StateAgent para estado FSM.
-
-    Args:
-        state_result: Resultado do StateAgent (LLM #1)
-        current_state: Estado atual
-
-    Returns:
-        Estado alvo para transição
-    """
-    if not state_result.suggested_next_states:
-        return current_state
-
-    # Pega sugestão de maior confiança
-    best = max(state_result.suggested_next_states, key=lambda s: s.confidence)
-
-    # Valida se é um estado válido
-    try:
-        return SessionState[best.state]
-    except KeyError:
-        return current_state
 
 
 def build_outbound_payload(
@@ -151,17 +124,6 @@ def build_outbound_request(
     )
 
 
-def serialize_contact_card(contact_card: Any) -> str:
-    """Serializa ContactCard para JSON seguro no prompt."""
-    if contact_card is None:
-        return "{}"
-    try:
-        payload = contact_card.model_dump(exclude_none=True, mode="json")
-        return json.dumps(payload, ensure_ascii=False)
-    except Exception:
-        return "{}"
-
-
 def _resolve_message_type(decision: OutboundDecisionProtocol) -> str:
     msg_type = getattr(decision, "message_type", None) or getattr(
         decision, "final_message_type", None
@@ -176,6 +138,7 @@ def _resolve_text(decision: OutboundDecisionProtocol) -> str:
         or ""
     )
 
+
 def history_as_strings(session: Any) -> list[str]:
     history = getattr(session, "history_as_strings", None)
     if history is not None:
@@ -183,27 +146,6 @@ def history_as_strings(session: Any) -> list[str]:
     raw_history = getattr(session, "history", []) or []
     return [str(entry) for entry in raw_history]
 
-def user_history_as_strings(session: Any, *, max_messages: int = 5) -> list[str]:
-    """Retorna somente as últimas N mensagens do usuário (sem mensagens do bot)."""
-    raw_history = getattr(session, "history", []) or []
-    user_messages: list[str] = []
-    for entry in raw_history:
-        if isinstance(entry, str):
-            user_messages.append(entry)
-            continue
-        if isinstance(entry, dict):
-            if entry.get("role") == "user" and entry.get("content"):
-                user_messages.append(f"Usuario: {entry['content']}")
-            continue
-        role = getattr(entry, "role", None)
-        content = getattr(entry, "content", None)
-        role_value = getattr(role, "value", role)
-        if role_value == "user" and content:
-            user_messages.append(f"Usuario: {content}")
-
-    if max_messages <= 0:
-        return user_messages
-    return user_messages[-max_messages:]
 
 def last_assistant_message(session: Any) -> str:
     """Retorna a ultima mensagem do assistente, se existir."""
@@ -225,6 +167,7 @@ def last_assistant_message(session: Any) -> str:
             return str(content).strip()
     return ""
 
+
 def build_tenant_intent(session: Any, user_message: str) -> tuple[str | None, float]:
     """Detecta vertente e retorna (intent, confidence).
 
@@ -245,8 +188,10 @@ def build_tenant_intent(session: Any, user_message: str) -> tuple[str | None, fl
     detected = detect_intent(user_message)
     return detected, 0.6 if detected else 0.0
 
+
 def get_valid_transitions(current_state: SessionState) -> tuple[str, ...]:
     return tuple(state.name for state in get_valid_targets(current_state))
+
 
 def is_terminal_session(session: Any) -> bool:
     return bool(getattr(session, "is_terminal", False))

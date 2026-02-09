@@ -9,7 +9,7 @@ metadata:
 
 # Texto conciso para injeção no USER
 prompt_injection: |
-  Empresa: Pyloto (B2B).
+  Empresa (B2B): Pyloto Multiserviços.
   Contato: contato@pyloto.com.br | https://pyloto.com.br
   Atendimento humano: Seg-Sex 09h-17h (America/Sao_Paulo); Otto 24/7.
 
@@ -38,12 +38,6 @@ horario_atendimento:
 
 # Resumo de serviços (IDs canônicos + arquivo de contexto da vertical)
 vertentes:
-  - id: "saas"
-    nome: "SaaS Pyloto"
-    descricao: "Sistema de gestão completo e adaptável."
-    keywords: ["sistema", "gestão", "crm", "erp", "agenda", "estoque", "software"]
-    context_file: "saas/core.yaml"
-
   - id: "sob_medida"
     nome: "Sistemas Sob Medida"
     descricao: "Software personalizado para processos específicos."

@@ -19,6 +19,7 @@ from app.services.otto_repetition_guard import (
     apply_repetition_guard,
     collect_contact_card_fields,
 )
+from app.services.whatsapp_fixed_replies import FixedReply, match_fixed_reply
 from app.use_cases.whatsapp._inbound_helpers import (
     build_outbound_payload,
     build_outbound_request,
@@ -94,6 +95,18 @@ class InboundMessageProcessor:
             return self._build_result(session, bool(early_sent))
 
         sanitized_input = sanitize_pii(raw_user_text)
+        fixed_reply = match_fixed_reply(raw_user_text)
+        if fixed_reply:
+            sent = await self._send_fixed_reply(msg, fixed_reply, correlation_id)
+            await self._apply_fixed_reply_to_session(
+                session=session,
+                sanitized_input=sanitized_input,
+                fixed_reply=fixed_reply,
+                correlation_id=correlation_id,
+                message_id=msg.message_id,
+            )
+            return self._build_result(session, sent)
+
         contact_card, history, card_summary = await self._prepare_context(msg, session)
 
         otto_request, decision, extraction = await self._run_agents(
@@ -478,6 +491,60 @@ class InboundMessageProcessor:
             },
         )
         return sent
+
+    async def _send_fixed_reply(
+        self,
+        msg: NormalizedMessage,
+        fixed_reply: FixedReply,
+        correlation_id: str,
+    ) -> bool:
+        decision = _FallbackDecision(
+            response_text=fixed_reply.response_text,
+            message_type=fixed_reply.message_type,
+        )
+        return await self._send_response(msg, decision, correlation_id)
+
+    async def _apply_fixed_reply_to_session(
+        self,
+        *,
+        session: Any,
+        sanitized_input: str,
+        fixed_reply: FixedReply,
+        correlation_id: str,
+        message_id: str | None,
+    ) -> None:
+        from app.sessions.models import HistoryRole, SessionContext
+
+        session.add_to_history(sanitized_input, role=HistoryRole.USER, max_history=None)
+        session.add_to_history(
+            sanitize_pii(fixed_reply.response_text),
+            role=HistoryRole.ASSISTANT,
+            max_history=None,
+        )
+        if fixed_reply.prompt_vertical and getattr(session, "context", None) is not None:
+            current = session.context
+            session.context = SessionContext(
+                tenant_id=current.tenant_id,
+                vertente=current.vertente,
+                rules=current.rules,
+                limits=current.limits,
+                prompt_vertical=fixed_reply.prompt_vertical,
+                prompt_contexts=list(current.prompt_contexts or []),
+            )
+
+        await self._session_manager.save(session)
+        logger.info(
+            "fixed_reply_applied",
+            extra={
+                "component": "inbound_processor",
+                "action": "fixed_reply",
+                "result": "sent",
+                "correlation_id": correlation_id,
+                "message_id": message_id,
+                "reply_key": fixed_reply.key,
+                "reply_kind": fixed_reply.kind,
+            },
+        )
 
     async def _update_session(
         self,

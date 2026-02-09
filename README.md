@@ -8,7 +8,24 @@ Este repositório implementa um sistema de atendimento automatizado para WhatsAp
 
 ## Arquitetura
 
-### Visão Geral
+### Visão Geral 'Quebra-Gelo' e 'comandos'
+
+Estão configuradas/cadastradas as seguintes mensagens de quebra gelo e comandos "/" no
+painel da Meta (Whatsapp Business API):
+  **Quebra-gelos**
+    - Como funciona a Gestão de perfis e Tráfego?
+    - Como funciona a Automação?
+    - Como funciona o desenvolvimento de Sistemas Sob Medida?
+    - O que é o SaaS da Pyloto?
+  **comandos**
+    - `/automacao` - Serviço de automação de atendimento com ou sem IA. Entregamos um painel de gestão onde é possível "assumir" uma conversa que esta sendo atendida pelo Bot ou IA, bem como visualizar os atendimentos em andamento.
+    - `/sobmedida`- Nós realizamos um estudo detalhado do fluxo atual do cliente, ferramentas que são utilizadas e serviços que podem ser integrados. Entregamos uma plataforma (Web ou Local) pensada exclusivamente para atender todas as necessidades.
+    - `/entregas_servicos`- Pyloto Serviços é o carro chefe da Pyloto. Realizamos a intermediação operacional entre prestadores de serviço cadastrados e solicitantes (PF ou PJ). Solicitações devem ser realizadas exclusivamente através do whatsapp +554291619261.
+    - `/saas`- "O Pyloto da sua comunicação". O SaaS da Pyloto, pensado para atender a maior parte dos nichos e empresas de maneira adaptável.
+
+Para as mensagens de "Quebra-gelos" e "comandos", deveremos cadastrar uma resposta fixa, a qual deverá constar no {conversation_history} porém, não deverá passar por nenhum dos agentes, essas serão respostas fixas.
+
+### Visão Geral LLMs
 
 O sistema utiliza **arquitetura de agente único (Otto) + agentes utilitários**, substituindo o pipeline sequencial de 4 agentes LLM por uma abordagem mais eficiente:
 

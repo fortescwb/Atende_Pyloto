@@ -4,9 +4,6 @@ Exporta contratos e serviços usados pelo agente único (Otto) e utilitários
 determinísticos de suporte.
 """
 
-# Config
-from ai.config import AISettings, get_ai_settings
-
 # Core protocols
 from ai.core import ContactCardExtractorClientProtocol, OttoClientProtocol
 
@@ -27,24 +24,17 @@ from ai.rules import (
 )
 
 # Services
-from ai.services import (
-    ContactCardExtractorService,
-    ContextInjector,
-    DecisionValidatorService,
-    OttoAgentService,
-)
+from ai.services import ContactCardExtractorService, DecisionValidatorService, OttoAgentService
 
 # Utils
 from ai.utils import contains_pii, extract_json_from_response, mask_history, sanitize_pii
 
 __all__ = [
-    "AISettings",
     "ContactCardExtractionRequest",
     "ContactCardExtractionResult",
     "ContactCardExtractorClientProtocol",
     "ContactCardExtractorService",
     "ContactCardPatch",
-    "ContextInjector",
     "DecisionValidatorService",
     "OttoAgentService",
     "OttoClientProtocol",
@@ -54,7 +44,6 @@ __all__ = [
     "contains_pii",
     "contains_prohibited_promises",
     "extract_json_from_response",
-    "get_ai_settings",
     "is_response_length_valid",
     "mask_history",
     "sanitize_pii",

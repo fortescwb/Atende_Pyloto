@@ -31,9 +31,8 @@ class ContactCardPatch(BaseModel):
     role: str | None = None
     location: str | None = None
     primary_interest: Literal[
-        "saas", "sob_medida", "gestao_perfis_trafego",
+        "sob_medida", "gestao_perfis_trafego",
         "automacao_atendimento", "intermediacao_entregas",
-        "gestao_perfis", "trafego_pago", "intermediacao",
     ] | None = None
     secondary_interests: list[str] | None = None
     urgency: Literal["low", "medium", "high", "urgent"] | None = None
