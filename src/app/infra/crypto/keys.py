@@ -28,14 +28,26 @@ def load_private_key(private_key_pem: str, passphrase: str | None = None) -> Any
     Raises:
         FlowCryptoError: Se chave inválida
     """
-    try:
-        passphrase_bytes = passphrase.encode() if passphrase else None
+    passphrase_bytes = passphrase.encode() if passphrase and passphrase.strip() else None
+
+    def _load(password: bytes | None) -> Any:
         return serialization.load_pem_private_key(
             private_key_pem.encode("utf-8"),
-            password=passphrase_bytes,
+            password=password,
             backend=default_backend(),
         )
+
+    try:
+        return _load(passphrase_bytes)
     except Exception as exc:
+        # Permite fallback quando a chave não está criptografada, mas uma
+        # passphrase foi injetada por configuração.
+        exc_text = str(exc).lower()
+        if passphrase_bytes and "private key is not encrypted" in exc_text:
+            try:
+                return _load(None)
+            except Exception as retry_exc:
+                raise FlowCryptoError(f"Invalid private key: {retry_exc}") from retry_exc
         raise FlowCryptoError(f"Invalid private key: {exc}") from exc
 
 
@@ -52,8 +64,16 @@ def decrypt_aes_key(private_key: Any, encrypted_aes_key: str) -> bytes:
     Raises:
         FlowCryptoError: Se decriptografia falhar
     """
+    def _decode_base64(value: str) -> bytes:
+        normalized = value.strip()
+        padded = normalized + ("=" * (-len(normalized) % 4))
+        try:
+            return base64.b64decode(padded, validate=True)
+        except (ValueError, binascii.Error):
+            return base64.urlsafe_b64decode(padded)
+
     try:
-        aes_key_encrypted = base64.b64decode(encrypted_aes_key, validate=True)
+        aes_key_encrypted = _decode_base64(encrypted_aes_key)
         aes_key = private_key.decrypt(
             aes_key_encrypted,
             padding.OAEP(

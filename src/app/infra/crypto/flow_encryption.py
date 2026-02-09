@@ -9,7 +9,6 @@ from dataclasses import dataclass
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from app.infra.crypto.constants import IV_SIZE
 from app.infra.crypto.errors import FlowCryptoError
 from app.infra.crypto.keys import decrypt_aes_key, load_private_key
 
@@ -21,6 +20,18 @@ class DecryptedFlowRequest:
     payload: dict[str, object]
     aes_key: bytes
     iv: bytes
+
+
+def _decode_base64(raw_value: str) -> bytes:
+    value = raw_value.strip()
+    padded = value + ("=" * (-len(value) % 4))
+    try:
+        return base64.b64decode(padded, validate=True)
+    except (ValueError, binascii.Error):
+        try:
+            return base64.urlsafe_b64decode(padded)
+        except (ValueError, binascii.Error) as exc:
+            raise FlowCryptoError(f"Invalid base64 payload: {exc}") from exc
 
 
 def decrypt_flow_request(
@@ -38,14 +49,8 @@ def decrypt_flow_request(
     - `initial_vector`: IV AES-GCM (base64)
     - `encrypted_flow_data`: ciphertext + auth tag concatenados (base64)
     """
-    try:
-        iv = base64.b64decode(initial_vector_b64, validate=True)
-        flow_data = base64.b64decode(encrypted_flow_data_b64, validate=True)
-    except (ValueError, binascii.Error) as exc:
-        raise FlowCryptoError(f"Invalid base64 payload: {exc}") from exc
-
-    if len(iv) != IV_SIZE:
-        raise FlowCryptoError(f"Invalid IV size: {len(iv)}")
+    iv = _decode_base64(initial_vector_b64)
+    flow_data = _decode_base64(encrypted_flow_data_b64)
 
     private_key = load_private_key(private_key_pem, private_key_passphrase)
     aes_key = decrypt_aes_key(private_key, encrypted_aes_key_b64)

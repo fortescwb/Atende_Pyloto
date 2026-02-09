@@ -67,7 +67,11 @@ async def handle_flow_endpoint(request: Request) -> PlainTextResponse:
     except FlowCryptoError as exc:
         logger.error(
             "flow_decryption_failed",
-            extra={"component": "flow_endpoint", "error_type": type(exc).__name__},
+            extra={
+                "component": "flow_endpoint",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            },
         )
         return PlainTextResponse("Decryption failed", status_code=421)
 

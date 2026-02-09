@@ -89,7 +89,12 @@ def validate_runtime_settings() -> None:
     openai_errors = get_openai_settings().validate()
     errors.extend(f"openai: {error}" for error in openai_errors)
 
-    firestore_errors = get_firestore_settings().validate(os.getenv("GCP_PROJECT", ""))
+    gcp_project = (
+        os.getenv("GCP_PROJECT", "")
+        or os.getenv("GOOGLE_CLOUD_PROJECT", "")
+        or os.getenv("GCLOUD_PROJECT", "")
+    )
+    firestore_errors = get_firestore_settings().validate(gcp_project)
     errors.extend(f"firestore: {error}" for error in firestore_errors)
 
     if not errors:
