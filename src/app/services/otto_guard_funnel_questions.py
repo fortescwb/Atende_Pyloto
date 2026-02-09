@@ -33,13 +33,22 @@ def pick_next_question(
     return None
 
 
-def build_next_step_cta(contact_card: ContactCard) -> str:
-    """Sugere proximo passo. Retorna string vazia se nao houver."""
+
+import asyncio
+from app.use_cases.whatsapp.send_outbound_message import SendOutboundMessageUseCase
+from app.protocols.models import OutboundMessageRequest
+from app.config.settings.whatsapp import get_whatsapp_settings
+
+async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None) -> str:
+    """
+    Sugere próximo passo. Se for hora de agendar, dispara template/flow WhatsApp.
+    outbound_sender: OutboundSenderProtocol (injetado pelo pipeline principal)
+    """
     if contact_card.meeting_preferred_datetime_text:
         if not contact_card.email:
             return "Para eu confirmar com o time, qual seu e-mail?"
         if not contact_card.full_name or not contact_card.company:
-            missing: list[str] = []
+            missing = []
             if not contact_card.full_name:
                 missing.append("seu nome completo")
             if not contact_card.company:
@@ -52,10 +61,34 @@ def build_next_step_cta(contact_card: ContactCard) -> str:
         )
 
     if ready_to_schedule_meeting(contact_card):
-        return (
-            "Se fizer sentido, posso agendar uma conversa rapida de 15 min "
-            "para diagnostico/orcamento. Qual melhor dia e horario (seg-sex, 9h-17h)?"
+        # Envia template e flow do WhatsApp
+        wa_settings = get_whatsapp_settings()
+        phone = getattr(contact_card, "wa_id", None) or getattr(contact_card, "phone", None)
+        if not phone or not outbound_sender:
+            return "Estamos prontos para agendar, mas houve um erro ao acionar o WhatsApp. Por favor, tente novamente mais tarde."
+        request = OutboundMessageRequest(
+            to=phone,
+            message_type="template",
+            template_name="agendamento_reuniao",
+            template_params={},
+            language="pt_BR",
+            category="MARKETING",
+            flow_id="agendamento_reuniao",
         )
+        # Use case já espera validator/builder/sender, mas aqui só chamamos o sender direto para não duplicar lógica
+        # O ideal é que o pipeline principal injete o outbound_sender correto
+        try:
+            # Se for sync, rodar no event loop
+            if asyncio.iscoroutinefunction(outbound_sender.send):
+                result = await outbound_sender.send(request, {})
+            else:
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(None, outbound_sender.send, request, {})
+            if getattr(result, "success", False):
+                return "Enviei um link para você agendar sua consultoria pelo WhatsApp. É só seguir as instruções."
+            return "Tentei enviar o link de agendamento, mas houve uma falha. Por favor, tente novamente mais tarde."
+        except Exception:
+            return "Tentei enviar o link de agendamento, mas houve uma falha. Por favor, tente novamente mais tarde."
 
     if contact_card.urgency is None:
         return "Qual a urgencia para colocar isso de pe? (esta semana, este mes, sem pressa)"
