@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Request, Response, status
+from fastapi.responses import JSONResponse
 
 from api.connectors.whatsapp.webhook.receive import (
     InvalidJsonError,
@@ -76,6 +77,23 @@ async def receive_webhook(request: Request) -> Response | dict[str, Any]:
             return _error_response("webhook_signature_invalid", "Unauthorized", 401, str(exc))
         except InvalidJsonError as exc:
             return _error_response("webhook_json_invalid", "Bad Request", 400, str(exc))
+        except Exception:
+            correlation_id = get_correlation_id()
+            logger.exception(
+                "webhook_dispatch_failed",
+                extra={
+                    "channel": "whatsapp",
+                    "correlation_id": correlation_id,
+                },
+            )
+            return JSONResponse(
+                content={
+                    "error": "internal_error",
+                    "message": "Failed to process inbound payload",
+                    "correlation_id": correlation_id,
+                },
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
     finally:
         reset_correlation_id(token)
 

@@ -33,7 +33,11 @@ async def run_prompt_micro_agents(
     correlation_id: str | None = None,
 ) -> MicroAgentResult:
     """Executa micro agentes de contexto em paralelo quando elegíveis."""
-    folder, normalized_message = _resolve_folder_and_message(tenant_intent, session_state, user_message)
+    folder, normalized_message = _resolve_folder_and_message(
+        tenant_intent,
+        session_state,
+        user_message,
+    )
     if not folder or not normalized_message:
         return MicroAgentResult.empty()
 

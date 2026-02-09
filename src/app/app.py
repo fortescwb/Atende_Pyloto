@@ -15,15 +15,20 @@ Cloud Run:
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import create_api_router
-from app.bootstrap import initialize_app
+from api.routes.whatsapp.webhook_runtime import drain_background_tasks
+from app.bootstrap import initialize_app, validate_runtime_settings
+from app.bootstrap.clients import create_async_redis_client, create_firestore_client
 from config.logging import get_logger
+from config.settings import get_openai_settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -32,6 +37,20 @@ if TYPE_CHECKING:
 initialize_app()
 
 logger = get_logger(__name__)
+
+
+async def _seed_firestore_health_doc(firestore_client: object) -> None:
+    """Escreve documento mínimo de health para check de readiness."""
+
+    def _write_doc() -> None:
+        firestore_client.collection("_health").document("check").set(  # type: ignore[attr-defined]
+            {
+                "updated_at": datetime.now(UTC).isoformat(),
+                "service": "atende-pyloto",
+            }
+        )
+
+    await asyncio.to_thread(_write_doc)
 
 
 @asynccontextmanager
@@ -46,19 +65,44 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     - Fecha conexões gracefully
     - Flush de logs/métricas
     """
-    # Startup
     logger.info("app_starting", extra={"service": "atende-pyloto"})
+    validate_runtime_settings()
+    app.state.redis_client = None
+    app.state.firestore_client = None
+    app.state.openai_client = None
 
-    # TODO: Inicializar conexões quando stores forem implementados
-    # await initialize_stores()
+    try:
+        app.state.redis_client = create_async_redis_client()
+    except Exception as exc:
+        logger.warning("redis_client_not_ready", extra={"error_type": type(exc).__name__})
+
+    try:
+        app.state.firestore_client = create_firestore_client()
+        await _seed_firestore_health_doc(app.state.firestore_client)
+    except Exception as exc:
+        logger.warning("firestore_client_not_ready", extra={"error_type": type(exc).__name__})
+
+    openai_settings = get_openai_settings()
+    if openai_settings.enabled and openai_settings.api_key:
+        try:
+            from openai import AsyncOpenAI
+
+            app.state.openai_client = AsyncOpenAI(api_key=openai_settings.api_key)
+        except Exception as exc:
+            logger.warning("openai_client_not_ready", extra={"error_type": type(exc).__name__})
 
     yield
 
-    # Shutdown
     logger.info("app_shutting_down", extra={"service": "atende-pyloto"})
-
-    # TODO: Fechar conexões gracefully
-    # await close_stores()
+    await drain_background_tasks(timeout_seconds=30.0)
+    redis_client = getattr(app.state, "redis_client", None)
+    if redis_client is not None:
+        close_async = getattr(redis_client, "aclose", None)
+        close_sync = getattr(redis_client, "close", None)
+        if callable(close_async):
+            await close_async()
+        elif callable(close_sync):
+            await close_sync()
 
 
 def create_app() -> FastAPI:

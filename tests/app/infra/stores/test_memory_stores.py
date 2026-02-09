@@ -93,6 +93,24 @@ class TestMemoryDedupeStore:
         is_dup_after = await store.is_duplicate("mark-key")
         assert is_dup_after is True
 
+    @pytest.mark.anyio
+    async def test_processing_lock_is_considered_duplicate(self) -> None:
+        """Mensagem em processamento deve bloquear reprocessamento concorrente."""
+        store = MemoryDedupeStore()
+
+        await store.mark_processing("processing-key", ttl=30)
+        assert await store.is_duplicate("processing-key") is True
+
+    @pytest.mark.anyio
+    async def test_unmark_processing_allows_retry(self) -> None:
+        """Falha no pipeline deve liberar lock temporário para retry."""
+        store = MemoryDedupeStore()
+
+        await store.mark_processing("retry-key", ttl=30)
+        await store.unmark_processing("retry-key")
+
+        assert await store.is_duplicate("retry-key") is False
+
 
 class TestMemoryAuditStore:
     """Testes do MemoryAuditStore."""

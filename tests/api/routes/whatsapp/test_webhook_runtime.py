@@ -112,7 +112,7 @@ async def test_dispatch_inbound_processing_without_use_case(
 
 
 @pytest.mark.asyncio
-async def test_process_inbound_payload_safe_swallows_exceptions(
+async def test_process_inbound_payload_safe_raises_unexpected_exceptions(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def _raise(
@@ -126,9 +126,33 @@ async def test_process_inbound_payload_safe_swallows_exceptions(
 
     monkeypatch.setattr(webhook_runtime, "process_inbound_payload", _raise)
 
+    with pytest.raises(RuntimeError, match="boom"):
+        await webhook_runtime.process_inbound_payload_safe(
+            payload={"entry": []},
+            correlation_id="corr-safe",
+            use_case=object(),
+            tenant_id="tenant-c",
+        )
+
+
+@pytest.mark.asyncio
+async def test_process_inbound_payload_safe_swallows_validation_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def _raise_validation(
+        *,
+        payload: dict[str, object],
+        correlation_id: str,
+        use_case: object,
+        tenant_id: str,
+    ) -> None:
+        raise ValueError("invalid payload")
+
+    monkeypatch.setattr(webhook_runtime, "process_inbound_payload", _raise_validation)
+
     await webhook_runtime.process_inbound_payload_safe(
         payload={"entry": []},
-        correlation_id="corr-safe",
+        correlation_id="corr-validation",
         use_case=object(),
         tenant_id="tenant-c",
     )

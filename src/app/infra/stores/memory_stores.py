@@ -100,33 +100,52 @@ class MemoryDedupeStore(DedupeProtocol, AsyncDedupeProtocol):
     """Store de dedupe em memória — apenas para dev/test."""
 
     def __init__(self) -> None:
-        self._store: dict[str, float] = {}  # key -> expires_at
+        self._processed: dict[str, float] = {}  # key -> expires_at
+        self._processing: dict[str, float] = {}  # key -> expires_at
 
     def _cleanup_expired(self) -> None:
         """Remove entradas expiradas."""
         now = time.time()
-        expired = [k for k, v in self._store.items() if v < now]
+        expired = [k for k, v in self._processed.items() if v < now]
         for k in expired:
-            del self._store[k]
+            del self._processed[k]
+        processing_expired = [k for k, v in self._processing.items() if v < now]
+        for k in processing_expired:
+            del self._processing[k]
 
     def seen(self, key: str, ttl: int) -> bool:
         """Verifica e marca chave atomicamente (sync)."""
         self._cleanup_expired()
         now = time.time()
-        if key in self._store and self._store[key] > now:
+        if (
+            (key in self._processed and self._processed[key] > now)
+            or (key in self._processing and self._processing[key] > now)
+        ):
             return True  # Duplicado
-        self._store[key] = now + ttl
+        self._processed[key] = now + ttl
         return False  # Novo
 
     async def is_duplicate(self, key: str, ttl: int = 3600) -> bool:
         """Verifica se chave já foi processada (async)."""
         self._cleanup_expired()
         now = time.time()
-        return key in self._store and self._store[key] > now
+        return (
+            (key in self._processed and self._processed[key] > now)
+            or (key in self._processing and self._processing[key] > now)
+        )
+
+    async def mark_processing(self, key: str, ttl: int = 30) -> None:
+        """Marca chave como em processamento (async)."""
+        self._processing[key] = time.time() + ttl
 
     async def mark_processed(self, key: str, ttl: int = 3600) -> None:
         """Marca chave como processada (async)."""
-        self._store[key] = time.time() + ttl
+        self._processed[key] = time.time() + ttl
+        self._processing.pop(key, None)
+
+    async def unmark_processing(self, key: str) -> None:
+        """Remove marca de processamento para permitir retry."""
+        self._processing.pop(key, None)
 
 
 class MemoryAuditStore(DecisionAuditStoreProtocol):

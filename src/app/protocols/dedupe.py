@@ -35,9 +35,13 @@ class AsyncDedupeProtocol(ABC):
 
     Método canônico:
     - is_duplicate(key: str, ttl: int) -> bool
-      Retorna True se a chave já foi vista (duplicado).
+      Retorna True se a chave está em processamento ou já foi processada.
+    - mark_processing(key: str, ttl: int) -> None
+      Marca a chave como em processamento (TTL curto).
     - mark_processed(key: str, ttl: int) -> None
       Marca a chave como processada com TTL.
+    - unmark_processing(key: str) -> None
+      Remove marca de processamento (rollback em falha).
     """
 
     @abstractmethod
@@ -60,3 +64,16 @@ class AsyncDedupeProtocol(ABC):
             key: Chave única (ex.: message_id)
             ttl: TTL em segundos
         """
+
+    @abstractmethod
+    async def mark_processing(self, key: str, ttl: int = 30) -> None:
+        """Marca a chave como em processamento.
+
+        Args:
+            key: Chave única (ex.: message_id)
+            ttl: TTL curto para evitar lock eterno em falhas
+        """
+
+    @abstractmethod
+    async def unmark_processing(self, key: str) -> None:
+        """Remove marca de processamento para permitir retry."""

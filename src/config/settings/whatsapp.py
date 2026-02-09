@@ -104,6 +104,12 @@ class WhatsAppSettings:
         """
         errors: list[str] = []
 
+        if not self.verify_token:
+            errors.append("WHATSAPP_VERIFY_TOKEN não configurado")
+
+        if not self.webhook_secret:
+            errors.append("WHATSAPP_WEBHOOK_SECRET não configurado")
+
         if not self.phone_number_id:
             errors.append("WHATSAPP_PHONE_NUMBER_ID não configurado")
 

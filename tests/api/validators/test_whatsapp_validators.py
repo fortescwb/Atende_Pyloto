@@ -223,7 +223,7 @@ class TestInteractiveMessageValidation:
             message_type="interactive",
             interactive_type="button",
         )
-        with pytest.raises(ValidationError, match="text.*required"):
+        with pytest.raises(ValidationError, match=r"text.*required"):
             validate_interactive_message(request)
 
     def test_button_interactive_valid(self) -> None:
@@ -261,7 +261,7 @@ class TestInteractiveMessageValidation:
             text="Escolha",
             buttons=[{"id": f"btn{i}", "title": f"Op {i}"} for i in range(5)],
         )
-        with pytest.raises(ValidationError, match="Maximum.*buttons allowed"):
+        with pytest.raises(ValidationError, match=r"Maximum.*buttons allowed"):
             _validate_button(request)
 
     def test_button_invalid_structure(self) -> None:
@@ -308,7 +308,7 @@ class TestInteractiveMessageValidation:
             interactive_type="flow",
             text="Preencha o formulário",
         )
-        with pytest.raises(ValidationError, match="flow_id.*required"):
+        with pytest.raises(ValidationError, match=r"flow_id.*required"):
             _validate_flow(request)
 
     def test_flow_valid(self) -> None:
@@ -496,7 +496,7 @@ class TestWhatsAppMessageValidatorOrchestrator:
             message_type="text",
             text="Olá!",
         )
-        with pytest.raises(ValidationError, match="E.164 format"):
+        with pytest.raises(ValidationError, match=r"E.164 format"):
             WhatsAppMessageValidator.validate_outbound_request(request)
 
     def test_validate_recipient_invalid_format(self) -> None:
@@ -506,7 +506,7 @@ class TestWhatsAppMessageValidatorOrchestrator:
             message_type="text",
             text="Olá!",
         )
-        with pytest.raises(ValidationError, match="E.164 format"):
+        with pytest.raises(ValidationError, match=r"E.164 format"):
             WhatsAppMessageValidator.validate_outbound_request(request)
 
     def test_validate_message_type_missing(self) -> None:

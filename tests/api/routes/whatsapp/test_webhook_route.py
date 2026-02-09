@@ -127,6 +127,47 @@ async def test_receive_webhook_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_receive_webhook_dispatch_failure_returns_500(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        webhook,
+        "get_whatsapp_settings",
+        lambda: SimpleNamespace(webhook_secret="secret", webhook_processing_mode="inline"),
+    )
+    monkeypatch.setattr(
+        webhook,
+        "parse_webhook_request",
+        lambda raw_body, headers, secret: (
+            {"entry": []},
+            SignatureResult(valid=True, skipped=False),
+        ),
+    )
+
+    async def _raise_dispatch(
+        *,
+        payload: dict[str, object],
+        correlation_id: str,
+        settings: object,
+        tenant_id: str,
+    ) -> None:
+        raise RuntimeError("dispatch failed")
+
+    monkeypatch.setattr(webhook, "dispatch_inbound_processing", _raise_dispatch)
+
+    request = _build_request(
+        method="POST",
+        body=b'{"entry": []}',
+        headers={"x-correlation-id": "cid-500"},
+    )
+
+    response = await webhook.receive_webhook(request)
+
+    assert response.status_code == 500
+    assert b"internal_error" in response.body
+
+
+@pytest.mark.asyncio
 async def test_receive_webhook_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         webhook,

@@ -35,6 +35,8 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         response_text=(
             "Gestão de Perfis + Tráfego: presença digital + tráfego pago com foco "
             "em leads e vendas. Inclui estratégia, campanhas e otimização contínua."
+            "Utilizamos um software próprio para gestão de perfis e tráfego, com "
+            "relatórios detalhados e insights para maximizar resultados."
         ),
         prompt_vertical="gestao_perfis_trafego",
         kind="quick_reply",
@@ -44,8 +46,13 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         trigger="Como funciona a Automação?",
         response_text=(
             "Automação de atendimento com ou sem IA. Entregamos um painel de gestão "
-            "onde é possível assumir conversas atendidas pelo bot/IA e visualizar "
-            "os atendimentos em andamento."
+            "onde é possível visualizar os atendimentos em andamento e assumir as "
+            "conversas atendidas pelo bot/IA. Separamos em dois tipos de automação: "
+            "1) Automação simples: respostas pré-definidas para perguntas frequentes, "
+            "sem IA. "
+            "2) Automação com IA: utiliza inteligência artificial para responder a perguntas "
+            "mais complexas e personalizadas, aprendendo com as interações para "
+            "melhorar continuamente."
         ),
         prompt_vertical="automacao_atendimento",
         kind="quick_reply",
@@ -54,9 +61,10 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         key="quebra_gelo_sob_medida",
         trigger="Como funciona o desenvolvimento de Sistemas Sob Medida?",
         response_text=(
-            "Sistemas sob medida: realizamos estudo do fluxo atual, ferramentas usadas "
-            "e integrações necessárias. Entregamos uma plataforma web ou local "
-            "pensada para suas necessidades."
+            "A equipe Pyloto faz um estudo detalhado sobre o processo atual da sua empresa, "
+            "quais ferramentas utilizam, quais sistemas podem/devem ser integrados, etc. "
+            "Após isso, desenhamos "
+            "um sistema exclusivo, pensado detalhadamente para a necessidade da sua empresa."
         ),
         prompt_vertical="sob_medida",
         kind="quick_reply",
@@ -65,8 +73,10 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         key="quebra_gelo_saas",
         trigger="O que é o SaaS da Pyloto?",
         response_text=(
-            "O Pyloto da sua comunicação. SaaS pensado para atender a maior parte "
-            "dos nichos e empresas de forma adaptável."
+            "O Pyloto da sua comunicação. O SaaS da Pyloto, pensado para atender a maior parte "
+            "dos nichos e empresas de maneira adaptável, esta atualmente em desenvolvimento. Em "
+            "breve será lançado "
+            "para bater de frente com gigantes do mercado de CRM."
         ),
         prompt_vertical="saas",
         kind="quick_reply",
@@ -75,9 +85,10 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         key="cmd_automacao",
         trigger="/automacao",
         response_text=(
-            "Automação de atendimento com ou sem IA. Entregamos um painel de gestão "
-            "onde é possível assumir conversas atendidas pelo bot/IA e visualizar "
-            "os atendimentos em andamento."
+            "Na automação de atendimento, nós entregamos um painel com inbox centralizada "
+            "dos canais que serão automatizados, onde você poderá acompanhar o atendimento "
+            "do Bot/IA e assumir as conversas "
+            "com potencial de conversão."
         ),
         prompt_vertical="automacao_atendimento",
         kind="command",
@@ -86,9 +97,10 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         key="cmd_sob_medida",
         trigger="/sobmedida",
         response_text=(
-            "Sistemas sob medida: realizamos estudo do fluxo atual, ferramentas usadas "
-            "e integrações necessárias. Entregamos uma plataforma web ou local "
-            "pensada para suas necessidades."
+            "A equipe Pyloto faz um estudo detalhado sobre o processo atual da sua empresa, "
+            "quais ferramentas utilizam, quais sistemas podem/devem ser integrados, etc. "
+            "Após isso, desenhamos um sistema exclusivo, "
+            "pensado detalhadamente para a necessidade da sua empresa."
         ),
         prompt_vertical="sob_medida",
         kind="command",
@@ -97,8 +109,8 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         key="cmd_entregas_servicos",
         trigger="/entregas_servicos",
         response_text=(
-            "Pyloto Serviços é o carro-chefe. Fazemos a intermediação operacional entre "
-            "prestadores cadastrados e solicitantes (PF ou PJ). Solicitações devem ser "
+            "Pyloto Serviços é o nosso carro-chefe. Fazemos a intermediação operacional entre "
+            "prestadores cadastrados e solicitantes (PF ou PJ). As solicitações devem ser "
             "feitas pelo WhatsApp +554291619261."
         ),
         prompt_vertical="intermediacao_entregas",
@@ -108,8 +120,9 @@ FIXED_REPLIES: tuple[FixedReplyConfig, ...] = (
         key="cmd_saas",
         trigger="/saas",
         response_text=(
-            "O Pyloto da sua comunicação. SaaS pensado para atender a maior parte "
-            "dos nichos e empresas de forma adaptável."
+            "O Pyloto da sua comunicação. O SaaS da Pyloto, pensado para atender a maior parte "
+            "dos nichos e empresas de maneira adaptável, esta atualmente em desenvolvimento. Em "
+            "breve será lançado para bater de frente com gigantes do mercado de CRM."
         ),
         prompt_vertical="saas",
         kind="command",

@@ -11,11 +11,26 @@ from app.sessions.history import HistoryEntry, HistoryRole
 from app.sessions.session_context import SessionContext
 from fsm.states import DEFAULT_INITIAL_STATE, SessionState
 
+_LEGACY_STATE_BY_INT: dict[int, SessionState] = {
+    1: SessionState.INITIAL,
+    2: SessionState.TRIAGE,
+    3: SessionState.COLLECTING_INFO,
+    4: SessionState.GENERATING_RESPONSE,
+    5: SessionState.HANDOFF_HUMAN,
+    6: SessionState.SELF_SERVE_INFO,
+    7: SessionState.ROUTE_EXTERNAL,
+    8: SessionState.SCHEDULED_FOLLOWUP,
+    9: SessionState.TIMEOUT,
+    10: SessionState.ERROR,
+}
+
 
 def _parse_session_state(value: Any) -> SessionState:
     """Normaliza estado serializado com fallback seguro."""
     if isinstance(value, SessionState):
         return value
+    if isinstance(value, int):
+        return _LEGACY_STATE_BY_INT.get(value, DEFAULT_INITIAL_STATE)
     if isinstance(value, str):
         if value == "ENTRY":
             return DEFAULT_INITIAL_STATE

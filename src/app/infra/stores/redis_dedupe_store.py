@@ -17,6 +17,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from app.protocols.dedupe import AsyncDedupeProtocol, DedupeProtocol
+from utils.errors import RedisConnectionError
 
 if TYPE_CHECKING:
     from redis import Redis
@@ -50,6 +51,10 @@ class RedisDedupeStore(DedupeProtocol, AsyncDedupeProtocol):
     def _key(self, key: str) -> str:
         """Gera chave Redis com namespace."""
         return f"{DEDUPE_PREFIX}{key}"
+
+    def _processing_key(self, key: str) -> str:
+        """Gera chave Redis para lock temporário de processamento."""
+        return f"{DEDUPE_PREFIX}processing:{key}"
 
     # ──────────────────────────────────────────────────────────────
     # Sync API (DedupeProtocol)
@@ -96,8 +101,30 @@ class RedisDedupeStore(DedupeProtocol, AsyncDedupeProtocol):
             msg = "Async Redis client não configurado"
             raise RuntimeError(msg)
 
-        redis_key = self._key(key)
-        return bool(await self._async_redis.exists(redis_key))
+        processed_key = self._key(key)
+        processing_key = self._processing_key(key)
+
+        try:
+            # Verificação conjunta reduz janela de race entre check e mark.
+            pipeline = self._async_redis.pipeline()
+            pipeline.exists(processed_key)
+            pipeline.exists(processing_key)
+            exists_processed, exists_processing = await pipeline.execute()
+        except Exception as exc:
+            raise RedisConnectionError("Falha ao consultar dedupe no Redis") from exc
+
+        return bool(exists_processed or exists_processing)
+
+    async def mark_processing(self, key: str, ttl: int = 30) -> None:
+        """Marca chave como em processamento com TTL curto."""
+        if self._async_redis is None:
+            msg = "Async Redis client não configurado"
+            raise RuntimeError(msg)
+
+        try:
+            await self._async_redis.setex(self._processing_key(key), ttl, "1")
+        except Exception as exc:
+            raise RedisConnectionError("Falha ao marcar processamento no Redis") from exc
 
     async def mark_processed(self, key: str, ttl: int = 3600) -> None:
         """Marca chave como processada (async).
@@ -110,10 +137,28 @@ class RedisDedupeStore(DedupeProtocol, AsyncDedupeProtocol):
             msg = "Async Redis client não configurado"
             raise RuntimeError(msg)
 
-        redis_key = self._key(key)
-        await self._async_redis.setex(redis_key, ttl, "1")
+        processed_key = self._key(key)
+        processing_key = self._processing_key(key)
+        try:
+            pipeline = self._async_redis.pipeline()
+            pipeline.setex(processed_key, ttl, "1")
+            pipeline.delete(processing_key)
+            await pipeline.execute()
+        except Exception as exc:
+            raise RedisConnectionError("Falha ao concluir dedupe no Redis") from exc
         key_masked = key[:8] + "..." if len(key) > 8 else key
         logger.debug("dedupe_marked_async", extra={"key": key_masked, "ttl": ttl})
+
+    async def unmark_processing(self, key: str) -> None:
+        """Remove marca de processamento em falhas de pipeline."""
+        if self._async_redis is None:
+            msg = "Async Redis client não configurado"
+            raise RuntimeError(msg)
+
+        try:
+            await self._async_redis.delete(self._processing_key(key))
+        except Exception as exc:
+            raise RedisConnectionError("Falha ao remover lock de dedupe no Redis") from exc
 
     async def seen_async(self, key: str, ttl: int) -> bool:
         """Verifica e marca chave atomicamente (async).

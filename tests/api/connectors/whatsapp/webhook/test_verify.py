@@ -1,3 +1,5 @@
+import pytest
+
 from api.connectors.whatsapp.webhook.verify import (
     WebhookChallengeError,
     verify_webhook_challenge,
@@ -15,28 +17,20 @@ def test_verify_webhook_challenge_ok() -> None:
 
 
 def test_verify_webhook_challenge_missing_token() -> None:
-    try:
+    with pytest.raises(WebhookChallengeError, match="missing_verify_token"):
         verify_webhook_challenge(
             hub_mode="subscribe",
             hub_verify_token="token",
             hub_challenge="x",
             expected_token=None,
         )
-    except WebhookChallengeError as exc:
-        assert "missing_verify_token" in str(exc)
-    else:
-        raise AssertionError("Expected WebhookChallengeError")
 
 
 def test_verify_webhook_challenge_invalid_token() -> None:
-    try:
+    with pytest.raises(WebhookChallengeError, match="verification_failed"):
         verify_webhook_challenge(
             hub_mode="subscribe",
             hub_verify_token="wrong",
             hub_challenge="x",
             expected_token="token",
         )
-    except WebhookChallengeError as exc:
-        assert "verification_failed" in str(exc)
-    else:
-        raise AssertionError("Expected WebhookChallengeError")

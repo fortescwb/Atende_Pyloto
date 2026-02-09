@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from app.protocols.transcription_service import TranscriptionResult
+if TYPE_CHECKING:
+    from app.protocols.transcription_service import TranscriptionResult
 
 
 @dataclass(frozen=True, slots=True)

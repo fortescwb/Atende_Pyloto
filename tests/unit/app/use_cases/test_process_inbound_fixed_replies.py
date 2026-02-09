@@ -70,7 +70,13 @@ class DummyDedupe:
     async def is_duplicate(self, message_id: str) -> bool:
         return False
 
+    async def mark_processing(self, message_id: str, ttl: int = 30) -> None:
+        return None
+
     async def mark_processed(self, message_id: str) -> None:
+        return None
+
+    async def unmark_processing(self, message_id: str) -> None:
         return None
 
 

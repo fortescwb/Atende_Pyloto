@@ -12,13 +12,13 @@ Módulos disponíveis:
 
 from __future__ import annotations
 
-from app.infra.stores.firestore_audit_store import FirestoreAuditStore
-from app.infra.stores.firestore_contact_card_store import FirestoreContactCardStore
-from app.infra.stores.firestore_conversation_store import FirestoreConversationStore
 from app.infra.stores.contact_card_store import (
     MemoryContactCardStore,
     RedisContactCardStore,
 )
+from app.infra.stores.firestore_audit_store import FirestoreAuditStore
+from app.infra.stores.firestore_contact_card_store import FirestoreContactCardStore
+from app.infra.stores.firestore_conversation_store import FirestoreConversationStore
 from app.infra.stores.memory_stores import (
     MemoryAuditStore,
     MemoryDedupeStore,
@@ -28,18 +28,14 @@ from app.infra.stores.redis_dedupe_store import RedisDedupeStore
 from app.infra.stores.redis_session_store import RedisSessionStore
 
 __all__ = [
-    # Firestore
     "FirestoreAuditStore",
-    "FirestoreConversationStore",
-    # ContactCard
     "FirestoreContactCardStore",
-    "MemoryContactCardStore",
-    "RedisContactCardStore",
-    # Memory (dev/test)
+    "FirestoreConversationStore",
     "MemoryAuditStore",
+    "MemoryContactCardStore",
     "MemoryDedupeStore",
     "MemorySessionStore",
-    # Redis (Upstash)
+    "RedisContactCardStore",
     "RedisDedupeStore",
     "RedisSessionStore",
 ]

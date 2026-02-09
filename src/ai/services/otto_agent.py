@@ -130,7 +130,9 @@ def _build_prompts(
 
 
 def _conversation_history_text(history: list[str]) -> str:
-    normalized = _normalize_history_labels(mask_history(history, max_messages=_MAX_HISTORY_MESSAGES))
+    normalized = _normalize_history_labels(
+        mask_history(history, max_messages=_MAX_HISTORY_MESSAGES)
+    )
     return "\n".join(normalized) if normalized else "(sem historico)"
 
 
@@ -162,13 +164,9 @@ def _normalize_history_labels(history: list[str]) -> list[str]:
         if not text:
             continue
         lowered = text.lower()
-        if lowered.startswith("usu\u00e1rio:") or lowered.startswith("usuario:"):
+        if lowered.startswith(("usu\u00e1rio:", "usuario:")):
             text = f"Usuario: {text.split(':', 1)[1].strip()}"
-        elif lowered.startswith("otto:"):
-            text = f"Pyloto: {text.split(':', 1)[1].strip()}"
-        elif lowered.startswith("assistente:"):
-            text = f"Pyloto: {text.split(':', 1)[1].strip()}"
-        elif lowered.startswith("assistant:"):
+        elif lowered.startswith(("otto:", "assistente:", "assistant:")):
             text = f"Pyloto: {text.split(':', 1)[1].strip()}"
         normalized.append(text)
     return normalized

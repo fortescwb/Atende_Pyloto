@@ -16,22 +16,31 @@ Uso:
 
 from __future__ import annotations
 
+import logging
 import os
 from functools import lru_cache
 
 from app.observability import get_correlation_id
 from config.logging import configure_logging
+from config.settings import (
+    get_firestore_settings,
+    get_openai_settings,
+    get_whatsapp_settings,
+)
 
 # Nome do serviço para logs e métricas
 SERVICE_NAME = "atende_pyloto"
 
 # Nível de log padrão (pode ser sobrescrito por env)
 DEFAULT_LOG_LEVEL = "INFO"
+STRICT_VALIDATION_ENVS = {"staging", "production"}
 
 # Singletons de stores (lazy initialization)
 _session_store = None
 _dedupe_store = None
 _audit_store = None
+
+logger = logging.getLogger(__name__)
 
 
 def initialize_app() -> None:
@@ -62,6 +71,47 @@ def initialize_test_app() -> None:
         service_name=f"{SERVICE_NAME}_test",
         correlation_id_getter=get_correlation_id,
     )
+
+
+def validate_runtime_settings() -> None:
+    """Valida settings obrigatórias no startup.
+
+    Em `staging`/`production` falha rápido para impedir boot inválido.
+    Em `development`/`test` mantém alerta sem bloquear execução local.
+    """
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    strict_mode = environment in STRICT_VALIDATION_ENVS
+    errors: list[str] = []
+
+    wa_errors = get_whatsapp_settings().validate()
+    errors.extend(f"whatsapp: {error}" for error in wa_errors)
+
+    openai_errors = get_openai_settings().validate()
+    errors.extend(f"openai: {error}" for error in openai_errors)
+
+    firestore_errors = get_firestore_settings().validate(os.getenv("GCP_PROJECT", ""))
+    errors.extend(f"firestore: {error}" for error in firestore_errors)
+
+    if not errors:
+        logger.info(
+            "settings_validated",
+            extra={"component": "bootstrap", "result": "ok", "environment": environment},
+        )
+        return
+
+    logger.warning(
+        "settings_validation_failed",
+        extra={
+            "component": "bootstrap",
+            "result": "failed",
+            "environment": environment,
+            "error_count": len(errors),
+            "errors": errors,
+        },
+    )
+    if strict_mode:
+        details = "\n".join(f"- {error}" for error in errors)
+        raise RuntimeError(f"Configuração inválida para {environment}:\n{details}")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

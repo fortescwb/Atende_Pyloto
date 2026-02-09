@@ -105,6 +105,12 @@ class TestSessionStateAndTerminals:
         assert DirectSessionState is SessionState
         assert DirectSessionState.INITIAL == SessionState.INITIAL
 
+    def test_session_state_values_are_explicit_strings(self) -> None:
+        """Estados devem possuir valores string estáveis para persistência."""
+        for state in SessionState:
+            assert state.value == state.name
+            assert str(state) == state.name
+
 
 class TestValidTransitionsAndRules:
     """
@@ -328,11 +334,11 @@ class TestStateTransitionAndTransitionResult:
         assert result.error_reason == "Transição inválida"
 
         # Validação: sucesso sem transition
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="deve incluir transition"):
             TransitionResult(success=True, transition=None)
 
         # Validação: falha sem error_reason
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="deve incluir error_reason"):
             TransitionResult(success=False, error_reason=None)
 
 
@@ -362,7 +368,8 @@ class TestFSMStateMachineCompleteFlow:
 
     def test_complete_happy_path_flow(self) -> None:
         """
-        Testa fluxo completo: INITIAL → TRIAGE → COLLECTING_INFO → GENERATING_RESPONSE → SELF_SERVE_INFO.
+        Testa fluxo completo:
+        INITIAL → TRIAGE → COLLECTING_INFO → GENERATING_RESPONSE → SELF_SERVE_INFO.
         Cobre: transition, can_transition_to, history, get_state_summary, get_history_summary
         """
         fsm = create_fsm("test-happy-path")

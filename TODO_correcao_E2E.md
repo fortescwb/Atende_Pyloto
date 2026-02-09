@@ -12,6 +12,11 @@ TODO baseado nas **falhas concretas** encontradas bem como lacunas estruturais i
 
 ### 1. **Race Condition Dedupe + Perda Silenciosa de Mensagens**
 
+**Status em 2026-02-09**: ✅ **Concluído**
+- Implementado fluxo `mark_processing -> mark_processed` com rollback `unmark_processing` em falha.
+- Dedupe atualizado em `RedisDedupeStore` e `MemoryDedupeStore`.
+- Testes adicionados/ajustados para concorrência, retry e fluxo do processor.
+
 **Problema**:
 
 ```python
@@ -130,6 +135,11 @@ async def test_dedupe_prevents_concurrent_processing():
 
 ### 2. **Webhook Handler Não Propaga Erros Críticos**
 
+**Status em 2026-02-09**: ✅ **Concluído**
+- `webhook_runtime.py` agora classifica erro de validação vs infra e propaga exceções críticas.
+- `webhook.py` agora retorna `500` quando o dispatch falha.
+- Criadas exceções de infraestrutura em `src/utils/errors/exceptions.py`.
+
 **Problema**:
 
 ```python
@@ -204,6 +214,11 @@ async def receive_webhook(...):
 ---
 
 ### 3. **Readiness Check Falso Positivo**
+
+**Status em 2026-02-09**: ✅ **Concluído**
+- `/ready` agora executa checks reais de Redis, Firestore e OpenAI.
+- Readiness agora responde `200` (ready) ou `503` (not_ready) conforme dependências críticas.
+- Testes adicionados em `tests/api/routes/health/test_health_route.py`.
 
 **Problema**:
 
@@ -340,6 +355,11 @@ async def lifespan(app: FastAPI):
 
 ### 4. **Validação de Configuração Não é Aplicada**
 
+**Status em 2026-02-09**: ✅ **Concluído**
+- Adicionado `validate_runtime_settings()` no bootstrap.
+- Validação executada no startup/lifespan.
+- Modo estrito para `staging/production`; em `development/test` registra warning sem bloquear.
+
 **Problema**:
 
 ```python
@@ -431,6 +451,12 @@ def validate(self) -> None:
 ---
 
 ### 5. **Processamento Async Sem Durabilidade**
+
+**Status em 2026-02-09**: ✅ **Mitigação MVP concluída**
+- Implementado limite de concorrência com `Semaphore`, tracking de tasks e drain no shutdown.
+- Integrado `drain_background_tasks()` no `lifespan` da aplicação.
+- Documentada limitação e mitigação atual no `README.md`.
+- Observação: fila durável (Cloud Tasks/Streams/PubSub) permanece como evolução futura.
 
 **Problema**:
 
@@ -555,6 +581,10 @@ async def shutdown_handler():
 
 ### 6. **Corrigir 46 Erros de Lint (Ruff)**
 
+**Status em 2026-02-09**: ✅ **Concluído**
+- Estado atual: **0 erros** (`ruff check .`).
+- Gate de lint P0 fechado para o repositório inteiro.
+
 **Executar e categorizar**:
 
 ```bash
@@ -618,6 +648,37 @@ ignore = [
 
 ### 7. **Aumentar Cobertura de 57.65% → 80%**
 
+**Status em 2026-02-09**: 🟡 **Em andamento**
+- Cobertura global atual: **66.21%** (`pytest --cov=src --cov-report=term-missing`).
+- Rodadas recentes concluidas (+7.46pp global desde 58.75%).
+- Evolução dos arquivos P0 desta rodada:
+  - `src/app/use_cases/whatsapp/process_inbound_canonical.py`: **76.60% → 100.00%**
+  - `src/app/use_cases/whatsapp/_inbound_processor.py`: **60.87% → 99.13%**
+  - `src/app/infra/stores/redis_dedupe_store.py`: **63.44% → 100.00%**
+  - `src/ai/services/otto_agent.py`: **86.57%** (mantido)
+  - `src/ai/services/decision_validator.py`: **88.64%** (mantido)
+- Evolução dos arquivos P1/P2 de suporte nesta rodada:
+  - `src/ai/services/contact_card_extractor.py`: **75.38% → 99.23%**
+  - `src/ai/utils/contact_card_extraction.py`: **41.36% → 98.77%**
+  - `src/api/routes/whatsapp/webhook_runtime_tasks.py`: **27.91% → 100.00%**
+  - `src/fsm/manager/machine.py`: **96.43% → 100.00%**
+  - `src/app/use_cases/whatsapp/_inbound_processor_mixin.py`: **61.93% → 64.13%**
+- Evolução desta rodada:
+  - `src/ai/config/prompt_assets_loader.py`: **70.33% → 98.90%**
+  - Cobertura global: **60.94% → 66.21%**
+- Testes adicionados nas rodadas recentes:
+  - `tests/unit/app/use_cases/test_process_inbound_canonical_coverage.py`
+  - `tests/unit/app/use_cases/test_inbound_processor_helpers.py`
+  - `tests/app/infra/stores/test_redis_dedupe_store.py` (expandido)
+  - `tests/test_ai/test_contact_card_extractor_coverage.py`
+  - `tests/test_ai/test_contact_card_extraction_utils.py`
+  - `tests/api/routes/whatsapp/test_webhook_runtime_tasks.py`
+  - `tests/test_fsm/test_fsm_machine_guard_denial.py`
+  - `tests/app/sessions/test_session_models.py` (expandido)
+  - `tests/test_fsm/test_fsm_complete.py` (expandido)
+  - `tests/test_ai/test_prompt_assets_loader.py`
+  - `tests/test_e2e/test_golden_path.py`
+
 **Análise de cobertura atual**:
 
 ```bash
@@ -638,8 +699,8 @@ pytest --cov=src --cov-report=html --cov-report=term-missing
 **B. Cobertura Importante (P1) - ~10% de ganho**:
 
 - `src/ai/services/contact_card_extractor.py`
-- `src/api/connectors/whatsapp/webhook/handler.py`
-- `src/fsm/manager/fsm_manager.py`
+- `src/api/routes/whatsapp/webhook_runtime_tasks.py`
+- `src/fsm/manager/machine.py`
 
 **Criar testes obrigatórios**:
 
@@ -738,6 +799,11 @@ async def test_otto_agent_fallback_on_client_error():
 ## 🟠 IMPLEMENTAÇÕES FALTANTES (P1)
 
 ### 8. **Implementar TranscriptionAgent**
+
+**Status em 2026-02-09**: ✅ **Concluído**
+- Serviço implementado em `src/app/services/transcription_agent.py` (adaptacao arquitetural via protocolo).
+- Integrado ao fluxo inbound em `src/app/use_cases/whatsapp/_inbound_processor_contact.py`.
+- Testes em `tests/app/services/test_transcription_agent.py`.
 
 **Criar serviço**:
 
@@ -860,6 +926,11 @@ async def _resolve_user_text(self, msg, session, correlation_id):
 
 ### 9. **Implementar Gate 3 do DecisionValidator**
 
+**Status em 2026-02-09**: ✅ **Concluído**
+- Gate de revisao opcional implementado via `review_client` injetavel em `src/ai/services/decision_validator.py`.
+- Cobre cenarios: aprovado, falha de review e escalonamento para humano.
+- Testes em `tests/test_ai/test_decision_validator.py`.
+
 **Atualizar validador**:
 
 ```python
@@ -973,6 +1044,14 @@ Retorne JSON: {{"approved": true/false, "reason": "..."}}"""
 
 ### 10. **Corrigir Estados FSM para Strings Explícitas**
 
+**Status em 2026-02-09**: ✅ **Concluído**
+- `SessionState` migrado para `str, Enum` com valores explicitos em `src/fsm/states/session.py`.
+- Compatibilidade retroativa adicionada para leitura de estados legados numericos em
+  `src/app/sessions/session_entity.py`.
+- Script de migracao criado em `scripts/migrate_session_states.py`.
+- Testes adicionados/atualizados em `tests/app/sessions/test_session_models.py` e
+  `tests/test_fsm/test_fsm_complete.py`.
+
 **Problema atual**:
 
 ```python
@@ -1038,6 +1117,12 @@ async def migrate_session_states():
 ---
 
 ### 11. **Adicionar Validação de Transições FSM**
+
+**Status em 2026-02-09**: ✅ **Concluído**
+- Regras de transicao ativas em `src/fsm/transitions/rules.py`.
+- Validacao aplicada no fluxo via `valid_transitions` no `OttoRequest` e guardas da FSM.
+- Cobertura de regressao em `tests/test_fsm/test_fsm_complete.py` e
+  `tests/test_fsm/test_fsm_machine_guard_denial.py`.
 
 **Criar regras de transição**:
 
@@ -1139,6 +1224,16 @@ def _maybe_adjust_next_state(
 
 ### 12. **Quebrar `_inbound_processor_mixin.py` (300+ linhas)**
 
+**Status em 2026-02-09**: ✅ **Concluído**
+- Refatoração aplicada com separação por responsabilidade:
+  - `src/app/use_cases/whatsapp/_inbound_processor_context.py` (181 linhas)
+  - `src/app/use_cases/whatsapp/_inbound_processor_contact.py` (183 linhas)
+  - `src/app/use_cases/whatsapp/_inbound_processor_dispatch.py` (152 linhas)
+  - `src/app/use_cases/whatsapp/_inbound_processor_state_adjustments.py` (79 linhas)
+- `src/app/use_cases/whatsapp/_inbound_processor_mixin.py` mantido como camada de compatibilidade (35 linhas) para não quebrar imports existentes.
+- `src/app/use_cases/whatsapp/_inbound_processor.py` passou a consumir os módulos especializados.
+- Testes de regressão ajustados em `tests/unit/app/use_cases/test_inbound_processor_helpers.py`.
+
 **Estratégia**:
 
 ```
@@ -1155,6 +1250,11 @@ _inbound_processor_mixin.py (300+ linhas)
 ---
 
 ### 13. **Adicionar Timeouts nos `asyncio.gather`**
+
+**Status em 2026-02-09**: ✅ **Concluído**
+- Timeout aplicado em `_run_agents()` com `asyncio.wait_for` no paralelo Otto + extractor.
+- Fallback implementado para seguir apenas com Otto em caso de timeout.
+- Cobertura adicionada em `tests/unit/app/use_cases/test_inbound_processor_helpers.py`.
 
 ```python
 # src/app/use_cases/whatsapp/_inbound_processor.py
@@ -1183,6 +1283,13 @@ async def _run_agents(...):
 
 ### 14. **Cache de Contextos YAML no Bootstrap**
 
+**Status em 2026-02-09**: ✅ **Concluído (implementado na camada correta)**
+- Cache de contextos/prompt já estava implementado com `@lru_cache` em
+  `src/ai/config/prompt_assets_loader.py` (`load_context_text`, `load_context_for_prompt`, `load_prompt_yaml`).
+- Mantido em `ai/config` para respeitar boundaries (evitando acoplamento `ai` → `app/bootstrap`).
+- Cobertura de regressão adicionada em `tests/test_ai/test_prompt_assets_loader.py`.
+- Resultado: `prompt_assets_loader.py` subiu para **98.90%** de cobertura.
+
 ```python
 # src/app/bootstrap/context_cache.py
 
@@ -1200,6 +1307,14 @@ def load_context_cached(path: str) -> str:
 ---
 
 ### 15. **Teste E2E Golden Path**
+
+**Status em 2026-02-09**: ✅ **Concluído**
+- Teste E2E adicionado em `tests/test_e2e/test_golden_path.py` cobrindo fluxo:
+  saudação → interesse SaaS → atualização de sessão/estado → atualização de ContactCard.
+- Implementado com pipeline canônico real (`ProcessInboundCanonicalUseCase`) e doubles determinísticos
+  para Otto/Extractor/Outbound, sem rede real.
+- Marker `e2e` registrado em `pyproject.toml` para manter `--strict-markers`.
+- Validação local: `pytest -q tests/test_e2e/test_golden_path.py` (verde).
 
 ```python
 # tests/test_e2e/test_golden_path.py
@@ -1264,13 +1379,13 @@ async def test_full_conversation_saas_interest(
 
 | \#  | Item                   | Prazo  | Status      |
 | :-- | :--------------------- | :----- | :---------- |
-| 1   | Race condition dedupe  | 1 dia  | ❌          |
-| 2   | Webhook error handling | 4h     | ❌          |
-| 3   | Readiness check        | 1 dia  | ❌          |
-| 4   | Validação de config    | 4h     | ❌          |
-| 5   | Async sem durabilidade | 6h     | ❌          |
-| 6   | Corrigir 46 erros lint | 4h     | ❌          |
-| 7   | Cobertura 80%          | 3 dias | ❌ (57.65%) |
+| 1   | Race condition dedupe  | 1 dia  | ✅          |
+| 2   | Webhook error handling | 4h     | ✅          |
+| 3   | Readiness check        | 1 dia  | ✅          |
+| 4   | Validação de config    | 4h     | ✅          |
+| 5   | Async sem durabilidade | 6h     | ✅ (MVP)    |
+| 6   | Corrigir 46 erros lint | 4h     | ✅ (0 pendentes) |
+| 7   | Cobertura 80%          | 3 dias | 🟡 (66.21%) |
 
 **Total P0**: ~6 dias úteis
 
@@ -1278,21 +1393,21 @@ async def test_full_conversation_saas_interest(
 
 | \#  | Item                 | Prazo | Status |
 | :-- | :------------------- | :---- | :----- |
-| 8   | TranscriptionAgent   | 1 dia | ❌     |
-| 9   | Gate 3 validator     | 6h    | ❌     |
-| 10  | Estados FSM string   | 2h    | ❌     |
-| 11  | Validação transições | 4h    | ❌     |
+| 8   | TranscriptionAgent   | 1 dia | ✅     |
+| 9   | Gate 3 validator     | 6h    | ✅     |
+| 10  | Estados FSM string   | 2h    | ✅     |
+| 11  | Validação transições | 4h    | ✅     |
 
 **Total P1**: ~2 dias úteis
 
 ### **Desejável (P2) - Polish**
 
-| \#  | Item            | Prazo |
-| :-- | :-------------- | :---- |
-| 12  | Refatorar mixin | 4h    |
-| 13  | Timeouts gather | 2h    |
-| 14  | Cache contextos | 2h    |
-| 15  | Teste E2E       | 1 dia |
+| \#  | Item            | Prazo | Status |
+| :-- | :-------------- | :---- | :----- |
+| 12  | Refatorar mixin | 4h    | ✅     |
+| 13  | Timeouts gather | 2h    | ✅     |
+| 14  | Cache contextos | 2h    | ✅     |
+| 15  | Teste E2E       | 1 dia | ✅     |
 
 ---
 

@@ -9,12 +9,12 @@ import logging
 from typing import TYPE_CHECKING, Any, Protocol
 
 from ai.rules.intent_detection import detect_intent
-from fsm.states import SessionState
 from fsm.transitions.rules import get_valid_targets
 
 if TYPE_CHECKING:
     from app.protocols import OutboundMessageRequest
     from app.protocols.models import NormalizedMessage
+    from fsm.states import SessionState
 
 
 class OutboundDecisionProtocol(Protocol):
@@ -145,7 +145,10 @@ def _build_interactive_payload(msg_type: str, text: str) -> dict[str, str | dict
     }
 
 
-def _fallback_text_payload(msg_type: str, fallback_text: str | None) -> dict[str, str | dict[str, str]]:
+def _fallback_text_payload(
+    msg_type: str,
+    fallback_text: str | None,
+) -> dict[str, str | dict[str, str]]:
     logger.warning(
         "unsupported_message_type_fallback",
         extra={"original_type": msg_type, "fallback": "text"},
@@ -167,7 +170,7 @@ def last_assistant_message(session: Any) -> str:
     for entry in reversed(raw_history):
         if isinstance(entry, str):
             lowered = entry.lower()
-            if lowered.startswith("otto:") or lowered.startswith("assistente:"):
+            if lowered.startswith(("otto:", "assistente:")):
                 return entry.split(":", 1)[-1].strip()
             continue
         if isinstance(entry, dict):

@@ -8,10 +8,10 @@ Referência: REGRAS_E_PADROES.md § 2.5 — FSM determinístico
 Referência: FUNCIONAMENTO.md § 4.4 — FSM avalia estado e transições
 """
 
-from enum import Enum, auto
+from enum import Enum
 
 
-class SessionState(Enum):
+class SessionState(str, Enum):
     """
     Estados canônicos de uma sessão de atendimento.
 
@@ -34,18 +34,21 @@ class SessionState(Enum):
     """
 
     # Estados não-terminais (fluxo em andamento)
-    INITIAL = auto()
-    TRIAGE = auto()
-    COLLECTING_INFO = auto()
-    GENERATING_RESPONSE = auto()
+    INITIAL = "INITIAL"
+    TRIAGE = "TRIAGE"
+    COLLECTING_INFO = "COLLECTING_INFO"
+    GENERATING_RESPONSE = "GENERATING_RESPONSE"
 
     # Estados terminais (sessão encerrada)
-    HANDOFF_HUMAN = auto()
-    SELF_SERVE_INFO = auto()
-    ROUTE_EXTERNAL = auto()
-    SCHEDULED_FOLLOWUP = auto()
-    TIMEOUT = auto()
-    ERROR = auto()
+    HANDOFF_HUMAN = "HANDOFF_HUMAN"
+    SELF_SERVE_INFO = "SELF_SERVE_INFO"
+    ROUTE_EXTERNAL = "ROUTE_EXTERNAL"
+    SCHEDULED_FOLLOWUP = "SCHEDULED_FOLLOWUP"
+    TIMEOUT = "TIMEOUT"
+    ERROR = "ERROR"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 # Conjunto de estados que indicam término do fluxo

@@ -13,6 +13,7 @@ from ai.config.institutional_loader import (
     get_service_info,
     load_institutional_context,
 )
+
 __all__ = [
     "InstitutionalContextError",
     "clear_cache",

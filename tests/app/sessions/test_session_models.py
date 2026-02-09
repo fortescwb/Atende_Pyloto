@@ -191,6 +191,44 @@ class TestSession:
         assert len(session.history) == 2
         assert session.turn_count == 5
 
+    def test_from_dict_accepts_legacy_int_state(self) -> None:
+        """Mantém compatibilidade com estados legados serializados como int."""
+        data = {
+            "session_id": "sess-legacy",
+            "sender_id": "sender-hash",
+            "current_state": 3,
+            "context": {
+                "tenant_id": "tenant-1",
+                "vertente": "suporte",
+            },
+            "history": [],
+            "created_at": "2025-01-01T00:00:00+00:00",
+            "updated_at": "2025-01-01T01:00:00+00:00",
+        }
+
+        session = Session.from_dict(data)
+
+        assert session.current_state == SessionState.COLLECTING_INFO
+
+    def test_from_dict_defaults_to_initial_for_unknown_int_state(self) -> None:
+        """Estado numérico desconhecido deve cair em fallback seguro."""
+        data = {
+            "session_id": "sess-legacy-unknown",
+            "sender_id": "sender-hash",
+            "current_state": 999,
+            "context": {
+                "tenant_id": "tenant-1",
+                "vertente": "suporte",
+            },
+            "history": [],
+            "created_at": "2025-01-01T00:00:00+00:00",
+            "updated_at": "2025-01-01T01:00:00+00:00",
+        }
+
+        session = Session.from_dict(data)
+
+        assert session.current_state == SessionState.INITIAL
+
     def test_roundtrip_serialization(self) -> None:
         """Verifica que serialização e deserialização são inversas."""
         original = Session(

@@ -15,7 +15,12 @@ class FakeCrypto:
     def decrypt_aes_key(self, private_key, encrypted_aes_key: str) -> bytes:
         return b"AESKEY"
 
-    def decrypt_flow_data(self, aes_key: bytes, encrypted_flow_data: str, initial_vector: str) -> dict:
+    def decrypt_flow_data(
+        self,
+        aes_key: bytes,
+        encrypted_flow_data: str,
+        initial_vector: str,
+    ) -> dict:
         return {"flow_token": "t", "action": "ok", "screen": "s", "data": {}, "version": "1"}
 
     def encrypt_flow_response(self, response_data: dict, aes_key: bytes | None = None) -> dict:

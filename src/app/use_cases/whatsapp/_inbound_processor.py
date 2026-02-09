@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
-from ai.models.otto import OttoDecision, OttoRequest
 from ai.services.decision_validator import DecisionValidatorService
 from ai.utils.sanitizer import sanitize_pii
 from app.services.meeting_time_validator import extract_hour, is_within_business_hours
@@ -16,13 +16,12 @@ from app.services.otto_repetition_guard import (
     apply_repetition_guard,
 )
 from app.services.whatsapp_fixed_replies import match_fixed_reply
-from app.use_cases.whatsapp._inbound_processor_mixin import (
-    InboundProcessorContactMixin,
-    InboundProcessorContextMixin,
-    InboundProcessorDispatchMixin,
-)
+from app.use_cases.whatsapp._inbound_processor_contact import InboundProcessorContactMixin
+from app.use_cases.whatsapp._inbound_processor_context import InboundProcessorContextMixin
+from app.use_cases.whatsapp._inbound_processor_dispatch import InboundProcessorDispatchMixin
 
 if TYPE_CHECKING:
+    from ai.models.otto import OttoDecision, OttoRequest
     from ai.services.contact_card_extractor import ContactCardExtractorService
     from ai.services.otto_agent import OttoAgentService
     from app.protocols import AsyncDedupeProtocol, OutboundSenderProtocol
@@ -68,37 +67,48 @@ class InboundMessageProcessor(
         correlation_id: str,
         tenant_id: str,
     ) -> dict[str, Any] | None:
-        if self._should_skip_message(msg) or await self._dedupe.is_duplicate(msg.message_id):
+        if self._should_skip_message(msg):
             return None
-        await self._dedupe.mark_processed(msg.message_id)
-        session = await self._resolve_session(msg, tenant_id)
-        raw_user_text, early_sent = await self._resolve_user_text(
-            msg=msg,
-            session=session,
-            correlation_id=correlation_id,
-        )
-        if raw_user_text is None:
-            return self._build_result(session, bool(early_sent))
-        sanitized_input = sanitize_pii(raw_user_text)
-        fixed_reply = match_fixed_reply(raw_user_text)
-        if fixed_reply:
-            sent = await self._send_fixed_reply(msg, fixed_reply, correlation_id)
-            await self._apply_fixed_reply_to_session(
+        if await self._dedupe.is_duplicate(msg.message_id):
+            return None
+        await self._dedupe.mark_processing(msg.message_id)
+        try:
+            session = await self._resolve_session(msg, tenant_id)
+            raw_user_text, early_sent = await self._resolve_user_text(
+                msg=msg,
                 session=session,
-                sanitized_input=sanitized_input,
-                fixed_reply=fixed_reply,
                 correlation_id=correlation_id,
-                message_id=msg.message_id,
             )
-            return self._build_result(session, sent)
-        return await _process_with_agents(
-            self,
-            msg=msg,
-            session=session,
-            sanitized_input=sanitized_input,
-            raw_user_text=raw_user_text,
-            correlation_id=correlation_id,
-        )
+            if raw_user_text is None:
+                result = self._build_result(session, bool(early_sent))
+            else:
+                sanitized_input = sanitize_pii(raw_user_text)
+                fixed_reply = match_fixed_reply(raw_user_text)
+                if fixed_reply:
+                    sent = await self._send_fixed_reply(msg, fixed_reply, correlation_id)
+                    await self._apply_fixed_reply_to_session(
+                        session=session,
+                        sanitized_input=sanitized_input,
+                        fixed_reply=fixed_reply,
+                        correlation_id=correlation_id,
+                        message_id=msg.message_id,
+                    )
+                    result = self._build_result(session, sent)
+                else:
+                    result = await _process_with_agents(
+                        self,
+                        msg=msg,
+                        session=session,
+                        sanitized_input=sanitized_input,
+                        raw_user_text=raw_user_text,
+                        correlation_id=correlation_id,
+                    )
+            await self._dedupe.mark_processed(msg.message_id)
+            return result
+        except Exception:
+            with contextlib.suppress(Exception):
+                await self._dedupe.unmark_processing(msg.message_id)
+            raise
 
 
 async def _process_with_agents(
@@ -131,7 +141,13 @@ async def _process_with_agents(
         message_id=msg.message_id,
     )
     sent = await processor._send_response(msg, decision, correlation_id)
-    await processor._update_session(session, sanitized_input, decision, correlation_id, otto_request)
+    await processor._update_session(
+        session,
+        sanitized_input,
+        decision,
+        correlation_id,
+        otto_request,
+    )
     return processor._build_result(session, sent)
 
 
@@ -185,7 +201,11 @@ async def _apply_extraction(
     patch = extraction.updates
     extracted_fields = list(patch.model_dump(exclude_none=True).keys())
     meeting_text = getattr(patch, "meeting_preferred_datetime_text", None)
-    if isinstance(meeting_text, str) and meeting_text.strip() and is_within_business_hours(meeting_text) is False:
+    if (
+        isinstance(meeting_text, str)
+        and meeting_text.strip()
+        and is_within_business_hours(meeting_text) is False
+    ):
         logger.info(
             "meeting_time_out_of_business_hours",
             extra={

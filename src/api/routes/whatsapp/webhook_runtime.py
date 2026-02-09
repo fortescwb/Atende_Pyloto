@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
+from pydantic import ValidationError as PydanticValidationError
+
+from api.routes.whatsapp.webhook_runtime_tasks import (
+    drain_processing_tasks,
+    schedule_processing_task,
+)
 from app.coordinators.whatsapp.inbound.handler import process_inbound_payload
+from app.protocols.validator import ValidationError as OutboundValidationError
+from utils.errors import FirestoreUnavailableError, RedisConnectionError
 
 logger = logging.getLogger(__name__)
 
 _inbound_use_case: Any | None = None
-_background_tasks: set[asyncio.Task[Any]] = set()
 
 
 def get_inbound_use_case() -> Any:
@@ -52,7 +58,7 @@ async def process_inbound_payload_safe(
     use_case: Any,
     tenant_id: str,
 ) -> None:
-    """Executa processamento inbound sem propagar exceções para a rota."""
+    """Executa processamento inbound com classificação explícita de erros."""
     try:
         await process_inbound_payload(
             payload=payload,
@@ -60,7 +66,27 @@ async def process_inbound_payload_safe(
             use_case=use_case,
             tenant_id=tenant_id,
         )
-    except Exception:
+    except Exception as exc:
+        if _is_validation_error(exc):
+            logger.warning(
+                "webhook_processing_validation_failed",
+                extra={
+                    "channel": "whatsapp",
+                    "correlation_id": correlation_id,
+                    "error_type": type(exc).__name__,
+                },
+            )
+            return
+        if _is_infrastructure_error(exc):
+            logger.error(
+                "webhook_processing_infra_failed",
+                extra={
+                    "channel": "whatsapp",
+                    "correlation_id": correlation_id,
+                    "error_type": type(exc).__name__,
+                },
+            )
+            raise
         logger.exception(
             "webhook_processing_failed",
             extra={
@@ -68,6 +94,7 @@ async def process_inbound_payload_safe(
                 "correlation_id": correlation_id,
             },
         )
+        raise
 
 
 async def dispatch_inbound_processing(
@@ -126,17 +153,28 @@ def _schedule_async_processing(
     use_case: Any,
     tenant_id: str,
 ) -> None:
-    task = asyncio.create_task(
-        process_inbound_payload_safe(
+    schedule_processing_task(
+        correlation_id=correlation_id,
+        coroutine=process_inbound_payload_safe(
             payload=payload,
             correlation_id=correlation_id,
             use_case=use_case,
             tenant_id=tenant_id,
         )
     )
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
-    logger.info(
-        "webhook_processing_scheduled",
-        extra={"channel": "whatsapp", "correlation_id": correlation_id, "mode": "async"},
-    )
+
+
+async def drain_background_tasks(timeout_seconds: float = 30.0) -> None:
+    """Aguarda tasks async pendentes durante shutdown do processo."""
+    await drain_processing_tasks(timeout_seconds=timeout_seconds)
+
+
+def _is_validation_error(exc: Exception) -> bool:
+    return isinstance(exc, (ValueError, PydanticValidationError, OutboundValidationError))
+
+
+def _is_infrastructure_error(exc: Exception) -> bool:
+    if isinstance(exc, (RedisConnectionError, FirestoreUnavailableError)):
+        return True
+    module_name = type(exc).__module__
+    return module_name.startswith(("redis.", "google.api_core."))

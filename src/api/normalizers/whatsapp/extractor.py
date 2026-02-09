@@ -71,9 +71,12 @@ def _extract_simple_type(
         fields["text"], _ = extract_text_message(msg)
         return True
     if message_type in ("image", "video", "audio", "document", "sticker"):
-        fields["media_id"], fields["media_url"], fields["media_filename"], fields["media_mime_type"] = (
-            extract_media_message(msg, message_type)
-        )
+        (
+            fields["media_id"],
+            fields["media_url"],
+            fields["media_filename"],
+            fields["media_mime_type"],
+        ) = extract_media_message(msg, message_type)
         return True
     if message_type == "location":
         (

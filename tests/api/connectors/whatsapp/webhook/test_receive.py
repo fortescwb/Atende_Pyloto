@@ -2,6 +2,8 @@ import hashlib
 import hmac
 import json
 
+import pytest
+
 from api.connectors.whatsapp.webhook.receive import (
     InvalidJsonError,
     InvalidSignatureError,
@@ -30,12 +32,8 @@ def test_parse_webhook_request_invalid_signature() -> None:
     body = json.dumps({"entry": []}).encode("utf-8")
     headers = {"x-hub-signature-256": "sha256=deadbeef"}
 
-    try:
+    with pytest.raises(InvalidSignatureError, match="signature"):
         parse_webhook_request(body, headers, secret)
-    except InvalidSignatureError as exc:
-        assert "signature" in str(exc)
-    else:
-        raise AssertionError("Expected InvalidSignatureError")
 
 
 def test_parse_webhook_request_invalid_json() -> None:
@@ -43,9 +41,5 @@ def test_parse_webhook_request_invalid_json() -> None:
     body = b"{invalid}"
     headers = {"x-hub-signature-256": _sign(body, secret)}
 
-    try:
+    with pytest.raises(InvalidJsonError, match="invalid_json"):
         parse_webhook_request(body, headers, secret)
-    except InvalidJsonError as exc:
-        assert "invalid_json" in str(exc)
-    else:
-        raise AssertionError("Expected InvalidJsonError")

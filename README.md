@@ -536,6 +536,30 @@ gcloud run deploy atende-pyloto \
   --set-env-vars ENVIRONMENT=production
 ```
 
+## Limitações Conhecidas
+
+### Processamento async sem fila durável
+
+Atualmente o processamento inbound em modo `async` roda em tasks locais do processo, sem
+persistência externa.
+
+**Riscos conhecidos:**
+
+- perda de task em crash/restart abrupto
+- processamento interrompido em desligamento forçado
+
+**Mitigações atuais:**
+
+- limite de concorrência (`Semaphore`) para evitar exaustão
+- tracking de tasks ativas com drain no shutdown (até 30s)
+- dedupe com estado `processing` + rollback em falha para permitir retry seguro
+- modo `inline` propaga erro crítico e retorna `500` para acionar retry do provedor
+
+**Evolução recomendada:**
+
+- migrar despacho inbound para fila durável (Cloud Tasks / PubSub / Redis Streams)
+- adicionar política explícita de retry/backoff por tipo de falha
+
 ---
 
 ## Testes
