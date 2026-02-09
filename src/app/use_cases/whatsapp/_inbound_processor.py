@@ -74,6 +74,15 @@ class InboundMessageProcessor(
         await self._dedupe.mark_processing(msg.message_id)
         try:
             session = await self._resolve_session(msg, tenant_id)
+            if self._is_flow_completion_message(msg):
+                await self._handle_flow_completion(
+                    msg=msg,
+                    session=session,
+                    correlation_id=correlation_id,
+                )
+                result = self._build_result(session, False)
+                await self._dedupe.mark_processed(msg.message_id)
+                return result
             raw_user_text, early_sent = await self._resolve_user_text(
                 msg=msg,
                 session=session,

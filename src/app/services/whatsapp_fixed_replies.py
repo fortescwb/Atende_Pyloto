@@ -9,6 +9,8 @@ from typing import Literal
 
 from app.constants.whatsapp_fixed_replies import FIXED_REPLIES, FixedReplyConfig
 
+_OTTO_INTRO = "Voce esta sendo atendido pelo Otto, assistente virtual da Pyloto."
+
 
 @dataclass(frozen=True, slots=True)
 class FixedReply:
@@ -46,11 +48,21 @@ def match_fixed_reply(user_message: str | None) -> FixedReply | None:
 def _to_reply(config: FixedReplyConfig) -> FixedReply:
     return FixedReply(
         key=config.key,
-        response_text=config.response_text,
+        response_text=_ensure_otto_intro(config.response_text),
         message_type="text",
         prompt_vertical=config.prompt_vertical,
         kind=config.kind,
     )
+
+
+def _ensure_otto_intro(response_text: str) -> str:
+    body = (response_text or "").strip()
+    if not body:
+        return _OTTO_INTRO
+    normalized = _normalize_text(body)
+    if normalized.startswith(_normalize_text(_OTTO_INTRO)):
+        return body
+    return f"{_OTTO_INTRO} {body}"
 
 
 def _extract_command(text: str) -> str | None:

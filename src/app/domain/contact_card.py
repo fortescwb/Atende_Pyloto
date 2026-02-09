@@ -110,6 +110,7 @@ class ContactCard(BaseModel):
         _append_profile_lines(self, parts)
         _append_interest_lines(self, parts)
         _append_status_lines(self, parts)
+        _append_pending_lines(self, parts)
         return "\n".join(parts)
 
     def to_firestore_dict(self) -> dict[str, Any]:
@@ -188,6 +189,28 @@ def _append_status_lines(card: ContactCard, parts: list[str]) -> None:
         alerts.append("Lead qualificado nao notificado")
     if alerts:
         parts.append(f"Atencao: {' | '.join(alerts)}")
+
+
+def _append_pending_lines(card: ContactCard, parts: list[str]) -> None:
+    missing: list[str] = []
+    if not card.full_name:
+        missing.append("nome")
+    if not card.company:
+        missing.append("empresa")
+    if not card.primary_interest:
+        missing.append("interesse principal")
+    if not card.specific_need:
+        missing.append("necessidade")
+    if card.has_crm is None:
+        missing.append("uso de CRM")
+    if card.message_volume_per_day is None:
+        missing.append("volume/dia")
+    if not card.urgency:
+        missing.append("urgencia")
+    if not card.budget_indication:
+        missing.append("orcamento")
+    if missing:
+        parts.append(f"Pendencias CRM: {', '.join(missing[:6])}")
 
 
 def _append_if_not_none(parts: list[str], label: str, value: int | None) -> None:

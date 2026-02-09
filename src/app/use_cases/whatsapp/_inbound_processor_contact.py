@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import TYPE_CHECKING, Any
 
+from ai.models.contact_card_extraction import ContactCardPatch
 from ai.utils.sanitizer import sanitize_pii
+from app.services.appointment_handler import save_appointment_from_flow
 from app.services.otto_repetition_guard import collect_contact_card_fields
 from app.use_cases.whatsapp._inbound_processor_common import _FallbackDecision
 
@@ -141,6 +144,58 @@ class InboundProcessorContactMixin:
         )
         return await self._send_response(msg, decision, correlation_id)
 
+    @staticmethod
+    def _is_flow_completion_message(msg: NormalizedMessage) -> bool:
+        return (
+            getattr(msg, "message_type", "") == "interactive"
+            and getattr(msg, "interactive_type", "") == "nfm_reply"
+            and bool(getattr(msg, "flow_response_json", None))
+        )
+
+    async def _handle_flow_completion(
+        self,
+        *,
+        msg: NormalizedMessage,
+        session: Any,
+        correlation_id: str,
+    ) -> None:
+        flow_response_json = getattr(msg, "flow_response_json", None)
+        appointment = await save_appointment_from_flow(
+            flow_response_json=flow_response_json,
+            from_number=msg.from_number,
+            correlation_id=correlation_id,
+        )
+        if appointment and self._contact_card_store and msg.from_number:
+            contact_card = await self._contact_card_store.get_or_create(
+                msg.from_number,
+                getattr(msg, "whatsapp_name", "") or "",
+            )
+            session.contact_card = contact_card
+            patch = _build_contact_card_patch_from_appointment(appointment)
+            await self._apply_contact_card_patch(
+                contact_card=contact_card,
+                patch=patch,
+                confidence=1.0,
+                correlation_id=correlation_id,
+                message_id=msg.message_id,
+            )
+        await self._append_flow_completion_history(
+            session=session,
+            flow_response_json=flow_response_json,
+        )
+        await self._session_manager.save(session)
+        logger.info(
+            "flow_completion_processed",
+            extra={
+                "component": "inbound_processor",
+                "action": "flow_completion",
+                "result": "processed",
+                "correlation_id": correlation_id,
+                "message_id": msg.message_id,
+                "saved": bool(appointment),
+            },
+        )
+
     async def _apply_fixed_reply_to_session(
         self,
         *,
@@ -181,3 +236,73 @@ class InboundProcessorContactMixin:
                 "reply_kind": fixed_reply.kind,
             },
         )
+
+    async def _append_flow_completion_history(
+        self,
+        *,
+        session: Any,
+        flow_response_json: str | None,
+    ) -> None:
+        from app.sessions.models import HistoryRole
+
+        summary = _flow_completion_summary(flow_response_json)
+        session.add_to_history(
+            summary,
+            role=HistoryRole.SYSTEM,
+            max_history=None,
+        )
+
+
+def _build_contact_card_patch_from_appointment(appointment: dict[str, Any]) -> ContactCardPatch:
+    date = str(appointment.get("date") or "").strip()
+    time = str(appointment.get("time") or "").strip()
+    meeting_text = " ".join(item for item in (date, time) if item).strip() or None
+    vertical = str(appointment.get("vertical") or "").strip().lower()
+    primary_interest = vertical if vertical in {
+        "saas",
+        "sob_medida",
+        "gestao_perfis_trafego",
+        "automacao_atendimento",
+        "intermediacao_entregas",
+    } else None
+    return ContactCardPatch(
+        full_name=_non_empty(appointment.get("name")),
+        email=_non_empty(appointment.get("email")),
+        company=_non_empty(appointment.get("company")),
+        specific_need=_non_empty(appointment.get("need_description")),
+        primary_interest=primary_interest,
+        meeting_preferred_datetime_text=meeting_text,
+        meeting_mode=_meeting_mode_or_none(appointment.get("meeting_mode")),
+    )
+
+
+def _flow_completion_summary(flow_response_json: str | None) -> str:
+    base = "flow_completion_confirmed"
+    if not flow_response_json:
+        return base
+    try:
+        payload = json.loads(flow_response_json)
+    except (TypeError, ValueError):
+        return base
+    if not isinstance(payload, dict):
+        return base
+    params = payload.get("params") if isinstance(payload.get("params"), dict) else payload
+    date = _non_empty(params.get("date"))
+    time = _non_empty(params.get("time"))
+    if date and time:
+        return f"flow_completion_confirmed:{date} {time}"
+    if date:
+        return f"flow_completion_confirmed:{date}"
+    return base
+
+
+def _non_empty(value: Any) -> str | None:
+    text = str(value).strip() if value is not None else ""
+    return text or None
+
+
+def _meeting_mode_or_none(value: Any) -> str | None:
+    mode = (str(value).strip().lower() if value is not None else "")
+    if mode in {"online", "presencial"}:
+        return mode
+    return None

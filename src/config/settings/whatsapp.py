@@ -60,6 +60,12 @@ class WhatsAppSettings:
     media_upload_timeout_seconds: float = 120.0
     media_max_size_bytes: int = 16 * 1024 * 1024  # 16MB
 
+    # WhatsApp Flows endpoint (data exchange)
+    flow_endpoint_enabled: bool = False
+    app_secret: str = ""
+    flow_private_key: str = ""
+    flow_private_key_passphrase: str = ""
+
     @property
     def api_endpoint(self) -> str:
         """URL base completa da API com versão."""
@@ -127,6 +133,12 @@ class WhatsAppSettings:
                 "WHATSAPP_WEBHOOK_PROCESSING_MODE deve ser 'async' ou 'inline'"
             )
 
+        if self.flow_endpoint_enabled:
+            if not self.app_secret:
+                errors.append("WHATSAPP_APP_SECRET não configurado")
+            if not self.flow_private_key:
+                errors.append("FLOW_PRIVATE_KEY não configurado")
+
         return errors
 
 
@@ -135,6 +147,12 @@ def _load_from_env() -> WhatsAppSettings:
     environment = os.getenv("ENVIRONMENT", "").lower()
     default_processing_mode = (
         "inline" if environment in ("staging", "development", "dev", "test") else "async"
+    )
+    flow_enabled = os.getenv("WHATSAPP_FLOW_ENDPOINT_ENABLED", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
     )
     return WhatsAppSettings(
         verify_token=os.getenv("WHATSAPP_VERIFY_TOKEN", ""),
@@ -163,6 +181,10 @@ def _load_from_env() -> WhatsAppSettings:
         webhook_processing_mode=os.getenv(
             "WHATSAPP_WEBHOOK_PROCESSING_MODE", default_processing_mode
         ).lower(),
+        flow_endpoint_enabled=flow_enabled,
+        app_secret=os.getenv("WHATSAPP_APP_SECRET", ""),
+        flow_private_key=os.getenv("FLOW_PRIVATE_KEY", ""),
+        flow_private_key_passphrase=os.getenv("FLOW_PRIVATE_KEY_PASSPHRASE", ""),
     )
 
 

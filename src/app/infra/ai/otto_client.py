@@ -15,6 +15,21 @@ from config.settings.ai.openai import OpenAISettings, get_openai_settings
 
 logger = logging.getLogger(__name__)
 
+_ALLOWED_STATES = [
+    "INITIAL",
+    "TRIAGE",
+    "COLLECTING_INFO",
+    "GENERATING_RESPONSE",
+    "HANDOFF_HUMAN",
+    "SELF_SERVE_INFO",
+    "SCHEDULED_FOLLOWUP",
+    "ROUTE_EXTERNAL",
+    "TIMEOUT",
+    "ERROR",
+]
+
+_ALLOWED_MESSAGE_TYPES = ["text", "interactive_button", "interactive_list"]
+
 
 class OttoClient:
     """Cliente LLM para decisao do OttoAgent."""
@@ -116,9 +131,9 @@ def _build_response_format() -> dict[str, Any]:
     schema: dict[str, Any] = {
         "type": "object",
         "properties": {
-            "next_state": {"type": "string"},
+            "next_state": {"type": "string", "enum": _ALLOWED_STATES},
             "response_text": {"type": "string"},
-            "message_type": {"type": "string"},
+            "message_type": {"type": "string", "enum": _ALLOWED_MESSAGE_TYPES},
             "confidence": {"type": "number"},
             "requires_human": {"type": "boolean"},
             "reasoning_debug": {"type": "string"},

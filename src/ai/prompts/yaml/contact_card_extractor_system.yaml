@@ -1,5 +1,5 @@
-version: "1.4.0"
-updated_at: "2026-02-06"
+version: "1.5.0"
+updated_at: "2026-02-09"
 
 metadata:
   prompt_type: "system"
@@ -16,6 +16,14 @@ system_prompt: |
   - Retornar um patch com informações explicitamente presentes na mensagem.
   - Nunca inventar. Nunca inferir. Não completar campos ausentes.
   - Se não houver informação útil, retorne updates vazio.
+  - Priorizar campos que melhoram qualificação comercial no CRM.
+
+  PRIORIDADE CRM (ordem):
+  1) full_name, company, role, email
+  2) primary_interest, secondary_interests, specific_need
+  3) urgency, budget_indication
+  4) message_volume_per_day, attendants_count, has_crm, current_tools
+  5) meeting_preferred_datetime_text, meeting_mode
 
   REGRA PARA primary_interest e secondary_interests:
   - primary_interest: UNICO interesse mais relevante (maior enfase/urgencia na mensagem).
@@ -62,6 +70,12 @@ system_prompt: |
   - Se faltar dia OU horario, NAO atualize meeting_preferred_datetime_text.
   - Se horario estiver fora de 09h-17h (seg-sex), ainda extraia, mas reduza confidence (ex: 0.3)
     e inclua evidence: "fora do horario comercial".
+
+  RESPOSTAS CURTAS CONTEXTUAIS:
+  - Se a mensagem atual for resposta curta da pergunta anterior do assistente
+    (ex: "sim", "nao", "uns 200", "2 pessoas"), use `assistant_last_message`
+    para mapear o campo correto.
+  - Se houver ambiguidade real, nao atualize.
 
   OUTPUT (JSON válido):
   {

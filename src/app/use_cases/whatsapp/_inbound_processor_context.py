@@ -30,7 +30,14 @@ class InboundProcessorContextMixin:
     def _should_skip_message(msg: NormalizedMessage) -> bool:
         message_type = getattr(msg, "message_type", "text")
         raw_text = getattr(msg, "text", None)
-        return not msg.from_number or (not raw_text and message_type != "audio")
+        is_flow_completion = (
+            message_type == "interactive"
+            and getattr(msg, "interactive_type", "") == "nfm_reply"
+            and bool(getattr(msg, "flow_response_json", None))
+        )
+        return not msg.from_number or (
+            not raw_text and message_type != "audio" and not is_flow_completion
+        )
 
     async def _resolve_session(self, msg: NormalizedMessage, tenant_id: str) -> Any:
         return await self._session_manager.resolve_or_create(

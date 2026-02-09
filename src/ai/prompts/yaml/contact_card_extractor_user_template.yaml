@@ -1,5 +1,5 @@
-version: "1.2.0"
-updated_at: "2026-02-06"
+version: "1.3.0"
+updated_at: "2026-02-09"
 
 metadata:
   prompt_type: "user_template"
@@ -15,4 +15,5 @@ template: |
   Extraia apenas informacoes novas presentes na mensagem.
   Se a mensagem do usuario responder diretamente a pergunta do assistente,
   mapeie para o campo correto do ContactCard.
+  Priorize campos de qualificacao de CRM.
   JSON apenas.

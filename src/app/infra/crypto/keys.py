@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 from typing import Any
 
 from cryptography.hazmat.backends import default_backend
@@ -10,7 +11,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.hashes import SHA256
 
-from .constants import AES_KEY_SIZE
+from .constants import AES_KEY_SIZES_ALLOWED
 from .errors import FlowCryptoError
 
 
@@ -46,13 +47,13 @@ def decrypt_aes_key(private_key: Any, encrypted_aes_key: str) -> bytes:
         encrypted_aes_key: Chave AES criptografada (base64)
 
     Returns:
-        Chave AES bruta (256 bits)
+        Chave AES bruta (128/192/256 bits)
 
     Raises:
         FlowCryptoError: Se decriptografia falhar
     """
     try:
-        aes_key_encrypted = base64.b64decode(encrypted_aes_key)
+        aes_key_encrypted = base64.b64decode(encrypted_aes_key, validate=True)
         aes_key = private_key.decrypt(
             aes_key_encrypted,
             padding.OAEP(
@@ -62,7 +63,7 @@ def decrypt_aes_key(private_key: Any, encrypted_aes_key: str) -> bytes:
             ),
         )
 
-        if len(aes_key) != AES_KEY_SIZE:
+        if len(aes_key) not in AES_KEY_SIZES_ALLOWED:
             msg = f"Invalid AES key size: {len(aes_key)}"
             raise FlowCryptoError(msg)
 
@@ -70,5 +71,7 @@ def decrypt_aes_key(private_key: Any, encrypted_aes_key: str) -> bytes:
 
     except FlowCryptoError:
         raise
+    except (ValueError, binascii.Error) as exc:
+        raise FlowCryptoError(f"Invalid base64 AES key: {exc}") from exc
     except Exception as exc:
         raise FlowCryptoError(f"AES key decryption failed: {exc}") from exc

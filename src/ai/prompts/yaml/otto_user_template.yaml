@@ -1,4 +1,4 @@
-version: "1.4.0"
+version: "1.6.0"
 updated_at: "2026-02-09"
 
 metadata:
@@ -26,5 +26,5 @@ template: |
   ## Mensagem do usuario
   {user_message}
 
-  ## Confidence (comercial)
-  0.1-0.3 = curiosidade | 0.4-0.6 = interesse | 0.7-0.9 = alta intencao
+  Instrucao operacional:
+  use ContactCard + Historico para evitar repeticao e priorizar dados faltantes do CRM.

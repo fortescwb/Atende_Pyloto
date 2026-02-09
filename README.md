@@ -501,6 +501,10 @@ WHATSAPP_VERIFY_TOKEN=pyloto_webhook_secret
 WHATSAPP_PHONE_NUMBER_ID=123456789012345
 WHATSAPP_ACCESS_TOKEN=EAAx...
 WHATSAPP_BUSINESS_ACCOUNT_ID=987654321
+WHATSAPP_APP_SECRET=meta_app_secret
+WHATSAPP_FLOW_ENDPOINT_ENABLED=true
+FLOW_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+FLOW_PRIVATE_KEY_PASSPHRASE=
 
 # Firestore
 FIRESTORE_PROJECT_ID=pyloto-prod
@@ -513,6 +517,12 @@ REDIS_URL=redis://localhost:6379
 ENVIRONMENT=production  # ou staging
 LOG_LEVEL=INFO
 ```
+
+### Endpoint WhatsApp Flows (data exchange)
+
+- Endpoint: `/webhook/whatsapp/flow/endpoint`
+- Segurança: assinatura `X-Hub-Signature-256` (HMAC-SHA256) + payload criptografado (RSA-OAEP + AES-GCM)
+- Resposta: `text/plain` com `base64(ciphertext + tag)`
 
 ### Deploy Google Cloud Run
 

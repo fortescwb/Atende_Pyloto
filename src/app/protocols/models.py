@@ -50,6 +50,7 @@ class NormalizedMessage(BaseModel):
     interactive_button_id: str | None = None
     interactive_list_id: str | None = None
     interactive_cta_url: str | None = None
+    flow_response_json: str | None = None  # interactive.nfm_reply.response_json
     # Para reaction
     reaction_message_id: str | None = None
     reaction_emoji: str | None = None

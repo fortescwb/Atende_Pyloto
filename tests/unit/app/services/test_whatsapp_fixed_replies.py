@@ -10,6 +10,7 @@ def test_match_command_simple() -> None:
     assert result is not None
     assert result.kind == "command"
     assert result.prompt_vertical == "automacao_atendimento"
+    assert "Otto, assistente virtual da Pyloto" in result.response_text
 
 
 def test_match_command_with_suffix() -> None:
@@ -29,6 +30,7 @@ def test_match_quick_reply_with_accents() -> None:
     assert result is not None
     assert result.kind == "quick_reply"
     assert result.prompt_vertical == "gestao_perfis_trafego"
+    assert "Otto, assistente virtual da Pyloto" in result.response_text
 
 
 def test_match_unknown_returns_none() -> None:

@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.hashes import SHA256
 
-from .constants import AES_KEY_SIZE
+from .constants import AES_KEY_SIZES_ALLOWED
 from .errors import FlowCryptoError
 
 
@@ -46,7 +46,7 @@ def decrypt_aes_key(private_key: Any, encrypted_aes_key: str) -> bytes:
         encrypted_aes_key: Chave AES criptografada (base64)
 
     Returns:
-        Chave AES bruta (256 bits)
+        Chave AES bruta (128/192/256 bits)
 
     Raises:
         FlowCryptoError: Se decriptografia falhar
@@ -62,7 +62,7 @@ def decrypt_aes_key(private_key: Any, encrypted_aes_key: str) -> bytes:
             ),
         )
 
-        if len(aes_key) != AES_KEY_SIZE:
+        if len(aes_key) not in AES_KEY_SIZES_ALLOWED:
             msg = f"Invalid AES key size: {len(aes_key)}"
             raise FlowCryptoError(msg)
 

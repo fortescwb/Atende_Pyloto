@@ -106,4 +106,5 @@ async def test_fixed_reply_bypasses_agents_and_updates_history() -> None:
     assert len(session_mgr.session.history) == 2
     assert session_mgr.session.history[0].role == HistoryRole.USER
     assert session_mgr.session.history[1].role == HistoryRole.ASSISTANT
+    assert "Otto, assistente virtual da Pyloto" in session_mgr.session.history[1].content
     assert session_mgr.session.context.prompt_vertical == "automacao_atendimento"

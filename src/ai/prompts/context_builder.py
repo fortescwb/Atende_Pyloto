@@ -9,6 +9,8 @@ Padronização:
 
 from __future__ import annotations
 
+import re
+
 from ai.config.prompt_assets_loader import load_context_for_prompt
 
 _ALWAYS_SYSTEM = (
@@ -53,20 +55,22 @@ def build_contexts(tenant_intent: str | None = None) -> dict[str, str]:
         tenant_intent: ID curto/canônico da vertente (opcional).
     """
     system_parts = [load_context_for_prompt(path) for path in _ALWAYS_SYSTEM]
-    system_context = "\n\n".join(part for part in system_parts if part).strip()
+    system_context = _merge_unique_blocks(system_parts)
 
     institutional_parts = [load_context_for_prompt(path) for path in _ALWAYS_USER]
-    institutional_context = "\n\n".join(part for part in institutional_parts if part).strip()
+    institutional_context = _merge_unique_blocks(institutional_parts)
 
     tenant_context = ""
     folder = normalize_tenant_intent(tenant_intent)
     if folder:
-        tenant_context = load_context_for_prompt(f"vertentes/{folder}/core.yaml").strip()
+        tenant_context = _merge_unique_blocks(
+            [load_context_for_prompt(f"vertentes/{folder}/core.yaml")]
+        )
 
     user_parts = [institutional_context]
     if tenant_context:
         user_parts.append(tenant_context)
-    user_context = "\n\n".join(part for part in user_parts if part).strip()
+    user_context = _merge_unique_blocks(user_parts)
 
     return {
         "system_context": system_context,
@@ -74,3 +78,29 @@ def build_contexts(tenant_intent: str | None = None) -> dict[str, str]:
         "tenant_context": tenant_context,
         "user_context": user_context,
     }
+
+
+def _merge_unique_blocks(parts: list[str]) -> str:
+    """Une partes removendo blocos textuais duplicados (economia de tokens)."""
+    merged: list[str] = []
+    seen: set[str] = set()
+    for part in parts:
+        text = (part or "").strip()
+        if not text:
+            continue
+        for block in _split_blocks(text):
+            normalized = _normalize_block(block)
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            merged.append(block)
+    return "\n\n".join(merged).strip()
+
+
+def _split_blocks(text: str) -> list[str]:
+    chunks = re.split(r"\n\s*\n", text.strip())
+    return [chunk.strip() for chunk in chunks if chunk and chunk.strip()]
+
+
+def _normalize_block(block: str) -> str:
+    return " ".join(block.lower().split())

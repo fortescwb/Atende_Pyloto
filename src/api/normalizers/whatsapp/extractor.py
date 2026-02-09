@@ -39,7 +39,7 @@ _FIELD_NAMES = (
     "location_latitude", "location_longitude", "location_name", "location_address",
     "address_street", "address_city", "address_state", "address_zip_code", "address_country_code",
     "contacts_json", "interactive_type", "interactive_button_id", "interactive_list_id",
-    "interactive_cta_url", "reaction_message_id", "reaction_emoji",
+    "interactive_cta_url", "flow_response_json", "reaction_message_id", "reaction_emoji",
 )
 
 
@@ -109,6 +109,7 @@ def _extract_interactive_fields(msg: dict[str, Any], fields: dict[str, Any]) -> 
         fields["interactive_type"],
         fields["interactive_button_id"],
         fields["interactive_list_id"],
+        fields["flow_response_json"],
     ) = extract_interactive_message(msg)
     interactive_block = msg.get("interactive") or {}
     if not isinstance(interactive_block, dict):

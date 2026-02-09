@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.infra.ai.otto_client import OttoClient
+from app.infra.ai.otto_client import OttoClient, _build_response_format
 
 
 class FakeResponse:
@@ -49,3 +49,12 @@ async def test_decide_returns_none_on_invalid_json() -> None:
     result = await client.decide(system_prompt="s", user_prompt="u")
 
     assert result is None
+
+
+def test_response_format_enforces_state_and_message_type_enums() -> None:
+    response_format = _build_response_format()
+    schema = response_format["json_schema"]["schema"]
+    props = schema["properties"]
+
+    assert "TRIAGE" in props["next_state"]["enum"]
+    assert props["message_type"]["enum"] == ["text", "interactive_button", "interactive_list"]

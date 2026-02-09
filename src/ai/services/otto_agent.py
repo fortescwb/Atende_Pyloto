@@ -167,6 +167,6 @@ def _normalize_history_labels(history: list[str]) -> list[str]:
         if lowered.startswith(("usu\u00e1rio:", "usuario:")):
             text = f"Usuario: {text.split(':', 1)[1].strip()}"
         elif lowered.startswith(("otto:", "assistente:", "assistant:")):
-            text = f"Pyloto: {text.split(':', 1)[1].strip()}"
+            text = f"Otto: {text.split(':', 1)[1].strip()}"
         normalized.append(text)
     return normalized

@@ -8,6 +8,7 @@ Regras:
 
 from __future__ import annotations
 
+import re
 from typing import NamedTuple
 
 from ai.config.prompt_assets_loader import load_context_for_prompt, load_prompt_template
@@ -105,10 +106,14 @@ def _merge_context_chunks(*chunks: list[str]) -> str:
     for chunk in chunks:
         for item in chunk or []:
             text = (item or "").strip()
-            if not text or text in seen:
+            if not text:
                 continue
-            seen.add(text)
-            merged.append(text)
+            for block in _split_blocks(text):
+                normalized = _normalize_block(block)
+                if not normalized or normalized in seen:
+                    continue
+                seen.add(normalized)
+                merged.append(block)
     return "\n\n".join(merged).strip()
 
 
@@ -126,3 +131,12 @@ def _build_tenant_context(
         loaded_paths,
         extra_context_chunks or [],
     )
+
+
+def _split_blocks(text: str) -> list[str]:
+    chunks = re.split(r"\n\s*\n", text.strip())
+    return [chunk.strip() for chunk in chunks if chunk and chunk.strip()]
+
+
+def _normalize_block(block: str) -> str:
+    return " ".join(block.lower().split())

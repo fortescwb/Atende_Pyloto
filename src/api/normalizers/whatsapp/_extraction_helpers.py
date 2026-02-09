@@ -77,23 +77,24 @@ def extract_contacts_message(msg: dict[str, Any]) -> str | None:
 
 def extract_interactive_message(
     msg: dict[str, Any],
-) -> tuple[str | None, str | None, str | None]:
+) -> tuple[str | None, str | None, str | None, str | None]:
     """Extrai campos de mensagem interativa."""
     interactive_block = msg.get("interactive")
     if not isinstance(interactive_block, dict):
-        return None, None, None
+        return None, None, None, None
     interactive_type = interactive_block.get("type")
+    flow_response_json = _extract_flow_response_json(interactive_block)
     button_reply = interactive_block.get("button_reply") or {}
     if isinstance(button_reply, dict):
         button_id = button_reply.get("id")
         if button_id:
-            return interactive_type, button_id, None
+            return interactive_type, button_id, None, flow_response_json
     list_reply = interactive_block.get("list_reply") or {}
     if isinstance(list_reply, dict):
         list_id = list_reply.get("id")
         if list_id:
-            return interactive_type, None, list_id
-    return interactive_type, None, None
+            return interactive_type, None, list_id, flow_response_json
+    return interactive_type, None, None, flow_response_json
 
 
 def extract_reaction_message(msg: dict[str, Any]) -> tuple[str | None, str | None]:
@@ -102,3 +103,18 @@ def extract_reaction_message(msg: dict[str, Any]) -> tuple[str | None, str | Non
     if not isinstance(reaction_block, dict):
         return None, None
     return reaction_block.get("message_id"), reaction_block.get("emoji")
+
+
+def _extract_flow_response_json(interactive_block: dict[str, Any]) -> str | None:
+    nfm_reply = interactive_block.get("nfm_reply") or {}
+    if not isinstance(nfm_reply, dict):
+        return None
+    response_json = nfm_reply.get("response_json")
+    if isinstance(response_json, str):
+        return response_json
+    if isinstance(response_json, dict):
+        try:
+            return json.dumps(response_json, ensure_ascii=False)
+        except (TypeError, ValueError):
+            return None
+    return None

@@ -1,5 +1,5 @@
-version: "1.0.1"
-updated_at: "2026-02-06"
+version: "1.1.0"
+updated_at: "2026-02-09"
 
 metadata:
   context_type: "json_output"
@@ -13,6 +13,8 @@ prompt_injection: |
   Schema:
   {"next_state":"<ESTADO>","response_text":"<texto curto>","message_type":"text|interactive_button|interactive_list","confidence":0.0,"requires_human":false,"reasoning_debug":"opcional"}
   Restrições: response_text <= 350 chars.
+  `message_type` é obrigatório e será usado diretamente pelo sistema de envio.
+  Use interactive_button/list apenas quando melhorar claramente o próximo passo.
 
 # Formato JSON + limites (SYSTEM)
 output_contract:

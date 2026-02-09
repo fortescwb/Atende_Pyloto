@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from ai.models.otto import OttoDecision, OttoRequest
-from ai.services.otto_agent import OttoAgentService
+from ai.services.otto_agent import OttoAgentService, _conversation_history_text
 
 
 class FakeClient:
@@ -53,3 +53,19 @@ async def test_client_error_returns_handoff() -> None:
 
     assert result.next_state == "HANDOFF_HUMAN"
     assert result.requires_human is True
+
+
+def test_conversation_history_uses_last_20_messages() -> None:
+    history = [f"Usuario: msg {idx}" for idx in range(1, 31)]
+
+    text = _conversation_history_text(history)
+    lines = text.splitlines()
+
+    assert len(lines) == 20
+    assert lines[0] == "Usuario: msg 11"
+    assert lines[-1] == "Usuario: msg 30"
+
+
+def test_conversation_history_normalizes_assistant_label_to_otto() -> None:
+    text = _conversation_history_text(["assistente: tudo certo"])
+    assert text == "Otto: tudo certo"
