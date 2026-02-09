@@ -134,8 +134,10 @@ class WhatsAppSettings:
             )
 
         if self.flow_endpoint_enabled:
-            if not self.app_secret:
-                errors.append("WHATSAPP_APP_SECRET não configurado")
+            if not (self.app_secret or self.webhook_secret):
+                errors.append(
+                    "WHATSAPP_APP_SECRET ou WHATSAPP_WEBHOOK_SECRET não configurado"
+                )
             if not self.flow_private_key:
                 errors.append("FLOW_PRIVATE_KEY não configurado")
 

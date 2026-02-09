@@ -116,7 +116,7 @@ steps:
         SECRETS="$$SECRETS,WHATSAPP_VERIFY_TOKEN=whatsapp-verify-token-${_ENV}:latest"
         SECRETS="$$SECRETS,WHATSAPP_WEBHOOK_SECRET=whatsapp-webhook-secret-${_ENV}:latest"
         SECRETS="$$SECRETS,WHATSAPP_ACCESS_TOKEN=whatsapp-access-token-${_ENV}:latest"
-        SECRETS="$$SECRETS,WHATSAPP_APP_SECRET=whatsapp-app-secret-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_APP_SECRET=whatsapp-webhook-secret-${_ENV}:latest"
         SECRETS="$$SECRETS,FLOW_PRIVATE_KEY=flow-private-key-${_ENV}:latest"
         SECRETS="$$SECRETS,FLOW_PRIVATE_KEY_PASSPHRASE=flow-private-key-passphrase-${_ENV}:latest"
         SECRETS="$$SECRETS,REDIS_URL=redis-url-${_ENV}:latest"
