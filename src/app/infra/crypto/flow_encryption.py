@@ -28,6 +28,13 @@ def _decode_base64(raw_value: str) -> bytes:
     try:
         return base64.b64decode(padded, validate=True)
     except (ValueError, binascii.Error):
+        # Be stricter before attempting urlsafe: only allow urlsafe chars
+        # (alphanum, dash, underscore, padding). This prevents permissive
+        # decoding of clearly invalid inputs like '%%%invalid'.
+        import re
+
+        if not re.fullmatch(r"[A-Za-z0-9_\-]+={0,2}", value):
+            raise FlowCryptoError("Invalid base64 payload: invalid characters in input")
         try:
             return base64.urlsafe_b64decode(padded)
         except (ValueError, binascii.Error) as exc:
@@ -51,6 +58,10 @@ def decrypt_flow_request(
     """
     iv = _decode_base64(initial_vector_b64)
     flow_data = _decode_base64(encrypted_flow_data_b64)
+
+    # Validate AES key base64 before attempting to load private key to ensure
+    # base64-related errors surface first (helps in debugging and testing).
+    _ = _decode_base64(encrypted_aes_key_b64)
 
     private_key = load_private_key(private_key_pem, private_key_passphrase)
     aes_key = decrypt_aes_key(private_key, encrypted_aes_key_b64)

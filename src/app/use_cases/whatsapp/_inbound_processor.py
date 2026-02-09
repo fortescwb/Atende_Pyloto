@@ -178,7 +178,7 @@ async def _post_process_decision(
         correlation_id=correlation_id,
         message_id=message_id,
     )
-    guarded = _apply_guards(
+    guarded = await _apply_guards(
         processor,
         decision=decision,
         contact_card=contact_card,
@@ -238,7 +238,7 @@ async def _apply_extraction(
     return extracted_fields
 
 
-def _apply_guards(
+async def _apply_guards_async(
     processor: InboundMessageProcessor,
     *,
     decision: OttoDecision,
@@ -248,6 +248,8 @@ def _apply_guards(
     correlation_id: str,
     message_id: str | None,
 ) -> OttoDecision:
+    import asyncio
+
     if not contact_card:
         return decision
     processor._log_contact_card_snapshot(
@@ -263,7 +265,7 @@ def _apply_guards(
     )
     if business_hours_decision is not None:
         return business_hours_decision
-    return _apply_repetition_and_continuation_guards(
+    result = _apply_repetition_and_continuation_guards(
         decision=decision,
         contact_card=contact_card,
         extracted_fields=extracted_fields,
@@ -271,6 +273,41 @@ def _apply_guards(
         correlation_id=correlation_id,
         message_id=message_id,
     )
+    if asyncio.iscoroutine(result):
+        result = await result
+    return result
+
+
+def _apply_guards(
+    processor: InboundMessageProcessor,
+    *,
+    decision: OttoDecision,
+    contact_card: Any,
+    extracted_fields: list[str],
+    user_message: str,
+    correlation_id: str,
+    message_id: str | None,
+) -> OttoDecision:
+    """Compatibility wrapper: returns OttoDecision synchronously when called from sync code,
+    or returns coroutine when called from async context (caller should await)."""
+    coro = _apply_guards_async(
+        processor,
+        decision=decision,
+        contact_card=contact_card,
+        extracted_fields=extracted_fields,
+        user_message=user_message,
+        correlation_id=correlation_id,
+        message_id=message_id,
+    )
+    import asyncio
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return coro
+    except RuntimeError:
+        pass
+    return asyncio.run(coro)
 
 
 def _apply_business_hours_guard_log(
@@ -292,7 +329,7 @@ def _apply_business_hours_guard_log(
     )
 
 
-def _apply_repetition_and_continuation_guards(
+async def _apply_repetition_and_continuation_guards_async(
     *,
     decision: OttoDecision,
     contact_card: Any,
@@ -301,11 +338,15 @@ def _apply_repetition_and_continuation_guards(
     correlation_id: str,
     message_id: str | None,
 ) -> OttoDecision:
+    import asyncio
+
     repetition = apply_repetition_guard(
         decision=decision,
         contact_card=contact_card,
         recent_fields=extracted_fields,
     )
+    if asyncio.iscoroutine(repetition):
+        repetition = await repetition
     if repetition.applied:
         return _log_guard_and_get_decision(
             guard_name="otto_repetition_guard_applied",
@@ -324,6 +365,8 @@ def _apply_repetition_and_continuation_guards(
         user_message=user_message,
         recent_fields=extracted_fields,
     )
+    if asyncio.iscoroutine(continuation):
+        continuation = await continuation
     if continuation.applied:
         return _log_guard_and_get_decision(
             guard_name="otto_continuation_guard_applied",
@@ -336,6 +379,36 @@ def _apply_repetition_and_continuation_guards(
             },
         )
     return decision
+
+
+def _apply_repetition_and_continuation_guards(
+    *,
+    decision: OttoDecision,
+    contact_card: Any,
+    extracted_fields: list[str],
+    user_message: str,
+    correlation_id: str,
+    message_id: str | None,
+) -> OttoDecision:
+    """Compatibility wrapper: returns OttoDecision synchronously when called from sync code,
+    or returns coroutine when called from async context (caller should await)."""
+    coro = _apply_repetition_and_continuation_guards_async(
+        decision=decision,
+        contact_card=contact_card,
+        extracted_fields=extracted_fields,
+        user_message=user_message,
+        correlation_id=correlation_id,
+        message_id=message_id,
+    )
+    import asyncio
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return coro
+    except RuntimeError:
+        pass
+    return asyncio.run(coro)
 
 
 def _log_guard_and_get_decision(

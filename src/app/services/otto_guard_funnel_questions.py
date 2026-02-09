@@ -35,9 +35,7 @@ def pick_next_question(
 
 
 import asyncio
-from app.use_cases.whatsapp.send_outbound_message import SendOutboundMessageUseCase
 from app.protocols.models import OutboundMessageRequest
-from app.config.settings.whatsapp import get_whatsapp_settings
 
 async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None) -> str:
     """
@@ -62,7 +60,6 @@ async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None)
 
     if ready_to_schedule_meeting(contact_card):
         # Envia template e flow do WhatsApp
-        wa_settings = get_whatsapp_settings()
         phone = getattr(contact_card, "wa_id", None) or getattr(contact_card, "phone", None)
         if not phone or not outbound_sender:
             return "Estamos prontos para agendar, mas houve um erro ao acionar o WhatsApp. Por favor, tente novamente mais tarde."

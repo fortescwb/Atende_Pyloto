@@ -114,6 +114,7 @@ class OutboundMessageRequest(BaseModel):
     # Para template
     template_name: str | None = None  # Para template messages
     template_params: dict[str, Any] | None = None
+    language: str | None = None  # Idioma do template (ex: pt_BR)
     # Metadata
     category: str | None = None  # MARKETING, UTILITY, AUTHENTICATION, SERVICE
     idempotency_key: str | None = None  # Para idempotência

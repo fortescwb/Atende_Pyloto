@@ -59,13 +59,13 @@ def apply_business_hours_guard(
     )
 
 
-def apply_repetition_guard(
+async def _apply_repetition_guard_async(
     *,
     decision: OttoDecision,
     contact_card: ContactCard | None,
     recent_fields: Iterable[str] | None = None,
 ) -> GuardResult:
-    """Evita repetir pergunta (ou qualificar errado) quando o ContactCard ja tem a resposta."""
+    """Async implementation of apply_repetition_guard."""
     if contact_card is None:
         return GuardResult(decision=decision, applied=False)
 
@@ -84,7 +84,7 @@ def apply_repetition_guard(
 
     ack = build_ack(contact_card, question_type, recent_fields=recent_fields)
     next_pick = pick_next_question(contact_card, skip_fields={question_type})
-    cta = build_next_step_cta(contact_card)
+    cta = await build_next_step_cta(contact_card)
 
     next_text = next_pick.text if next_pick else cta
     if not next_text:
@@ -101,14 +101,37 @@ def apply_repetition_guard(
     )
 
 
-def apply_continuation_guard(
+def apply_repetition_guard(
+    *,
+    decision: OttoDecision,
+    contact_card: ContactCard | None,
+    recent_fields: Iterable[str] | None = None,
+):
+    """Compatibility wrapper: returns GuardResult synchronously when called from sync code,
+    or returns coroutine when called from async context (caller should await)."""
+    coro = _apply_repetition_guard_async(
+        decision=decision, contact_card=contact_card, recent_fields=recent_fields
+    )
+    import asyncio
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return coro
+    except RuntimeError:
+        # No running loop
+        pass
+    return asyncio.run(coro)
+
+
+async def _apply_continuation_guard_async(
     *,
     decision: OttoDecision,
     contact_card: ContactCard | None,
     user_message: str,
     recent_fields: Iterable[str] | None = None,
 ) -> GuardResult:
-    """Se o Otto nao propuser proximo passo, injeta uma continuacao deterministica."""
+    """Async implementation of apply_continuation_guard."""
     if contact_card is None:
         return GuardResult(decision=decision, applied=False)
 
@@ -123,7 +146,7 @@ def apply_continuation_guard(
         return GuardResult(decision=decision, applied=False)
 
     next_pick = pick_next_question(contact_card, skip_fields=set())
-    cta = build_next_step_cta(contact_card)
+    cta = await build_next_step_cta(contact_card)
 
     next_text = ""
     if has_minimum_qualification(contact_card) and cta:
@@ -143,6 +166,30 @@ def apply_continuation_guard(
         next_question_key=next_pick.key if next_pick else None,
         guard_type="continuation",
     )
+
+
+def apply_continuation_guard(
+    *,
+    decision: OttoDecision,
+    contact_card: ContactCard | None,
+    user_message: str,
+    recent_fields: Iterable[str] | None = None,
+):
+    """Compatibility wrapper: returns GuardResult synchronously when called from sync code,
+    or returns coroutine when called from async context (caller should await)."""
+    coro = _apply_continuation_guard_async(
+        decision=decision, contact_card=contact_card, user_message=user_message, recent_fields=recent_fields
+    )
+    import asyncio
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return coro
+    except RuntimeError:
+        # No running loop
+        pass
+    return asyncio.run(coro)
 
 
 def collect_contact_card_fields(contact_card: ContactCard | None) -> list[str]:
