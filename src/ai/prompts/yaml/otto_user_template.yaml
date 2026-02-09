@@ -1,5 +1,5 @@
-version: "1.3.0"
-updated_at: "2026-02-06"
+version: "1.4.0"
+updated_at: "2026-02-09"
 
 metadata:
   prompt_type: "user_template"
@@ -7,26 +7,24 @@ metadata:
 
 template: |
 
-  ## Contexto base
+  ## Contexto Pyloto
   {institutional_context}
 
-  ## Contexto do tenant (vertical)
+  ## Contexto vertical (se detectado)
   {tenant_context}
 
-  ## Resumo do ContactCard
+  ## ContactCard
   {contact_card_summary}
 
-  ## Historico curto (ultimas 20 mensagens, Usuario/Pyloto)
+  ## Historico (ultimas 20 msgs)
   {conversation_history}
 
-  ## Estado atual e transições válidas
+  ## Estado FSM
   Estado atual: {session_state}
+  Transicoes validas: {valid_transitions}
 
-  ## Mensagem atual do usuário
+  ## Mensagem do usuario
   {user_message}
 
-  ## COMO AJUSTAR confidence (indicador comercial)
-  0.1-0.3 = curiosidade | 0.4-0.6 = interesse | 0.7-0.9 = alta intenção
-
-  Escolha o próximo estado apenas entre as transições válidas.
-  Responda apenas JSON.
+  ## Confidence (comercial)
+  0.1-0.3 = curiosidade | 0.4-0.6 = interesse | 0.7-0.9 = alta intencao

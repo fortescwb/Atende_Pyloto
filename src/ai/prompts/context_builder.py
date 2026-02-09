@@ -2,7 +2,7 @@
 
 Padronização:
   - Assets de contexto ficam em `src/ai/contexts/**.yaml`
-  - SYSTEM: `core/system_role.yaml`, `core/mindset.yaml`, `core/vertentes_lista.yaml`,
+  - SYSTEM: `core/system_role.yaml`, `core/mindset.yaml`, `core/guardrails.yaml`,
     `regras/json_output.yaml`
   - USER: `core/sobre_pyloto.yaml` + (opcional) `vertentes/<intent>/core.yaml`
 """
@@ -14,7 +14,7 @@ from ai.config.prompt_assets_loader import load_context_for_prompt
 _ALWAYS_SYSTEM = (
     "core/system_role.yaml",
     "core/mindset.yaml",
-    "core/vertentes_lista.yaml",
+    "core/guardrails.yaml",
     "regras/json_output.yaml",
 )
 
