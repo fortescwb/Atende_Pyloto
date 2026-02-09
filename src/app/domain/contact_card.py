@@ -107,74 +107,9 @@ class ContactCard(BaseModel):
         """Resumo curto para prompt (max ~200 tokens)."""
         parts: list[str] = []
         parts.append(f"WhatsApp: {self.whatsapp_name}")
-        if self.full_name and self.full_name.lower() != self.whatsapp_name.lower():
-            parts.append(f"Nome completo: {self.full_name}")
-        if self.company:
-            size_str = f" ({self.company_size})" if self.company_size else ""
-            parts.append(f"Empresa: {self.company}{size_str}")
-        if self.role:
-            parts.append(f"Cargo: {self.role}")
-        if self.message_volume_per_day is not None:
-            parts.append(f"Volume/dia: {self.message_volume_per_day}")
-        if self.attendants_count is not None:
-            parts.append(f"Equipe atendimento: {self.attendants_count}")
-        if self.specialists_count is not None:
-            parts.append(f"Especialistas: {self.specialists_count}")
-        if self.has_crm is not None:
-            parts.append(f"CRM: {'Sim' if self.has_crm else 'Nao'}")
-        if self.current_tools:
-            tools_display = ", ".join(self.current_tools)
-            parts.append(f"Ferramentas atuais: {tools_display}")
-        if self.users_count is not None:
-            parts.append(f"Usuarios: {self.users_count}")
-        if self.modules_needed:
-            parts.append(f"Modulos: {', '.join(self.modules_needed[:6])}")
-        if self.desired_features:
-            parts.append(f"Funcionalidades: {', '.join(self.desired_features[:6])}")
-        if self.integrations_needed:
-            parts.append(f"Integracoes: {', '.join(self.integrations_needed[:6])}")
-        if self.needs_data_migration is not None:
-            parts.append(f"Migracao de dados: {'Sim' if self.needs_data_migration else 'Nao'}")
-        if self.legacy_systems:
-            parts.append(f"Legado: {', '.join(self.legacy_systems[:4])}")
-        if self.email:
-            parts.append(f"Email: {self.email}")
-        if self.primary_interest:
-            interest_display = self.primary_interest.replace("_", " ").title()
-            parts.append(f"Interesse principal: {interest_display}")
-            if self.secondary_interests:
-                secondary = ", ".join(
-                    i.replace("_", " ").title() for i in self.secondary_interests
-                )
-                parts.append(f"Outros interesses: {secondary}")
-        else:
-            parts.append("Interesse: ainda nao identificado")
-        if self.specific_need:
-            parts.append(f"Necessidade: {self.specific_need}")
-        if self.urgency:
-            urgency_map = {
-                "low": "Baixa",
-                "medium": "Media",
-                "high": "Alta",
-                "urgent": "Urgente",
-            }
-            parts.append(f"Urgencia: {urgency_map[self.urgency]}")
-        if self.budget_indication:
-            parts.append(f"Orcamento: {self.budget_indication}")
-        if self.meeting_preferred_datetime_text:
-            mode = f" ({self.meeting_mode})" if self.meeting_mode else ""
-            parts.append(f"Agendamento: {self.meeting_preferred_datetime_text}{mode}")
-        status = "QUALIFICADO" if self.is_qualified else "Qualificando"
-        parts.append(f"Score: {self.qualification_score:.0f}/100 {status}")
-        alerts: list[str] = []
-        if self.requested_human:
-            alerts.append("Solicitou atendimento humano")
-        if self.showed_objection:
-            alerts.append("Levantou objecao")
-        if self.is_qualified and not self.was_notified_to_team:
-            alerts.append("Lead qualificado nao notificado")
-        if alerts:
-            parts.append(f"Atencao: {' | '.join(alerts)}")
+        _append_profile_lines(self, parts)
+        _append_interest_lines(self, parts)
+        _append_status_lines(self, parts)
         return "\n".join(parts)
 
     def to_firestore_dict(self) -> dict[str, Any]:
@@ -197,3 +132,78 @@ class ContactCard(BaseModel):
         if not _PHONE_REGEX.match(value):
             raise ValueError("Telefone deve ter 12-15 digitos")
         return value
+
+
+def _append_profile_lines(card: ContactCard, parts: list[str]) -> None:
+    if card.full_name and card.full_name.lower() != card.whatsapp_name.lower():
+        parts.append(f"Nome completo: {card.full_name}")
+    if card.company:
+        size_str = f" ({card.company_size})" if card.company_size else ""
+        parts.append(f"Empresa: {card.company}{size_str}")
+    _append_if_present(parts, "Cargo", card.role)
+    _append_if_not_none(parts, "Volume/dia", card.message_volume_per_day)
+    _append_if_not_none(parts, "Equipe atendimento", card.attendants_count)
+    _append_if_not_none(parts, "Especialistas", card.specialists_count)
+    if card.has_crm is not None:
+        parts.append(f"CRM: {'Sim' if card.has_crm else 'Nao'}")
+    if card.current_tools:
+        parts.append(f"Ferramentas atuais: {', '.join(card.current_tools)}")
+    _append_if_not_none(parts, "Usuarios", card.users_count)
+    _append_limited_list(parts, "Modulos", card.modules_needed, 6)
+    _append_limited_list(parts, "Funcionalidades", card.desired_features, 6)
+    _append_limited_list(parts, "Integracoes", card.integrations_needed, 6)
+    if card.needs_data_migration is not None:
+        parts.append(f"Migracao de dados: {'Sim' if card.needs_data_migration else 'Nao'}")
+    _append_limited_list(parts, "Legado", card.legacy_systems, 4)
+    _append_if_present(parts, "Email", card.email)
+
+
+def _append_interest_lines(card: ContactCard, parts: list[str]) -> None:
+    if card.primary_interest:
+        interest_display = card.primary_interest.replace("_", " ").title()
+        parts.append(f"Interesse principal: {interest_display}")
+        if card.secondary_interests:
+            secondary = ", ".join(i.replace("_", " ").title() for i in card.secondary_interests)
+            parts.append(f"Outros interesses: {secondary}")
+    else:
+        parts.append("Interesse: ainda nao identificado")
+    _append_if_present(parts, "Necessidade", card.specific_need)
+    if card.urgency:
+        parts.append(f"Urgencia: {_urgency_label(card.urgency)}")
+    _append_if_present(parts, "Orcamento", card.budget_indication)
+    if card.meeting_preferred_datetime_text:
+        mode = f" ({card.meeting_mode})" if card.meeting_mode else ""
+        parts.append(f"Agendamento: {card.meeting_preferred_datetime_text}{mode}")
+
+
+def _append_status_lines(card: ContactCard, parts: list[str]) -> None:
+    status = "QUALIFICADO" if card.is_qualified else "Qualificando"
+    parts.append(f"Score: {card.qualification_score:.0f}/100 {status}")
+    alerts: list[str] = []
+    if card.requested_human:
+        alerts.append("Solicitou atendimento humano")
+    if card.showed_objection:
+        alerts.append("Levantou objecao")
+    if card.is_qualified and not card.was_notified_to_team:
+        alerts.append("Lead qualificado nao notificado")
+    if alerts:
+        parts.append(f"Atencao: {' | '.join(alerts)}")
+
+
+def _append_if_not_none(parts: list[str], label: str, value: int | None) -> None:
+    if value is not None:
+        parts.append(f"{label}: {value}")
+
+
+def _append_if_present(parts: list[str], label: str, value: str | None) -> None:
+    if value:
+        parts.append(f"{label}: {value}")
+
+
+def _append_limited_list(parts: list[str], label: str, items: list[str], limit: int) -> None:
+    if items:
+        parts.append(f"{label}: {', '.join(items[:limit])}")
+
+
+def _urgency_label(value: Literal["low", "medium", "high", "urgent"]) -> str:
+    return {"low": "Baixa", "medium": "Media", "high": "Alta", "urgent": "Urgente"}[value]

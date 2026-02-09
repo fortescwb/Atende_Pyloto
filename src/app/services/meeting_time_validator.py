@@ -33,58 +33,19 @@ def extract_hour(text: str) -> int | None:
     if not normalized:
         return None
 
-    if "meio dia" in normalized or "meio-dia" in normalized:
-        return 12
-    if "meia noite" in normalized or "meia-noite" in normalized:
-        return 0
-
-    # 24h: 14:30
-    match = re.search(r"(?<!\d)(\d{1,2})\s*:\s*(\d{2})(?!\d)", normalized)
-    if match:
-        hour = _to_int(match.group(1))
-        if hour is None:
-            return None
-        return hour if 0 <= hour <= 23 else None
-
-    # 24h: 14h / 14hs / 14 horas
-    match = re.search(r"(?<!\d)(\d{1,2})\s*(h|hs|hora|horas)(?!\w)", normalized)
-    if match:
-        hour = _to_int(match.group(1))
-        if hour is None:
-            return None
-        return hour if 0 <= hour <= 23 else None
-
-    # am/pm: 2pm
-    match = re.search(r"(?<!\d)(\d{1,2})\s*(am|pm)(?!\w)", normalized)
-    if match:
-        hour = _to_int(match.group(1))
-        if hour is None:
-            return None
-        suffix = match.group(2)
-        if suffix == "pm" and 1 <= hour <= 11:
-            hour += 12
-        if suffix == "am" and hour == 12:
-            hour = 0
-        return hour if 0 <= hour <= 23 else None
-
-    # "6 da tarde" / "6 de noite"
-    match = re.search(r"(?<!\d)(\d{1,2})\s*(da|de)\s*(tarde|noite)(?!\w)", normalized)
-    if match:
-        hour = _to_int(match.group(1))
-        if hour is None:
-            return None
-        if 1 <= hour <= 11:
-            hour += 12
-        return hour if 0 <= hour <= 23 else None
-
-    # "6 da manha" / "6 de manha"
-    match = re.search(r"(?<!\d)(\d{1,2})\s*(da|de)\s*(manha)(?!\w)", normalized)
-    if match:
-        hour = _to_int(match.group(1))
-        if hour is None:
-            return None
-        return hour if 0 <= hour <= 23 else None
-
+    special = _extract_special_hour(normalized)
+    if special is not None:
+        return special
+    for extractor in (
+        _extract_colon_hour,
+        _extract_hora_hour,
+        _extract_am_pm_hour,
+        _extract_evening_hour,
+        _extract_morning_hour,
+    ):
+        hour = extractor(normalized)
+        if hour is not None:
+            return hour
     return None
 
 
@@ -103,3 +64,59 @@ def _to_int(value: str) -> int | None:
         return int(value)
     except ValueError:
         return None
+
+
+def _extract_special_hour(normalized: str) -> int | None:
+    if "meio dia" in normalized or "meio-dia" in normalized:
+        return 12
+    if "meia noite" in normalized or "meia-noite" in normalized:
+        return 0
+    return None
+
+
+def _extract_colon_hour(normalized: str) -> int | None:
+    match = re.search(r"(?<!\d)(\d{1,2})\s*:\s*(\d{2})(?!\d)", normalized)
+    return _safe_hour(_to_int(match.group(1))) if match else None
+
+
+def _extract_hora_hour(normalized: str) -> int | None:
+    match = re.search(r"(?<!\d)(\d{1,2})\s*(h|hs|hora|horas)(?!\w)", normalized)
+    return _safe_hour(_to_int(match.group(1))) if match else None
+
+
+def _extract_am_pm_hour(normalized: str) -> int | None:
+    match = re.search(r"(?<!\d)(\d{1,2})\s*(am|pm)(?!\w)", normalized)
+    if not match:
+        return None
+    hour = _to_int(match.group(1))
+    if hour is None:
+        return None
+    suffix = match.group(2)
+    if suffix == "pm" and 1 <= hour <= 11:
+        hour += 12
+    if suffix == "am" and hour == 12:
+        hour = 0
+    return _safe_hour(hour)
+
+
+def _extract_evening_hour(normalized: str) -> int | None:
+    match = re.search(r"(?<!\d)(\d{1,2})\s*(da|de)\s*(tarde|noite)(?!\w)", normalized)
+    if not match:
+        return None
+    hour = _to_int(match.group(1))
+    if hour is None:
+        return None
+    if 1 <= hour <= 11:
+        hour += 12
+    return _safe_hour(hour)
+
+
+def _extract_morning_hour(normalized: str) -> int | None:
+    match = re.search(r"(?<!\d)(\d{1,2})\s*(da|de)\s*(manha)(?!\w)", normalized)
+    return _safe_hour(_to_int(match.group(1))) if match else None
+
+
+def _safe_hour(hour: int | None) -> int | None:
+    if hour is None:
+        return None
+    return hour if 0 <= hour <= 23 else None

@@ -1,6 +1,6 @@
 """Normalizer Instagram — converte payloads para modelo interno.
 
-TODO: Implementar quando canal Instagram for ativado.
+Pendente: ativar quando canal Instagram for ativado.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 def normalize_messages(payload: dict[str, Any]) -> list[NormalizedMessage]:
     """Normaliza mensagens Instagram para modelo interno.
 
-    TODO: Implementar normalização específica Instagram.
+    Pendente: ativar normalização específica Instagram.
     """
     _ = payload  # Placeholder
     return []

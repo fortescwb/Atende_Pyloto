@@ -2,7 +2,7 @@
 
 Configurações do canal Instagram via Graph API (Meta).
 
-TODO: Implementar quando canal Instagram for desenvolvido.
+Pendente: ativar quando canal Instagram for desenvolvido.
 Referência: WhatsApp settings em config/settings/whatsapp.py
 """
 

@@ -2,7 +2,7 @@
 
 Configurações do canal Facebook Messenger via Graph API (Meta).
 
-TODO: Implementar quando canal Facebook for desenvolvido.
+Pendente: ativar quando canal Facebook for desenvolvido.
 Referência: WhatsApp settings em config/settings/whatsapp.py
 """
 

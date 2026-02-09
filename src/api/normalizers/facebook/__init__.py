@@ -5,7 +5,7 @@ Responsabilidades:
 - Normalizar para modelo interno NormalizedMessage
 - Suportar: message, postback, referral, optin, delivery, read
 
-TODO: Implementar quando canal Facebook for ativado.
+Pendente: ativar quando canal Facebook for ativado.
 """
 
 # from api.normalizers.meta_shared import is_valid_message_data, sanitize_message_payload

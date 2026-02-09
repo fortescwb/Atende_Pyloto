@@ -21,9 +21,9 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any
 
+from api.connectors.whatsapp.http_base import HttpClient, HttpClientConfig, HttpError
 from api.connectors.whatsapp.meta_errors import WhatsAppApiError, parse_meta_error
 from api.connectors.whatsapp.meta_logging import log_meta_error, log_success
-from app.infra.http import HttpClient, HttpClientConfig, HttpError
 
 if TYPE_CHECKING:
     import httpx

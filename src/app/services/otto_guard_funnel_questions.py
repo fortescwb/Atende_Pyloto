@@ -24,51 +24,7 @@ def pick_next_question(
     *,
     skip_fields: set[str],
 ) -> QuestionPick | None:
-    interest = effective_interest(contact_card)
-
-    base: list[tuple[str, str]] = []
-    if not contact_card.specific_need:
-        base.append(("specific_need", "Qual a principal necessidade que voce espera resolver?"))
-
-    if interest == "automacao_atendimento":
-        base.extend(
-            [
-                ("message_volume_per_day", "Quantas msgs/atendimentos por dia no WhatsApp?"),
-                ("attendants_count", "Quantas pessoas atendem essas mensagens hoje?"),
-                ("current_tools", "Como voces organizam os atendimentos hoje? (ex: planilha/CRM)"),
-                ("specialists_count", "Quantos especialistas receberiam os atendimentos?"),
-                ("has_crm", "Voce ja usa algum CRM ou ferramenta para organizar os atendimentos?"),
-            ]
-        )
-    elif interest == "sob_medida":
-        base.extend(
-            [
-                ("desired_features", "Quais funcionalidades sao essenciais nesse sistema?"),
-                ("integrations_needed", "Precisa integrar com algo? (ERP, WhatsApp, API)"),
-                ("needs_data_migration", "Voce precisa migrar dados de planilha/sistema atual?"),
-                ("users_count", "Quantas pessoas vao usar o sistema no dia a dia?"),
-            ]
-        )
-    elif interest == "saas":
-        base.extend(
-            [
-                ("modules_needed", "Quais modulos voce precisa? (ex: CRM, agenda, financeiro)"),
-                ("users_count", "Quantas pessoas vao usar o sistema?"),
-                ("current_tools", "Como voces fazem isso hoje? (planilha, WhatsApp, sistema)"),
-            ]
-        )
-    else:
-        base.extend(
-            [
-                ("urgency", "Qual a urgencia? (esta semana, este mes, sem pressa)"),
-                (
-                    "budget_indication",
-                    "Voce ja tem uma faixa de investimento (mensal/projeto), mesmo aproximada?",
-                ),
-            ]
-        )
-
-    for key, text in base:
+    for key, text in _build_question_candidates(contact_card):
         if key in skip_fields:
             continue
         if _already_has_value(contact_card, key):
@@ -139,3 +95,49 @@ def _already_has_value(contact_card: ContactCard, key: str) -> bool:
     if key == "specific_need":
         return bool(contact_card.specific_need)
     return False
+
+
+def _build_question_candidates(contact_card: ContactCard) -> list[tuple[str, str]]:
+    base: list[tuple[str, str]] = []
+    if not contact_card.specific_need:
+        base.append(("specific_need", "Qual a principal necessidade que voce espera resolver?"))
+    interest = effective_interest(contact_card)
+    if interest == "automacao_atendimento":
+        base.extend(_AUTOMACAO_QUESTIONS)
+    elif interest == "sob_medida":
+        base.extend(_SOB_MEDIDA_QUESTIONS)
+    elif interest == "saas":
+        base.extend(_SAAS_QUESTIONS)
+    else:
+        base.extend(_GENERIC_QUESTIONS)
+    return base
+
+
+_AUTOMACAO_QUESTIONS = [
+    ("message_volume_per_day", "Quantas msgs/atendimentos por dia no WhatsApp?"),
+    ("attendants_count", "Quantas pessoas atendem essas mensagens hoje?"),
+    ("current_tools", "Como voces organizam os atendimentos hoje? (ex: planilha/CRM)"),
+    ("specialists_count", "Quantos especialistas receberiam os atendimentos?"),
+    ("has_crm", "Voce ja usa algum CRM ou ferramenta para organizar os atendimentos?"),
+]
+
+_SOB_MEDIDA_QUESTIONS = [
+    ("desired_features", "Quais funcionalidades sao essenciais nesse sistema?"),
+    ("integrations_needed", "Precisa integrar com algo? (ERP, WhatsApp, API)"),
+    ("needs_data_migration", "Voce precisa migrar dados de planilha/sistema atual?"),
+    ("users_count", "Quantas pessoas vao usar o sistema no dia a dia?"),
+]
+
+_SAAS_QUESTIONS = [
+    ("modules_needed", "Quais modulos voce precisa? (ex: CRM, agenda, financeiro)"),
+    ("users_count", "Quantas pessoas vao usar o sistema?"),
+    ("current_tools", "Como voces fazem isso hoje? (planilha, WhatsApp, sistema)"),
+]
+
+_GENERIC_QUESTIONS = [
+    ("urgency", "Qual a urgencia? (esta semana, este mes, sem pressa)"),
+    (
+        "budget_indication",
+        "Voce ja tem uma faixa de investimento (mensal/projeto), mesmo aproximada?",
+    ),
+]

@@ -5,7 +5,7 @@ Responsabilidades:
 - HTTP client para Instagram Graph API
 - Modelos e erros específicos
 
-TODO: Implementar quando canal Instagram for ativado.
+Pendente: ativar quando canal Instagram for ativado.
 """
 
 __all__: list[str] = []

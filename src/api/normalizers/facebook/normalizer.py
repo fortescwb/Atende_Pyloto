@@ -1,6 +1,6 @@
 """Normalizer Facebook — converte payloads para modelo interno.
 
-TODO: Implementar quando canal Facebook for ativado.
+Pendente: ativar quando canal Facebook for ativado.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 def normalize_messages(payload: dict[str, Any]) -> list[NormalizedMessage]:
     """Normaliza mensagens Facebook para modelo interno.
 
-    TODO: Implementar normalização específica Facebook.
+    Pendente: ativar normalização específica Facebook.
     """
     _ = payload  # Placeholder
     return []

@@ -13,7 +13,7 @@ Tipos de evento:
 - echo
 - account_linking
 
-TODO: Implementar quando canal Facebook for ativado.
+Pendente: ativar quando canal Facebook for ativado.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from typing import Any
 def extract_payload_messages(payload: dict[str, Any]) -> list[dict[str, Any]]:
     """Extrai mensagens do payload Facebook para estrutura intermediária.
 
-    TODO: Implementar extração específica Facebook.
+    Pendente: ativar extração específica Facebook.
     """
     _ = payload  # Placeholder
     return []

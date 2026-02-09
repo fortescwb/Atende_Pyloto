@@ -5,7 +5,7 @@ Responsabilidades:
 - Normalizar para modelo interno NormalizedMessage
 - Suportar: DM (text, attachments), story_reply, story_mention, postback
 
-TODO: Implementar quando canal Instagram for ativado.
+Pendente: ativar quando canal Instagram for ativado.
 """
 
 # from api.normalizers.meta_shared import is_valid_message_data, sanitize_message_payload

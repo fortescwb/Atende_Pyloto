@@ -102,18 +102,13 @@ class MediaUploader:
             return existing
 
         gcs_uri = await self._upload_to_gcs(content, mime_type, user_key, sha256_hash)
-        media_id = None
-        if upload_to_whatsapp and self._whatsapp_client:
-            media_id = await self._upload_to_whatsapp(content, mime_type)
-
-        result = MediaUploadResult(
+        media_id = await self._maybe_upload_to_whatsapp(content, mime_type, upload_to_whatsapp)
+        result = self._build_upload_result(
             media_id=media_id,
             gcs_uri=gcs_uri,
             sha256_hash=sha256_hash,
             size_bytes=len(content),
             mime_type=mime_type,
-            was_deduplicated=False,
-            uploaded_at=datetime.now(tz=UTC),
         )
 
         self._metadata_store.save(result)
@@ -124,6 +119,35 @@ class MediaUploader:
         )
 
         return result
+
+    async def _maybe_upload_to_whatsapp(
+        self,
+        content: bytes,
+        mime_type: str,
+        should_upload: bool,
+    ) -> str | None:
+        if should_upload and self._whatsapp_client:
+            return await self._upload_to_whatsapp(content, mime_type)
+        return None
+
+    @staticmethod
+    def _build_upload_result(
+        *,
+        media_id: str | None,
+        gcs_uri: str,
+        sha256_hash: str,
+        size_bytes: int,
+        mime_type: str,
+    ) -> MediaUploadResult:
+        return MediaUploadResult(
+            media_id=media_id,
+            gcs_uri=gcs_uri,
+            sha256_hash=sha256_hash,
+            size_bytes=size_bytes,
+            mime_type=mime_type,
+            was_deduplicated=False,
+            uploaded_at=datetime.now(tz=UTC),
+        )
 
     async def _upload_to_gcs(
         self,

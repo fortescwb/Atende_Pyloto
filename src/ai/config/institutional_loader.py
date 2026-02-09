@@ -91,57 +91,14 @@ def get_institutional_prompt_section() -> str:
     para inclusão nos prompts dos agentes LLM.
     """
     context = load_institutional_context()
-
-    sections = []
-
-    # Empresa
-    empresa = context.get("empresa", {})
-    if empresa:
-        sections.append(f"**Empresa:** {empresa.get('nome', 'Pyloto')}")
-        if desc := empresa.get("descricao"):
-            sections.append(f"  {desc}")
-
-    # Contato
-    contato = context.get("contato", {})
-    if contato:
-        contato_lines = ["**Contato:**"]
-        if tel := contato.get("telefone"):
-            contato_lines.append(f"  - Telefone: {tel}")
-        if email := contato.get("email"):
-            contato_lines.append(f"  - Email: {email}")
-        if site := contato.get("site"):
-            contato_lines.append(f"  - Site: {site}")
-        sections.append("\n".join(contato_lines))
-
-    # Endereço
-    endereco = context.get("endereco", {})
-    if endereco and endereco.get("rua"):
-        end_str = (
-            f"{endereco.get('rua', '')}, {endereco.get('numero', '')}"
-            f" - {endereco.get('bairro', '')}, {endereco.get('cidade', '')}"
-            f"/{endereco.get('estado', '')}"
-        )
-        sections.append(f"**Endereço:** {end_str}")
-
-    # Horário
-    horario = context.get("horario_atendimento", {})
-    if horario:
-        dias_uteis = horario.get("dias_uteis", {})
-        if dias_uteis:
-            sections.append(
-                f"**Horário:** Seg-Sex {dias_uteis.get('inicio', '08:00')}-"
-                f"{dias_uteis.get('fim', '18:00')}"
-            )
-
-    # Vertentes (resumo)
-    vertentes = context.get("vertentes", [])
-    if vertentes:
-        vert_lines = ["**Serviços:**"]
-        for v in vertentes:
-            vert_lines.append(f"  - {v.get('nome', '')}: {v.get('descricao', '')}")
-        sections.append("\n".join(vert_lines))
-
-    return "\n\n".join(sections)
+    sections = [
+        _format_empresa_section(context.get("empresa", {})),
+        _format_contato_section(context.get("contato", {})),
+        _format_endereco_section(context.get("endereco", {})),
+        _format_horario_section(context.get("horario_atendimento", {})),
+        _format_servicos_section(context.get("vertentes", [])),
+    ]
+    return "\n\n".join(section for section in sections if section)
 
 
 def get_service_info(service_id: str) -> dict[str, Any] | None:
@@ -198,3 +155,57 @@ def clear_cache() -> None:
     Útil para testes ou quando o arquivo YAML for atualizado.
     """
     load_institutional_context.cache_clear()
+
+
+def _format_empresa_section(empresa: dict[str, Any]) -> str:
+    if not empresa:
+        return ""
+    lines = [f"**Empresa:** {empresa.get('nome', 'Pyloto')}"]
+    if desc := empresa.get("descricao"):
+        lines.append(f"  {desc}")
+    return "\n".join(lines)
+
+
+def _format_contato_section(contato: dict[str, Any]) -> str:
+    if not contato:
+        return ""
+    lines = ["**Contato:**"]
+    if tel := contato.get("telefone"):
+        lines.append(f"  - Telefone: {tel}")
+    if email := contato.get("email"):
+        lines.append(f"  - Email: {email}")
+    if site := contato.get("site"):
+        lines.append(f"  - Site: {site}")
+    return "\n".join(lines)
+
+
+def _format_endereco_section(endereco: dict[str, Any]) -> str:
+    if not (endereco and endereco.get("rua")):
+        return ""
+    end_str = (
+        f"{endereco.get('rua', '')}, {endereco.get('numero', '')}"
+        f" - {endereco.get('bairro', '')}, {endereco.get('cidade', '')}"
+        f"/{endereco.get('estado', '')}"
+    )
+    return f"**Endereço:** {end_str}"
+
+
+def _format_horario_section(horario: dict[str, Any]) -> str:
+    if not horario:
+        return ""
+    dias_uteis = horario.get("dias_uteis", {})
+    if not dias_uteis:
+        return ""
+    return (
+        f"**Horário:** Seg-Sex {dias_uteis.get('inicio', '08:00')}-"
+        f"{dias_uteis.get('fim', '18:00')}"
+    )
+
+
+def _format_servicos_section(vertentes: list[dict[str, Any]]) -> str:
+    if not vertentes:
+        return ""
+    lines = ["**Serviços:**"]
+    for vertente in vertentes:
+        lines.append(f"  - {vertente.get('nome', '')}: {vertente.get('descricao', '')}")
+    return "\n".join(lines)

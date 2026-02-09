@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from app.bootstrap.whatsapp_adapters import (
@@ -12,6 +13,62 @@ from app.bootstrap.whatsapp_adapters import (
 )
 from app.coordinators.whatsapp.flows.sender import create_flow_sender
 from app.use_cases.whatsapp.send_outbound_message import SendOutboundMessageUseCase
+
+
+@dataclass(frozen=True, slots=True)
+class _InfraCryptoFunctions:
+    load_private_key: Any
+    decrypt_aes_key: Any
+    decrypt_flow_data: Any
+    encrypt_flow_response: Any
+    validate_flow_signature: Any
+
+
+class _InfraCryptoAdapter:
+    """Adapter leve para FlowCryptoProtocol usando funções infra."""
+
+    def __init__(self, funcs: _InfraCryptoFunctions) -> None:
+        self._funcs = funcs
+
+    def load_private_key(self, private_key_pem: str, passphrase: str | None = None) -> Any:
+        return self._funcs.load_private_key(private_key_pem, passphrase)
+
+    def decrypt_aes_key(self, private_key: Any, encrypted_aes_key: str) -> bytes:
+        return self._funcs.decrypt_aes_key(private_key, encrypted_aes_key)
+
+    def decrypt_flow_data(
+        self,
+        aes_key: bytes,
+        encrypted_flow_data: str,
+        initial_vector: str,
+    ) -> dict[str, Any]:
+        return self._funcs.decrypt_flow_data(aes_key, encrypted_flow_data, initial_vector)
+
+    def encrypt_flow_response(
+        self,
+        response_data: dict[str, Any],
+        aes_key: bytes | None = None,
+    ) -> dict[str, str]:
+        return self._funcs.encrypt_flow_response(response_data, aes_key)
+
+    def validate_flow_signature(self, payload: bytes, signature: str, secret: bytes) -> bool:
+        return self._funcs.validate_flow_signature(payload, signature, secret)
+
+
+def _load_infra_crypto_functions() -> _InfraCryptoFunctions:
+    from app.infra.crypto import decrypt_aes_key as infra_decrypt_aes_key
+    from app.infra.crypto import decrypt_flow_data as infra_decrypt_flow_data
+    from app.infra.crypto import encrypt_flow_response as infra_encrypt_flow_response
+    from app.infra.crypto import load_private_key as infra_load_private_key
+    from app.infra.crypto import validate_flow_signature as infra_validate_flow_signature
+
+    return _InfraCryptoFunctions(
+        load_private_key=infra_load_private_key,
+        decrypt_aes_key=infra_decrypt_aes_key,
+        decrypt_flow_data=infra_decrypt_flow_data,
+        encrypt_flow_response=infra_encrypt_flow_response,
+        validate_flow_signature=infra_validate_flow_signature,
+    )
 
 
 def create_whatsapp_outbound_use_case() -> SendOutboundMessageUseCase:
@@ -47,49 +104,7 @@ def create_flow_sender_factory(
     A implementação concreta fica dentro de app.infra e é importada localmente
     para respeitar boundaries (wiring no bootstrap).
     """
-    from app.infra.crypto import (
-        decrypt_aes_key as infra_decrypt_aes_key,
-    )
-    from app.infra.crypto import (
-        decrypt_flow_data as infra_decrypt_flow_data,
-    )
-    from app.infra.crypto import (
-        encrypt_flow_response as infra_encrypt_flow_response,
-    )
-    from app.infra.crypto import (
-        load_private_key as infra_load_private_key,
-    )
-    from app.infra.crypto import (
-        validate_flow_signature as infra_validate_flow_signature,
-    )
-
-    class InfraCryptoAdapter:
-        # Adapter leve que implementa FlowCryptoProtocol usando funções infra
-        def load_private_key(self, private_key_pem: str, passphrase: str | None = None) -> Any:
-            return infra_load_private_key(private_key_pem, passphrase)
-
-        def decrypt_aes_key(self, private_key: Any, encrypted_aes_key: str) -> bytes:
-            return infra_decrypt_aes_key(private_key, encrypted_aes_key)
-
-        def decrypt_flow_data(
-            self,
-            aes_key: bytes,
-            encrypted_flow_data: str,
-            initial_vector: str,
-        ) -> dict[str, Any]:
-            return infra_decrypt_flow_data(aes_key, encrypted_flow_data, initial_vector)
-
-        def encrypt_flow_response(
-            self,
-            response_data: dict[str, Any],
-            aes_key: bytes | None = None,
-        ) -> dict[str, str]:
-            return infra_encrypt_flow_response(response_data, aes_key)
-
-        def validate_flow_signature(self, payload: bytes, signature: str, secret: bytes) -> bool:
-            return infra_validate_flow_signature(payload, signature, secret)
-
-    crypto = InfraCryptoAdapter()
+    crypto = _InfraCryptoAdapter(_load_infra_crypto_functions())
     return lambda: create_flow_sender(
         crypto=crypto,
         private_key_pem=private_key_pem,

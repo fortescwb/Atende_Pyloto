@@ -67,24 +67,8 @@ def build_full_prompt(
     extra_context_chunks: list[str] | None = None,
     extra_loaded_contexts: list[str] | None = None,
 ) -> PromptComponents:
-    """Monta (system_prompt, user_prompt, loaded_contexts) no padrão definitivo.
-
-    Args:
-        contact_card_summary: Resumo do ContactCard (string sanitizada).
-        conversation_history: Histórico curto (string sanitizada).
-        session_state: Estado atual.
-        valid_transitions: Lista de transições válidas.
-        user_message: Mensagem atual do usuário.
-        tenant_intent: Vertente detectada (opcional).
-        intent_confidence: Confiança na vertente detectada (0.0-1.0).
-        loaded_contexts: Contextos persistidos de turnos anteriores.
-        extra_context_paths: Caminhos adicionais de contexto para injeção.
-        extra_context_chunks: Strings adicionais de contexto para injeção.
-        extra_loaded_contexts: Caminhos adicionais a persistir na sessão.
-    """
+    """Monta prompt final e lista de contextos carregados para persistência."""
     contexts = build_contexts(tenant_intent)
-    system_prompt = contexts["system_context"]
-
     dynamic_result = resolve_dynamic_contexts(
         tenant_intent=tenant_intent,
         user_message=user_message,
@@ -92,15 +76,11 @@ def build_full_prompt(
         loaded_contexts=loaded_contexts,
         session_state=session_state,
     )
-    tenant_context = contexts["tenant_context"]
-    extra_chunks: list[str] = []
-    for path in extra_context_paths or []:
-        extra_chunks.append(load_context_for_prompt(path))
-    extra_chunks.extend(extra_context_chunks or [])
-    tenant_context = _merge_context_chunks(
-        [tenant_context] if tenant_context else [],
-        dynamic_result.contexts_for_prompt,
-        extra_chunks,
+    tenant_context = _build_tenant_context(
+        base_context=contexts["tenant_context"],
+        dynamic_chunks=dynamic_result.contexts_for_prompt,
+        extra_context_paths=extra_context_paths,
+        extra_context_chunks=extra_context_chunks,
     )
 
     user_prompt = format_otto_prompt(
@@ -116,7 +96,7 @@ def build_full_prompt(
     merged_loaded = sorted(
         set((dynamic_result.loaded_contexts or []) + (extra_loaded_contexts or []))
     )
-    return PromptComponents(system_prompt, user_prompt, merged_loaded)
+    return PromptComponents(contexts["system_context"], user_prompt, merged_loaded)
 
 
 def _merge_context_chunks(*chunks: list[str]) -> str:
@@ -130,3 +110,19 @@ def _merge_context_chunks(*chunks: list[str]) -> str:
             seen.add(text)
             merged.append(text)
     return "\n\n".join(merged).strip()
+
+
+def _build_tenant_context(
+    *,
+    base_context: str,
+    dynamic_chunks: list[str],
+    extra_context_paths: list[str] | None,
+    extra_context_chunks: list[str] | None,
+) -> str:
+    loaded_paths = [load_context_for_prompt(path) for path in (extra_context_paths or [])]
+    return _merge_context_chunks(
+        [base_context] if base_context else [],
+        dynamic_chunks,
+        loaded_paths,
+        extra_context_chunks or [],
+    )

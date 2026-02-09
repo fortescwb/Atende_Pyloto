@@ -46,52 +46,16 @@ def build_outbound_payload(
     msg_type = _resolve_message_type(decision)
     text = _resolve_text(decision)
 
-    # Reaction requer formato especial
-    if msg_type == "reaction":
-        if not reply_to_message_id:
-            logger.warning(
-                "reaction_without_message_id",
-                extra={"recipient": recipient[:6] + "***"},
-            )
-            # Fallback: enviar texto em vez de reaction
-            msg_type = "text"
-        else:
-            emoji = text or "👍"
-            return {
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": recipient,
-                "type": "reaction",
-                "reaction": {
-                    "message_id": reply_to_message_id,
-                    "emoji": emoji,
-                },
-            }
-
-    payload: dict[str, str | dict[str, str]] = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": recipient,
-        "type": msg_type,
-    }
-
+    reaction_payload = _build_reaction_payload(msg_type, text, recipient, reply_to_message_id)
+    if reaction_payload is not None:
+        return reaction_payload
+    payload = _base_payload(recipient, msg_type)
     if msg_type == "text":
         payload["text"] = {"body": text}
     elif msg_type in ("interactive_button", "interactive_list"):
-        payload["type"] = "interactive"
-        payload["interactive"] = {
-            "type": "button" if "button" in msg_type else "list",
-            "body": {"text": text},
-        }
+        payload.update(_build_interactive_payload(msg_type, text))
     else:
-        # Fallback para tipos não suportados: enviar como texto
-        logger.warning(
-            "unsupported_message_type_fallback",
-            extra={"original_type": msg_type, "fallback": "text"},
-        )
-        payload["type"] = "text"
-        payload["text"] = {"body": decision.final_text}
-
+        payload.update(_fallback_text_payload(msg_type, text))
     return payload
 
 
@@ -137,6 +101,56 @@ def _resolve_text(decision: OutboundDecisionProtocol) -> str:
         or getattr(decision, "final_text", None)
         or ""
     )
+
+
+def _build_reaction_payload(
+    msg_type: str,
+    text: str,
+    recipient: str,
+    reply_to_message_id: str | None,
+) -> dict[str, str | dict[str, str]] | None:
+    if msg_type != "reaction":
+        return None
+    if not reply_to_message_id:
+        logger.warning(
+            "reaction_without_message_id",
+            extra={"recipient": recipient[:6] + "***"},
+        )
+        return None
+    return {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": recipient,
+        "type": "reaction",
+        "reaction": {"message_id": reply_to_message_id, "emoji": text or "👍"},
+    }
+
+
+def _base_payload(recipient: str, msg_type: str) -> dict[str, str | dict[str, str]]:
+    return {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": recipient,
+        "type": "text" if msg_type == "reaction" else msg_type,
+    }
+
+
+def _build_interactive_payload(msg_type: str, text: str) -> dict[str, str | dict[str, str]]:
+    return {
+        "type": "interactive",
+        "interactive": {
+            "type": "button" if "button" in msg_type else "list",
+            "body": {"text": text},
+        },
+    }
+
+
+def _fallback_text_payload(msg_type: str, fallback_text: str | None) -> dict[str, str | dict[str, str]]:
+    logger.warning(
+        "unsupported_message_type_fallback",
+        extra={"original_type": msg_type, "fallback": "text"},
+    )
+    return {"type": "text", "text": {"body": fallback_text or ""}}
 
 
 def history_as_strings(session: Any) -> list[str]:

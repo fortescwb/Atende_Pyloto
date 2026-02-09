@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-from app.infra.ai.whisper_client import WhisperClient
-from app.infra.whatsapp.media_downloader import WhatsAppMediaDownloader
 from app.protocols.transcription_service import (
     TranscriptionResult,
     TranscriptionServiceProtocol,
 )
+
+if TYPE_CHECKING:
+    from app.protocols.transcription_dependencies import (
+        MediaDownloaderProtocol,
+        WhisperClientProtocol,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +27,11 @@ class TranscriptionAgent(TranscriptionServiceProtocol):
     def __init__(
         self,
         *,
-        downloader: WhatsAppMediaDownloader | None = None,
-        whisper_client: WhisperClient | None = None,
+        downloader: MediaDownloaderProtocol | None = None,
+        whisper_client: WhisperClientProtocol | None = None,
     ) -> None:
-        self._downloader = downloader or WhatsAppMediaDownloader()
-        self._whisper = whisper_client or WhisperClient()
+        self._downloader = downloader
+        self._whisper = whisper_client
 
     async def transcribe_whatsapp_audio(
         self,
@@ -39,6 +44,8 @@ class TranscriptionAgent(TranscriptionServiceProtocol):
         """Transcreve áudio de WhatsApp (media_id preferencial)."""
         if not media_id and not media_url:
             return _fallback("missing_media_reference")
+        if self._downloader is None or self._whisper is None:
+            return _fallback("service_unavailable")
 
         download_result = await self._downloader.download(
             media_id=media_id,
