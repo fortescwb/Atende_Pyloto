@@ -1,0 +1,103 @@
+version: "1.0.0"
+updated_at: "2026-02-11"
+
+metadata:
+  fixture_type: "mock_llm_responses"
+  agent: "otto_agent"
+  description: "Fixtures para testes determinísticos sem chamadas reais ao LLM"
+
+# Cenário 1: Saudação inicial (TRIAGE)
+triage_greeting:
+  user_message: "Oi, tudo bem?"
+  current_state: "INITIAL"
+  response:
+    next_state: "TRIAGE"
+    response_text: "Olá! Tudo bem sim, e você? Sou o Otto, assistente virtual da Pyloto. Como posso te ajudar hoje?"
+    message_type: "text"
+    confidence: 0.95
+    requires_human: false
+    reasoning_debug: "Saudação inicial, movendo para TRIAGE"
+
+# Cenário 2: Interesse em automação (COLLECTING_INFO)
+collecting_info_automation:
+  user_message: "Queria saber mais sobre automação de atendimento"
+  current_state: "TRIAGE"
+  response:
+    next_state: "COLLECTING_INFO"
+    response_text: "Ótimo! Automação de atendimento é uma das nossas especialidades. Para te ajudar melhor, me conta: qual canal você usa principalmente para atendimento (WhatsApp, Instagram, Facebook)?"
+    message_type: "text"
+    confidence: 0.88
+    requires_human: false
+    reasoning_debug: "Interesse identificado, coletando informações"
+
+# Cenário 3: Objeção de preço (GENERATING_RESPONSE)
+generating_response_price_objection:
+  user_message: "Achei meio caro"
+  current_state: "COLLECTING_INFO"
+  response:
+    next_state: "GENERATING_RESPONSE"
+    response_text: "Entendo sua preocupação! Mas pensa comigo: o custo de 1 atendente é em média R$ 2.500/mês. Com automação, você atende 24/7 por uma fração disso e ainda melhora o tempo de resposta. O payback geralmente é de 2-4 meses."
+    message_type: "text"
+    confidence: 0.82
+    requires_human: false
+    reasoning_debug: "Objeção de preço tratada com ROI"
+
+# Cenário 4: Pedido explícito de humano (HANDOFF_HUMAN)
+handoff_explicit_request:
+  user_message: "Quero falar com um humano"
+  current_state: "TRIAGE"
+  response:
+    next_state: "HANDOFF_HUMAN"
+    response_text: "Claro! Vou conectar você com nossa equipe para continuar o atendimento. Aguarde um momento."
+    message_type: "text"
+    confidence: 0.99
+    requires_human: true
+    reasoning_debug: "Solicitação explícita de handoff"
+
+# Cenário 5: Baixa confiança (HANDOFF_HUMAN)
+handoff_low_confidence:
+  user_message: "xpto abc def ghi"
+  current_state: "TRIAGE"
+  response:
+    next_state: "HANDOFF_HUMAN"
+    response_text: "Vou conectar você com nossa equipe para continuar o atendimento. Aguarde um momento."
+    message_type: "text"
+    confidence: 0.35
+    requires_human: true
+    reasoning_debug: "Baixa confiança na compreensão"
+
+# Cenário 6: FAQ sobre prazo (SELF_SERVE_INFO)
+self_serve_prazo:
+  user_message: "Qual o prazo de implementação?"
+  current_state: "COLLECTING_INFO"
+  response:
+    next_state: "SELF_SERVE_INFO"
+    response_text: "O prazo de implementação varia: para automação padrão (regras) é de 1-2 semanas. Para automação com IA é de 3-5 semanas (inclui treinamento e homologação)."
+    message_type: "text"
+    confidence: 0.91
+    requires_human: false
+    reasoning_debug: "Resposta self-service sobre prazo"
+
+# Cenário 7: Múltiplas opções (interactive_list)
+interactive_list_services:
+  user_message: "Quais serviços vocês oferecem?"
+  current_state: "TRIAGE"
+  response:
+    next_state: "GENERATING_RESPONSE"
+    response_text: "A Pyloto oferece 4 serviços principais. Qual te interessa mais?"
+    message_type: "interactive_list"
+    confidence: 0.93
+    requires_human: false
+    reasoning_debug: "Lista de serviços disponíveis"
+
+# Cenário 8: Confirmação simples (interactive_button)
+interactive_button_confirm:
+  user_message: "Pode me enviar mais informações?"
+  current_state: "COLLECTING_INFO"
+  response:
+    next_state: "GENERATING_RESPONSE"
+    response_text: "Claro! Quer receber por email ou WhatsApp?"
+    message_type: "interactive_button"
+    confidence: 0.89
+    requires_human: false
+    reasoning_debug: "Confirmação com botões"
