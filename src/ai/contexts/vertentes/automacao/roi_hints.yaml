@@ -1,0 +1,33 @@
+version: "1.0.0"
+updated_at: "2026-02-11"
+
+metadata:
+  context_type: "vertente_roi_hints"
+  vertical_id: "automacao_atendimento"
+  token_budget: 600
+  priority: "medium"
+  manual_injection: true
+  persist: false
+  min_confidence: 0.5
+  injection_trigger:
+    any_keywords: ["roi", "retorno", "payback", "investimento", "custo", "orçamento", "preço", "valor", "mensalidade", "quanto custa", "quanto sai", "economia"]
+
+prompt_injection: |
+  ROI - Automação de Atendimento (use com cautela, apenas se cliente perguntar):
+
+  Cenário típico (empresa com volume médio):
+  - Custo atual: 2-3 atendentes × R$ 2.500/mês = R$ 5k-7.5k/mês
+  - Custo Pyloto: setup R$ 1k-5k (padrão/IA) + R$ 200-500/mês
+  - Redução de carga: 70-80% mensagens automatizadas
+  - Payback: 2-4 meses
+  - Ganho adicional: atendimento 24/7, tempo de resposta <30s
+
+  Porte pequeno (MEI/micro):
+  - Foco: liberar tempo do dono/equipe pequena
+  - Benefício: atender fora do horário comercial, escalar sem contratar
+
+  Porte médio/grande (>500 msgs/dia):
+  - Foco: reduzir custo operacional e melhorar SLA
+  - Benefício: analytics + integrações + fallback controlado
+
+  Se cliente mencionar números específicos ou porte, adapte o cálculo mantendo conservadorismo.

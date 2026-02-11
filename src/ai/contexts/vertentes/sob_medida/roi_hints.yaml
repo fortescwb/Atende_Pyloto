@@ -1,0 +1,33 @@
+version: "1.0.0"
+updated_at: "2026-02-11"
+
+metadata:
+  context_type: "vertente_roi_hints"
+  vertical_id: "sob_medida"
+  token_budget: 600
+  priority: "medium"
+  manual_injection: true
+  persist: false
+  min_confidence: 0.5
+  injection_trigger:
+    any_keywords: ["roi", "retorno", "payback", "investimento", "custo", "orçamento", "preço", "valor", "quanto custa", "quanto sai", "projeto"]
+
+prompt_injection: |
+  ROI - Sistemas Sob Medida (use com cautela, apenas se cliente perguntar):
+
+  Cenário típico (processo manual ou sistema legado):
+  - Custo atual: retrabalho + erros + tempo perdido (estimar R$ 5k-20k/mês em operação)
+  - Investimento Pyloto: a partir de R$ 30k (varia por escopo) + suporte contínuo
+  - Ganho principal: automação de processo crítico, integrações, redução de erros
+  - Payback: 6-18 meses (depende de complexidade e economia operacional)
+
+  Porte médio (processo específico):
+  - Foco: substituir planilhas ou processos manuais complexos
+  - Benefício: time completo (dev/QA/DevOps), entregas incrementais
+
+  Porte grande (integrações legadas):
+  - Foco: conectar sistemas antigos com novos canais/APIs
+  - Benefício: suporte pós-entrega, manutenção evolutiva
+
+  Importante: ROI depende muito de escopo. Sempre sugerir diagnóstico antes de estimar valor.
+  Se cliente mencionar processo específico, foque em ganho operacional e redução de risco.

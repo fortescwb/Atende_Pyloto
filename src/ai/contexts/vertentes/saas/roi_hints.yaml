@@ -1,0 +1,32 @@
+version: "1.0.0"
+updated_at: "2026-02-11"
+
+metadata:
+  context_type: "vertente_roi_hints"
+  vertical_id: "saas"
+  token_budget: 600
+  priority: "medium"
+  manual_injection: true
+  persist: false
+  min_confidence: 0.5
+  injection_trigger:
+    any_keywords: ["roi", "retorno", "payback", "investimento", "custo", "orçamento", "preço", "valor", "mensalidade", "quanto custa", "quanto sai", "economia"]
+
+prompt_injection: |
+  ROI - SaaS Pyloto (use com cautela, apenas se cliente perguntar):
+
+  Cenário típico (PME com 5-10 usuários):
+  - Custo atual: planilhas + apps separados (R$ 100-300/mês) + tempo perdido em retrabalho
+  - Custo Pyloto: R$ 29/usuário/mês = R$ 145-290/mês (setup variável)
+  - Ganho principal: centralização, visibilidade e redução de erros
+  - Payback: 3-6 meses (considerando ganho de produtividade)
+
+  Porte pequeno (2-5 usuários):
+  - Foco: organizar operação e ter controle financeiro/agenda
+  - Benefício: implantação rápida (1-2 semanas), suporte humanizado
+
+  Porte médio (10-30 usuários):
+  - Foco: escalar operação sem perder controle
+  - Benefício: integrações essenciais, relatórios e customizações leves
+
+  Se cliente mencionar módulos específicos (CRM, financeiro, estoque), destaque valor modular.

@@ -1,0 +1,35 @@
+version: "1.0.0"
+updated_at: "2026-02-11"
+
+metadata:
+  context_type: "vertente_roi_hints"
+  vertical_id: "intermediacao_entregas"
+  token_budget: 600
+  priority: "medium"
+  manual_injection: true
+  persist: false
+  min_confidence: 0.5
+  injection_trigger:
+    any_keywords: ["roi", "retorno", "custo", "orçamento", "preço", "valor", "quanto custa", "quanto sai", "taxa"]
+
+prompt_injection: |
+  ROI - Intermediação de Entregas (use com cautela, apenas se cliente perguntar):
+
+  Modelo de negócio:
+  - Pyloto conecta solicitantes (PF/PJ) com prestadores de serviço cadastrados
+  - Cobrança: comissão por serviço intermediado (valores variam por tipo de serviço)
+  - Solicitações: exclusivamente via WhatsApp +554291619261
+
+  Para solicitantes (quem pede serviço):
+  - Benefício: acesso rápido a prestadores qualificados, sem busca manual
+  - Custo: incluso na taxa do serviço (transparente)
+
+  Para prestadores (quem oferece serviço):
+  - Benefício: fluxo constante de demandas, pagamento garantido via plataforma
+  - Custo: comissão por serviço concluído (valores sob consulta)
+
+  ROI para solicitante: economia de tempo + qualidade garantida
+  ROI para prestador: volume de demandas + redução de inadimplência
+
+  Importante: não detalhar valores de comissão sem consultar pricing atual.
+  Foque em conveniência, segurança e qualidade do serviço.
