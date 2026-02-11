@@ -5,13 +5,20 @@ Separado para manter SRP e limite de 200 linhas.
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from api.payload_builders.whatsapp.factory import build_full_payload
+from app.protocols.models import OutboundMessageRequest
 from app.services.otto_guard_funnel_state import effective_interest, ready_to_schedule_meeting
 
 if TYPE_CHECKING:
     from app.domain.contact_card import ContactCard
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True, slots=True)
 class QuestionPick:
@@ -31,11 +38,6 @@ def pick_next_question(
             continue
         return QuestionPick(key=key, text=text)
     return None
-
-
-
-import asyncio
-from app.protocols.models import OutboundMessageRequest
 
 async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None) -> str:
     """
@@ -67,24 +69,45 @@ async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None)
             to=phone,
             message_type="template",
             template_name="agendamento_reuniao",
-            template_params={},
+            template_params=None,  # Template sem parâmetros de body
             language="pt_BR",
             category="MARKETING",
             flow_id="agendamento_reuniao",
+            flow_token=phone,  # Usa o número do telefone como token para identificar o usuário
         )
         # Use case já espera validator/builder/sender, mas aqui só chamamos o sender direto para não duplicar lógica
         # O ideal é que o pipeline principal injete o outbound_sender correto
         try:
+            # Constrói o payload antes de enviar
+            payload = build_full_payload(request)
+
             # Se for sync, rodar no event loop
             if asyncio.iscoroutinefunction(outbound_sender.send):
-                result = await outbound_sender.send(request, {})
+                result = await outbound_sender.send(request, payload)
             else:
                 loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(None, outbound_sender.send, request, {})
+                result = await loop.run_in_executor(None, outbound_sender.send, request, payload)
             if getattr(result, "success", False):
                 return "Enviei um link para você agendar sua consultoria pelo WhatsApp. É só seguir as instruções."
+            error_msg = getattr(result, "error_message", "Erro desconhecido")
+            logger.warning(
+                "template_flow_send_failed",
+                extra={
+                    "to": phone,
+                    "error": error_msg,
+                    "template_name": "agendamento_reuniao",
+                },
+            )
             return "Tentei enviar o link de agendamento, mas houve uma falha. Por favor, tente novamente mais tarde."
-        except Exception:
+        except Exception as exc:
+            logger.exception(
+                "template_flow_send_exception",
+                extra={
+                    "to": phone,
+                    "template_name": "agendamento_reuniao",
+                    "error": str(exc),
+                },
+            )
             return "Tentei enviar o link de agendamento, mas houve uma falha. Por favor, tente novamente mais tarde."
 
     if contact_card.urgency is None:

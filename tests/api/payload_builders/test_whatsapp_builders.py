@@ -52,6 +52,7 @@ def _mock_request(**kwargs: Any) -> MagicMock:
     req.media_filename = None
     req.template_name = None
     req.template_params = None
+    req.language = None
     req.interactive_type = None
     req.buttons = None
     req.footer = None
@@ -428,6 +429,60 @@ class TestTemplatePayloadBuilder:
         texts = [p["text"] for p in component["parameters"]]
         assert "João" in texts
         assert "12345" in texts
+
+    def test_template_builder_with_flow(self) -> None:
+        """Template com botão de flow."""
+        req = _mock_request(
+            template_name="agendamento_reuniao",
+            flow_id="flow_001",
+            flow_token="token_123",
+            language="pt_BR",
+        )
+        result = TemplatePayloadBuilder().build(req)
+        assert result["template"]["name"] == "agendamento_reuniao"
+        assert result["template"]["language"] == {"code": "pt_BR"}
+        assert len(result["template"]["components"]) == 1
+        component = result["template"]["components"][0]
+        assert component["type"] == "button"
+        assert component["sub_type"] == "flow"
+        assert component["index"] == "0"
+        assert len(component["parameters"]) == 1
+        action_param = component["parameters"][0]
+        assert action_param["type"] == "action"
+        assert action_param["action"]["flow_token"] == "token_123"
+        assert action_param["action"]["flow_action_data"] == {}
+
+    def test_template_builder_with_params_and_flow(self) -> None:
+        """Template com parâmetros de body e botão de flow."""
+        req = _mock_request(
+            template_name="consultoria_agendamento",
+            template_params={"name": "Maria"},
+            flow_id="agendamento_flow",
+            flow_token="maria_token",
+        )
+        result = TemplatePayloadBuilder().build(req)
+        assert result["template"]["name"] == "consultoria_agendamento"
+        assert len(result["template"]["components"]) == 2
+        # Primeiro componente: body
+        body_component = result["template"]["components"][0]
+        assert body_component["type"] == "body"
+        assert body_component["parameters"][0]["text"] == "Maria"
+        # Segundo componente: botão flow
+        button_component = result["template"]["components"][1]
+        assert button_component["type"] == "button"
+        assert button_component["sub_type"] == "flow"
+        assert button_component["parameters"][0]["action"]["flow_token"] == "maria_token"
+
+    def test_template_builder_flow_without_token(self) -> None:
+        """Template com flow mas sem flow_token usa 'unused' como padrão."""
+        req = _mock_request(
+            template_name="simple_flow",
+            flow_id="flow_001",
+            flow_token=None,
+        )
+        result = TemplatePayloadBuilder().build(req)
+        component = result["template"]["components"][0]
+        assert component["parameters"][0]["action"]["flow_token"] == "unused"
 
 
 class TestFactoryFunctions:
