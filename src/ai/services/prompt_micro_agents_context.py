@@ -1,11 +1,14 @@
-"""Helpers de contexto e assets dos micro agentes."""
+"""Helpers de contexto e assets dos micro agentes.
+
+P2-1: Integrado cache inteligente para reduzir I/O de YAMLs.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-import yaml
+from ai.utils.context_cache import load_yaml_cached
 
 _VERTENTES_DIR = Path(__file__).resolve().parents[1] / "contexts" / "vertentes"
 
@@ -33,9 +36,8 @@ def context_exists(relative_path: str) -> bool:
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
-    """Lê YAML e retorna dict seguro."""
-    try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except yaml.YAMLError:
-        return {}
-    return data if isinstance(data, dict) else {}
+    """Lê YAML e retorna dict seguro.
+
+    P2-1: Usa cache com TTL 5min para reduzir I/O repetido.
+    """
+    return load_yaml_cached(path, ttl_seconds=300)

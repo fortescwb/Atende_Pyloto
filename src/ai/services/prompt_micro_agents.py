@@ -138,6 +138,7 @@ def _build_tasks(
         tasks.append(
             asyncio.create_task(
                 roi_agent(
+                    folder=folder,
                     normalized_message=normalized_message,
                     contact_card_signals=signals,
                     correlation_id=correlation_id,
