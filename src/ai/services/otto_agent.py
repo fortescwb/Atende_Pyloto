@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import TYPE_CHECKING
 
 from ai.models.otto import OttoDecision, OttoRequest
 from ai.prompts.otto_prompt import build_full_prompt
 from ai.services.prompt_micro_agents import MicroAgentResult, run_prompt_micro_agents
 from ai.utils.sanitizer import mask_history
+from app.observability import record_confidence, record_handoff, record_latency
 
 if TYPE_CHECKING:
     from ai.core.otto_client import OttoClientProtocol
@@ -31,6 +33,7 @@ class OttoAgentService:
 
     async def decide(self, request: OttoRequest) -> OttoDecision:
         """Executa OttoAgent e retorna decisão bruta (gates externos)."""
+        start_time = time.perf_counter()
         correlation_id = request.correlation_id
         conversation_history = _conversation_history_text(request.history)
         micro_result = await _safe_run_micro_agents(request, correlation_id)
@@ -46,6 +49,10 @@ class OttoAgentService:
             correlation_id=correlation_id,
         )
         if decision is not None:
+            # P1-2: Registrar latência e confidence
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            record_latency("otto_agent", "decide", latency_ms, correlation_id)
+            record_confidence("otto_agent", "decision", decision.confidence, correlation_id)
             return decision
         logger.warning(
             "otto_client_empty",
@@ -126,6 +133,7 @@ def _build_prompts(
         extra_context_paths=micro_result.context_paths,
         extra_context_chunks=micro_result.context_chunks,
         extra_loaded_contexts=micro_result.loaded_contexts,
+        correlation_id=request.correlation_id,
     )
 
 
@@ -147,6 +155,8 @@ def _handoff_decision(reason: str, *, correlation_id: str | None) -> OttoDecisio
             "correlation_id": correlation_id,
         },
     )
+    # P1-2: Registrar métrica de handoff
+    record_handoff(reason, correlation_id)
     return OttoDecision(
         next_state="HANDOFF_HUMAN",
         response_text=_HANDOFF_TEXT,
