@@ -9,14 +9,12 @@ options:
   machineType: "E2_HIGHCPU_8"
   logging: CLOUD_LOGGING_ONLY
 
-# cloudbuild.yaml (seção substitutions - ATUALIZADA)
 substitutions:
   _SERVICE: "atende-pyloto"
   _ENV: "staging"
   _REGION: "us-central1"
   _ARTIFACT_REGISTRY: "atende"
-  _TAG: "${SHORT_SHA}"
-  _MIN_INSTANCES: "1"  # <-- Você vai trocar para "0" antes de parar de trabalhar
+  _MIN_INSTANCES: "1"  # Trocar para "0" no fim do dia
   _MAX_INSTANCES: "10"
   _MEMORY: "512Mi"
   _CPU: "1"
@@ -59,16 +57,31 @@ steps:
   # ─────────────────────────────────────────────────────────
   - id: "build-image"
     name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
     args:
-      - "build"
-      - "--no-cache"
-      - "-t"
-      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_TAG}"
-      - "-t"
-      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest"
-      - "-t"
-      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}"
-      - "."
+      - "-c"
+      - |
+        set -euo pipefail
+        
+        # Gerar tag baseada no commit SHA ou timestamp
+        if [ -n "${SHORT_SHA:-}" ]; then
+          TAG="${SHORT_SHA}"
+        else
+          TAG=$(git rev-parse --short HEAD 2>/dev/null || echo "manual-$(date +%s)")
+        fi
+        
+        echo "🏗️  Building with tag: $$TAG"
+        
+        docker build --no-cache \
+          -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:$$TAG \
+          -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest \
+          -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV} \
+          .
+        
+        # Exportar TAG para próximos steps
+        echo "$$TAG" > /workspace/image_tag.txt
+        
+        echo "✅ Build concluído"
     timeout: "1200s"
     waitFor: ["run-tests"]
 
@@ -77,23 +90,36 @@ steps:
   # ─────────────────────────────────────────────────────────
   - id: "push-tag"
     name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
     args:
-      - "push"
-      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_TAG}"
+      - "-c"
+      - |
+        TAG=$(cat /workspace/image_tag.txt)
+        echo "📦 Pushing tag: $$TAG"
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:$$TAG
+        echo "✅ Tag $$TAG publicada"
     waitFor: ["build-image"]
 
   - id: "push-latest"
     name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
     args:
-      - "push"
-      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest"
+      - "-c"
+      - |
+        echo "📦 Pushing latest..."
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest
+        echo "✅ Tag latest publicada"
     waitFor: ["build-image"]
 
   - id: "push-env"
     name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
     args:
-      - "push"
-      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}"
+      - "-c"
+      - |
+        echo "📦 Pushing ${_ENV}..."
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}
+        echo "✅ Tag ${_ENV} publicada"
     waitFor: ["build-image"]
 
   # ─────────────────────────────────────────────────────────
@@ -144,6 +170,7 @@ steps:
           --max-instances "${_MAX_INSTANCES}" \
           --concurrency "${_CONCURRENCY}" \
           --timeout "${_TIMEOUT}" \
+          --cpu-throttling \
           --set-env-vars "$$ENV_VARS" \
           --set-secrets "$$SECRETS"
 
@@ -187,9 +214,4 @@ steps:
         echo "❌ Health check falhou após 5 tentativas"
         exit 1
     waitFor: ["deploy-cloud-run"]
-
-# Imagens a serem publicadas (referência)
-images:
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:latest"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY}/${_SERVICE}:${_ENV}"
+    
