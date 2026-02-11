@@ -9,15 +9,14 @@ options:
   machineType: "E2_HIGHCPU_8"
   logging: CLOUD_LOGGING_ONLY
 
-# Substitutions podem ser sobrescritas via --substitutions
-# Exemplo: gcloud builds submit --substitutions=_ENV=production
+# cloudbuild.yaml (seção substitutions - ATUALIZADA)
 substitutions:
   _SERVICE: "atende-pyloto"
   _ENV: "staging"
   _REGION: "us-central1"
   _ARTIFACT_REGISTRY: "atende"
   _TAG: "${SHORT_SHA}"
-  _MIN_INSTANCES: "0"
+  _MIN_INSTANCES: "1"  # <-- Você vai trocar para "0" antes de parar de trabalhar
   _MAX_INSTANCES: "10"
   _MEMORY: "512Mi"
   _CPU: "1"
@@ -113,19 +112,23 @@ steps:
 
         # Secrets montados do Secret Manager
         SECRETS="OPENAI_API_KEY=openai-api-key-${_ENV}:latest"
+        SECRETS="$$SECRETS,REDIS_URL=redis-url-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_ACCESS_TOKEN=whatsapp-access-token-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_API_VERSION=whatsapp-api-version-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_BUSINESS_ACCOUNT_ID=whatsapp-business-account-id-${_ENV}:latest"
+        SECRETS="$$SECRETS,WHATSAPP_PHONE_NUMBER_ID=whatsapp-phone-number-id-${_ENV}:latest"
         SECRETS="$$SECRETS,WHATSAPP_VERIFY_TOKEN=whatsapp-verify-token-${_ENV}:latest"
         SECRETS="$$SECRETS,WHATSAPP_WEBHOOK_SECRET=whatsapp-webhook-secret-${_ENV}:latest"
-        SECRETS="$$SECRETS,WHATSAPP_ACCESS_TOKEN=whatsapp-access-token-${_ENV}:latest"
         SECRETS="$$SECRETS,WHATSAPP_APP_SECRET=whatsapp-webhook-secret-${_ENV}:latest"
         SECRETS="$$SECRETS,FLOW_PRIVATE_KEY=flow-private-key-${_ENV}:latest"
-        SECRETS="$$SECRETS,FLOW_PRIVATE_KEY_PASSPHRASE=flow-private-key-passphrase-${_ENV}:latest"
-        SECRETS="$$SECRETS,REDIS_URL=redis-url-${_ENV}:latest"
 
         # Variáveis de ambiente
         ENV_VARS="ENVIRONMENT=${_ENV}"
         ENV_VARS="$$ENV_VARS,LOG_LEVEL=INFO"
-        ENV_VARS="$$ENV_VARS,UVICORN_WORKERS=1"
+        ENV_VARS="$$ENV_VARS,WHATSAPP_WEBHOOK_PROCESSING_MODE=inline"
         ENV_VARS="$$ENV_VARS,WHATSAPP_FLOW_ENDPOINT_ENABLED=true"
+        ENV_VARS="$$ENV_VARS,FIRESTORE_PROJECT_ID=atende-pyloto"
+        ENV_VARS="$$ENV_VARS,GCP_PROJECT=atende-pyloto"
 
         echo "🚀 Deploying $$SERVICE_NAME..."
 
