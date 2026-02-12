@@ -42,3 +42,51 @@ def create_transcription_service() -> Any:
     )
     logger.info("transcription_service_created")
     return service
+
+
+def create_calendar_service() -> Any:
+    """Cria GoogleCalendarClient se feature flag habilitada."""
+    from app.observability import get_correlation_id
+    from config.settings.calendar import get_calendar_settings
+
+    settings = get_calendar_settings()
+    if not settings.calendar_enabled:
+        logger.info(
+            "calendar_service_disabled",
+            extra={
+                "component": "bootstrap",
+                "action": "create_calendar_service",
+                "result": "disabled",
+                "correlation_id": get_correlation_id(),
+            },
+        )
+        return None
+    if not settings.google_calendar_id or not settings.google_service_account_json:
+        logger.warning(
+            "calendar_service_missing_config",
+            extra={
+                "component": "bootstrap",
+                "action": "create_calendar_service",
+                "result": "missing_config",
+                "correlation_id": get_correlation_id(),
+            },
+        )
+        return None
+
+    from app.infra.calendar.google_calendar_client import GoogleCalendarClient
+
+    client = GoogleCalendarClient(
+        calendar_id=settings.google_calendar_id,
+        credentials_json=settings.google_service_account_json,
+        timezone=settings.calendar_timezone,
+    )
+    logger.info(
+        "calendar_service_created",
+        extra={
+            "component": "bootstrap",
+            "action": "create_calendar_service",
+            "result": "ok",
+            "correlation_id": get_correlation_id(),
+        },
+    )
+    return client

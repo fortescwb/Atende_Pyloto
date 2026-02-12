@@ -56,11 +56,13 @@
 ## Fase 2 — Implementação Concreta (Client Google Calendar)
 
 ### 2.1 Criar diretório `src/app/infra/calendar/`
+- Status: ✅ Concluído
 - **Arquivos:**
   - `__init__.py`
   - `google_calendar_client.py`
 
 ### 2.2 Implementar `GoogleCalendarClient`
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/infra/calendar/google_calendar_client.py`
 - **Classe:** `GoogleCalendarClient` que implementa `CalendarServiceProtocol`
 - **Dependências externas:** `google-api-python-client`, `google-auth`
@@ -77,6 +79,7 @@
 - **Regras:** ≤200 linhas, tipagem explícita, comentários PT-BR
 
 ### 2.3 Adicionar dependências ao `pyproject.toml`
+- Status: ✅ Concluído
 - **Pacotes:**
   - `google-api-python-client>=2.0`
   - `google-auth>=2.0`
@@ -87,6 +90,7 @@
 ## Fase 3 — Bootstrap (Wiring)
 
 ### 3.1 Criar factory no bootstrap
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/bootstrap/dependencies_services.py`
 - **Adicionar:** `create_calendar_service() → CalendarServiceProtocol`
   - Lê `CalendarSettings`
@@ -94,6 +98,7 @@
   - Se habilitado, instancia `GoogleCalendarClient` com credenciais
 
 ### 3.2 Re-exportar na fachada
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/bootstrap/dependencies.py`
 - **O quê:** Importar e incluir `create_calendar_service` no `__all__`
 

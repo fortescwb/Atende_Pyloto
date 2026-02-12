@@ -1,0 +1,5 @@
+"""Implementacoes concretas para integracao com Google Calendar."""
+
+from .google_calendar_client import GoogleCalendarClient
+
+__all__ = ["GoogleCalendarClient"]
