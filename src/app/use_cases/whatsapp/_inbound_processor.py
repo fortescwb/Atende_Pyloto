@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from ai.services.contact_card_extractor import ContactCardExtractorService
     from ai.services.otto_agent import OttoAgentService
     from app.protocols import AsyncDedupeProtocol, OutboundSenderProtocol
+    from app.protocols.calendar_service import CalendarServiceProtocol
     from app.protocols.contact_card_store import ContactCardStoreProtocol
     from app.protocols.models import NormalizedMessage
     from app.protocols.session_manager import SessionManagerProtocol
@@ -51,6 +52,7 @@ class InboundMessageProcessor(
         contact_card_store: ContactCardStoreProtocol | None = None,
         transcription_service: TranscriptionServiceProtocol | None = None,
         contact_card_extractor: ContactCardExtractorService | None = None,
+        calendar_service: CalendarServiceProtocol | None = None,
     ) -> None:
         self._session_manager = session_manager
         self._dedupe = dedupe
@@ -60,6 +62,7 @@ class InboundMessageProcessor(
         self._contact_card_store = contact_card_store
         self._transcription_service = transcription_service
         self._contact_card_extractor = contact_card_extractor
+        self._calendar_service = calendar_service
 
     async def process(
         self,

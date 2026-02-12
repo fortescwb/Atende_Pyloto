@@ -147,6 +147,8 @@ steps:
         SECRETS="$$SECRETS,WHATSAPP_WEBHOOK_SECRET=whatsapp-webhook-secret-${_ENV}:latest"
         SECRETS="$$SECRETS,WHATSAPP_APP_SECRET=whatsapp-webhook-secret-${_ENV}:latest"
         SECRETS="$$SECRETS,FLOW_PRIVATE_KEY=flow-private-key-${_ENV}:latest"
+        SECRETS="$$SECRETS,GOOGLE_SERVICE_ACCOUNT_JSON=google-service-account-key-${_ENV}:latest"
+        SECRETS="$$SECRETS,GOOGLE_CALENDAR_ID=google-calendar-id-${_ENV}:latest"
 
         # Variáveis de ambiente
         ENV_VARS="ENVIRONMENT=${_ENV}"
@@ -155,6 +157,14 @@ steps:
         ENV_VARS="$$ENV_VARS,WHATSAPP_FLOW_ENDPOINT_ENABLED=true"
         ENV_VARS="$$ENV_VARS,FIRESTORE_PROJECT_ID=atende-pyloto"
         ENV_VARS="$$ENV_VARS,GCP_PROJECT=atende-pyloto"
+
+        # Configurar CALENDAR_ENABLED (true em staging, false em production)
+        if [ "${_ENV}" = "production" ]; then
+          CALENDAR_ENABLED_VAL="false"
+        else
+          CALENDAR_ENABLED_VAL="true"
+        fi
+        ENV_VARS="$$ENV_VARS,CALENDAR_ENABLED=$$CALENDAR_ENABLED_VAL"
 
         echo "🚀 Deploying $$SERVICE_NAME..."
 

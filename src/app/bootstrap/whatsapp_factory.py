@@ -124,6 +124,7 @@ def create_process_inbound_canonical(
     contact_card_store: Any | None = None,
     transcription_service: Any | None = None,
     contact_card_extractor: Any | None = None,
+    calendar_service: Any | None = None,
 ) -> Any:
     """Wiring para `ProcessInboundCanonicalUseCase` — injeta protocolos concretos.
 
@@ -155,4 +156,5 @@ def create_process_inbound_canonical(
         contact_card_store=contact_card_store,
         transcription_service=transcription_service,
         contact_card_extractor=contact_card_extractor,
+        calendar_service=calendar_service,
     )

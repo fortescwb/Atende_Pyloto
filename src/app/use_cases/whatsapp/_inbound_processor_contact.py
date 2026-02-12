@@ -164,6 +164,7 @@ class InboundProcessorContactMixin:
             flow_response_json=flow_response_json,
             from_number=msg.from_number,
             correlation_id=correlation_id,
+            calendar_service=self._calendar_service,
         )
         if appointment and self._contact_card_store and msg.from_number:
             contact_card = await self._contact_card_store.get_or_create(
@@ -184,17 +185,17 @@ class InboundProcessorContactMixin:
             flow_response_json=flow_response_json,
         )
         await self._session_manager.save(session)
-        logger.info(
-            "flow_completion_processed",
-            extra={
-                "component": "inbound_processor",
-                "action": "flow_completion",
-                "result": "processed",
-                "correlation_id": correlation_id,
-                "message_id": msg.message_id,
-                "saved": bool(appointment),
-            },
-        )
+        log_extra = {
+            "component": "inbound_processor",
+            "action": "flow_completion",
+            "result": "processed",
+            "correlation_id": correlation_id,
+            "message_id": msg.message_id,
+            "saved": bool(appointment),
+        }
+        if appointment and appointment.get("calendar_event_id"):
+            log_extra["calendar_event_id"] = appointment["calendar_event_id"]
+        logger.info("flow_completion_processed", extra=log_extra)
 
     async def _apply_fixed_reply_to_session(
         self,

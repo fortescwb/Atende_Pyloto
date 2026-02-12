@@ -107,6 +107,7 @@
 ## Fase 4 — Serviços Existentes (Adaptar)
 
 ### 4.1 Atualizar `appointment_availability.py`
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/services/appointment_availability.py`
 - **Mudanças:**
   - `get_available_dates()` → receber parâmetro opcional `calendar_service: CalendarServiceProtocol | None`
@@ -116,6 +117,7 @@
 - **Compatibilidade:** manter assinatura retrocompatível (parâmetro opcional)
 
 ### 4.2 Atualizar `appointment_handler.py`
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/services/appointment_handler.py`
 - **Mudanças em `save_appointment_from_flow()`:**
   - Adicionar parâmetro opcional `calendar_service: CalendarServiceProtocol | None`
@@ -127,6 +129,7 @@
   - Logar sucesso/falha com `correlation_id`, sem PII
 
 ### 4.3 Atualizar `otto_guard_funnel_questions.py`
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/services/otto_guard_funnel_questions.py`
 - **Mudança em `build_next_step_cta()`:**
   - Antes de disparar o template de agendamento, consultar disponibilidade real
@@ -138,10 +141,12 @@
 ## Fase 5 — Pipeline Inbound (Injeção e Trigger)
 
 ### 5.1 Atualizar `ProcessInboundCanonicalUseCase`
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/use_cases/whatsapp/process_inbound_canonical.py`
 - **Mudança:** Adicionar `calendar_service: CalendarServiceProtocol | None = None` no `__init__` e repassar ao `InboundMessageProcessor`
 
 ### 5.2 Atualizar `InboundMessageProcessor`
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/use_cases/whatsapp/_inbound_processor.py`
 - **Mudanças:**
   - Receber `calendar_service` no construtor
@@ -149,12 +154,14 @@
   - Armazenar `event_id` na sessão ou no registro do appointment
 
 ### 5.3 Atualizar `_inbound_processor_state_adjustments.py`
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/use_cases/whatsapp/_inbound_processor_state_adjustments.py`
 - **Mudança em `adjust_for_meeting_collected()`:**
   - Quando detectar dados completos (datetime + email) e transitar para `SCHEDULED_FOLLOWUP`, sinalizar que é necessário criar evento
   - Opção: adicionar campo `scheduling_action: str` no `OttoDecision.reasoning_debug` ou usar custom_metadata na sessão
 
 ### 5.4 Atualizar factory do WhatsApp
+- Status: ✅ Concluído
 - **Arquivo:** `src/app/bootstrap/whatsapp_factory.py`
 - **O quê:** Injetar `calendar_service` no `ProcessInboundCanonicalUseCase` durante a montagem
 
@@ -163,6 +170,7 @@
 ## Fase 6 — Testes
 
 ### 6.1 Fake/Mock do CalendarServiceProtocol
+- Status: ✅ Concluído
 - **Arquivo:** `tests/fakes/fake_calendar_service.py`
 - **O quê:** Implementação in-memory para testes determinísticos
   - `check_availability()` retorna slots pré-definidos
@@ -170,7 +178,10 @@
   - `cancel_event()` retorna `True`
 
 ### 6.2 Testes unitários do client
-- **Arquivo:** `tests/test_app/test_infra/test_calendar/test_google_calendar_client.py`
+- Status: ✅ Concluído
+- **Arquivos:**
+  - `tests/test_app/test_infra/test_calendar/test_google_calendar_client.py`
+  - `tests/test_app/test_infra/test_calendar/test_google_calendar_client_errors.py`
 - **Cobrir:**
   - Autenticação com credenciais válidas/inválidas
   - Parsing de resposta `freebusy.query`
@@ -179,13 +190,15 @@
   - Retry em erros transientes
 
 ### 6.3 Testes de integração do appointment_handler
-- **Arquivo:** `tests/test_app/test_services/test_appointment_handler.py`
+- Status: ✅ Concluído
+- **Arquivo:** `tests/app/services/test_appointment_handler.py`
 - **Cobrir:**
   - `save_appointment_from_flow()` com `calendar_service` → verifica chamada a `create_event()`
   - `save_appointment_from_flow()` sem `calendar_service` → comportamento retrocompatível
   - Falha no calendar não impede gravação no Firestore
 
 ### 6.4 Teste E2E do golden path com agendamento
+- Status: ✅ Concluído
 - **Arquivo:** `tests/test_e2e/test_scheduling_golden_path.py`
 - **Cobrir:**
   - Fluxo completo: lead qualificado → Flow WhatsApp → completion → evento criado no calendar (fake)
@@ -211,6 +224,7 @@
 - Deploy com `CALENDAR_ENABLED=false` em produção
 - Testar em staging com calendário de teste
 - Ativar em produção após validação
+- Nota: Pendente — configuração manual no GCP
 
 ---
 
@@ -224,18 +238,21 @@ pytest --cov=src --cov-fail-under=80
 ```
 
 Status da última execução:
-- ✅ `ruff check src/`
-- ✅ `pytest -q`
+- ✅ `ruff check src/ tests/` — passou
+- ✅ `pytest -q` — 471 passed
+- ❌ `pytest --cov=src --cov-fail-under=80` — 67.65% (<80%)
 
 ### 8.2 Checklist de revisão
-- [ ] Boundaries respeitadas (`app/infra/` faz IO, `app/protocols/` define contrato)
-- [ ] Nenhum import de `app/infra/calendar/` em `ai/`, `fsm/` ou `api/`
-- [ ] Arquivos ≤200 linhas, funções ≤50 linhas
-- [ ] Logs sem PII (sem email, telefone, nome)
-- [ ] Comentários em PT-BR
-- [ ] Feature flag funcional (`CALENDAR_ENABLED`)
-- [ ] Testes determinísticos (sem chamadas reais à API Google)
-- [ ] Retrocompatibilidade mantida (parâmetros opcionais)
+- [x] Boundaries respeitadas (`app/infra/` faz IO, `app/protocols/` define contrato)
+- [x] Nenhum import de `app/infra/calendar/` em `ai/`, `fsm/` ou `api/`
+- [x] Arquivos ≤200 linhas, funções ≤50 linhas
+- [x] Logs sem PII (sem email, telefone, nome)
+- [x] Comentários em PT-BR
+- [x] Feature flag funcional (`CALENDAR_ENABLED`)
+- [x] Testes determinísticos (sem chamadas reais à API Google)
+- [x] Retrocompatibilidade mantida (parâmetros opcionais)
+
+Obs.: `src/app/use_cases/whatsapp/_inbound_processor.py` permanece acima de 200 linhas com exceção já documentada no cabeçalho (`EXCECAO REGRA 2.1`).
 
 ---
 
@@ -272,7 +289,8 @@ Fase 8 (Validação)
 | **CRIAR** | `src/app/infra/calendar/google_calendar_client.py` |
 | **CRIAR** | `tests/fakes/fake_calendar_service.py` |
 | **CRIAR** | `tests/test_app/test_infra/test_calendar/test_google_calendar_client.py` |
-| **CRIAR** | `tests/test_app/test_services/test_appointment_handler.py` |
+| **CRIAR** | `tests/test_app/test_infra/test_calendar/test_google_calendar_client_errors.py` |
+| **CRIAR** | `tests/app/services/test_appointment_handler.py` |
 | **CRIAR** | `tests/test_e2e/test_scheduling_golden_path.py` |
 | ATUALIZAR | `src/app/protocols/__init__.py` |
 | ATUALIZAR | `src/config/settings/__init__.py` |

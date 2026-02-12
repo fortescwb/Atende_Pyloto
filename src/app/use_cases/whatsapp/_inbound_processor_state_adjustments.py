@@ -76,4 +76,11 @@ def adjust_for_meeting_collected(
             "reason": "meeting_collected",
         },
     )
-    return decision.model_copy(update={"next_state": "SCHEDULED_FOLLOWUP"})
+    debug = decision.reasoning_debug or ""
+    updated_debug = f"{debug} | scheduling_triggered=true".strip(" |")
+    return decision.model_copy(
+        update={
+            "next_state": "SCHEDULED_FOLLOWUP",
+            "reasoning_debug": updated_debug,
+        }
+    )

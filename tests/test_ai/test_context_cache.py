@@ -11,7 +11,7 @@ Valida:
 from __future__ import annotations
 
 import time
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
@@ -24,6 +24,9 @@ from ai.utils.context_cache import (
     invalidate_key,
     load_yaml_cached,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.fixture
