@@ -187,12 +187,12 @@ def _build_tenant_context(
 
 
 def _compute_prompt_fingerprint(system_prompt: str, user_prompt: str) -> str:
-    """Calcula MD5 hash dos prompts para rastreabilidade.
+    """Calcula hash dos prompts para rastreabilidade.
 
     P0-1: Permite reproduzir exatamente o prompt em debug/rollback.
     """
     combined = f"{system_prompt}\n---\n{user_prompt}"
-    return hashlib.md5(combined.encode("utf-8")).hexdigest()
+    return hashlib.sha256(combined.encode("utf-8")).hexdigest()
 
 
 def _split_blocks(text: str) -> list[str]:

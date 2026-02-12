@@ -34,7 +34,9 @@ def _decode_base64(raw_value: str) -> bytes:
         import re
 
         if not re.fullmatch(r"[A-Za-z0-9_\-]+={0,2}", value):
-            raise FlowCryptoError("Invalid base64 payload: invalid characters in input")
+            raise FlowCryptoError(
+                "Invalid base64 payload: invalid characters in input"
+            ) from None
         try:
             return base64.urlsafe_b64decode(padded)
         except (ValueError, binascii.Error) as exc:

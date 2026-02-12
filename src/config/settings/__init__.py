@@ -27,6 +27,12 @@ from config.settings.base import (
     get_session_settings,
 )
 
+# Calendar settings
+from config.settings.calendar import (
+    CalendarSettings,
+    get_calendar_settings,
+)
+
 # Infrastructure settings
 from config.settings.infra import (
     CloudTasksSettings,
@@ -57,6 +63,7 @@ __all__ = [
     "GRAPH_API_VERSION",
     # Base
     "BaseSettings",
+    "CalendarSettings",
     "CloudTasksSettings",
     "DedupeBackend",
     "DedupeSettings",
@@ -76,6 +83,7 @@ __all__ = [
     # Channels
     "WhatsAppSettings",
     "get_base_settings",
+    "get_calendar_settings",
     "get_cloud_tasks_settings",
     "get_dedupe_settings",
     "get_firestore_settings",

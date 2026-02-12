@@ -39,7 +39,7 @@ def pick_next_question(
         return QuestionPick(key=key, text=text)
     return None
 
-async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None) -> str:
+async def build_next_step_cta(contact_card: ContactCard, outbound_sender=None) -> str:
     """
     Sugere próximo passo. Se for hora de agendar, dispara template/flow WhatsApp.
     outbound_sender: OutboundSenderProtocol (injetado pelo pipeline principal)
@@ -64,7 +64,10 @@ async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None)
         # Envia template e flow do WhatsApp
         phone = getattr(contact_card, "wa_id", None) or getattr(contact_card, "phone", None)
         if not phone or not outbound_sender:
-            return "Estamos prontos para agendar, mas houve um erro ao acionar o WhatsApp. Por favor, tente novamente mais tarde."
+            return (
+                "Estamos prontos para agendar, mas houve um erro ao acionar o "
+                "WhatsApp. Por favor, tente novamente mais tarde."
+            )
         request = OutboundMessageRequest(
             to=phone,
             message_type="template",
@@ -73,10 +76,9 @@ async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None)
             language="pt_BR",
             category="MARKETING",
             flow_id="agendamento_reuniao",
-            flow_token=phone,  # Usa o número do telefone como token para identificar o usuário
+            flow_token=phone,  # Usa o numero como token para identificar o usuario.
         )
-        # Use case já espera validator/builder/sender, mas aqui só chamamos o sender direto para não duplicar lógica
-        # O ideal é que o pipeline principal injete o outbound_sender correto
+        # Evita duplicar montagem do fluxo; o pipeline principal injeta o sender correto.
         try:
             # Constrói o payload antes de enviar
             payload = build_full_payload(request)
@@ -86,9 +88,17 @@ async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None)
                 result = await outbound_sender.send(request, payload)
             else:
                 loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(None, outbound_sender.send, request, payload)
+                result = await loop.run_in_executor(
+                    None,
+                    outbound_sender.send,
+                    request,
+                    payload,
+                )
             if getattr(result, "success", False):
-                return "Enviei um link para você agendar sua consultoria pelo WhatsApp. É só seguir as instruções."
+                return (
+                    "Enviei um link para voce agendar sua consultoria pelo WhatsApp. "
+                    "E so seguir as instrucoes."
+                )
             error_msg = getattr(result, "error_message", "Erro desconhecido")
             logger.warning(
                 "template_flow_send_failed",
@@ -98,7 +108,10 @@ async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None)
                     "template_name": "agendamento_reuniao",
                 },
             )
-            return "Tentei enviar o link de agendamento, mas houve uma falha. Por favor, tente novamente mais tarde."
+            return (
+                "Tentei enviar o link de agendamento, mas houve uma falha. "
+                "Por favor, tente novamente mais tarde."
+            )
         except Exception as exc:
             logger.exception(
                 "template_flow_send_exception",
@@ -108,7 +121,10 @@ async def build_next_step_cta(contact_card: "ContactCard", outbound_sender=None)
                     "error": str(exc),
                 },
             )
-            return "Tentei enviar o link de agendamento, mas houve uma falha. Por favor, tente novamente mais tarde."
+            return (
+                "Tentei enviar o link de agendamento, mas houve uma falha. "
+                "Por favor, tente novamente mais tarde."
+            )
 
     if contact_card.urgency is None:
         return "Qual a urgencia para colocar isso de pe? (esta semana, este mes, sem pressa)"

@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from datetime import datetime
 
 
-class TemplateCategory(str, Enum):
+class TemplateCategory(StrEnum):
     """Categorias de template conforme Meta."""
 
     MARKETING = "MARKETING"
@@ -18,7 +18,7 @@ class TemplateCategory(str, Enum):
     AUTHENTICATION = "AUTHENTICATION"
 
 
-class TemplateStatus(str, Enum):
+class TemplateStatus(StrEnum):
     """Status de aprovação de template."""
 
     APPROVED = "APPROVED"

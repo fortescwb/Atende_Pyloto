@@ -8,10 +8,10 @@ Referência: REGRAS_E_PADROES.md § 2.5 — FSM determinístico
 Referência: FUNCIONAMENTO.md § 4.4 — FSM avalia estado e transições
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class SessionState(str, Enum):
+class SessionState(StrEnum):
     """
     Estados canônicos de uma sessão de atendimento.
 

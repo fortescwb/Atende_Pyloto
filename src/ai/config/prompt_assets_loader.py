@@ -27,7 +27,9 @@ def _resolve_relative_path(base_dir: Path, relative_path: str) -> Path:
     if not relative_path:
         raise PromptAssetError("relative_path vazio")
     rel = Path(relative_path)
-    if rel.is_absolute():
+    # Em Windows, caminhos iniciando com "/" podem nao ser reconhecidos por
+    # Path.is_absolute(); por isso validamos tambem por prefixo.
+    if rel.is_absolute() or relative_path.startswith(("/", "\\")):
         raise PromptAssetError("relative_path deve ser relativo")
     if ".." in rel.parts:
         raise PromptAssetError("relative_path invalido (..) não permitido")

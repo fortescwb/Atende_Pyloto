@@ -1,5 +1,6 @@
 """Protocolos e contratos do core da aplicação."""
 
+from .calendar_service import CalendarServiceProtocol
 from .conversation_store import (
     ConversationMessage,
     ConversationStoreError,
@@ -27,6 +28,7 @@ from .validator import OutboundRequestValidatorProtocol, ValidationError
 __all__ = [
     "AsyncDedupeProtocol",
     "AsyncSessionStoreProtocol",
+    "CalendarServiceProtocol",
     "ConversationMessage",
     "ConversationStoreError",
     "ConversationStoreProtocol",

@@ -176,9 +176,10 @@ async def roi_agent(
                 "has_numbers": has_numbers,
             },
         )
+        roi_hint = "ROI hint: adapte o calculo ao porte e ao contexto informado pelo lead."
         return MicroAgentResult(
             context_paths=[path],
-            context_chunks=[],
+            context_chunks=[roi_hint],
             loaded_contexts=[path],
         )
     except Exception as exc:

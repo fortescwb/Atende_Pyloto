@@ -178,7 +178,10 @@ def apply_continuation_guard(
     """Compatibility wrapper: returns GuardResult synchronously when called from sync code,
     or returns coroutine when called from async context (caller should await)."""
     coro = _apply_continuation_guard_async(
-        decision=decision, contact_card=contact_card, user_message=user_message, recent_fields=recent_fields
+        decision=decision,
+        contact_card=contact_card,
+        user_message=user_message,
+        recent_fields=recent_fields,
     )
     import asyncio
 
